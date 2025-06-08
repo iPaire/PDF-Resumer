@@ -1,13 +1,11 @@
-// app/api/auth/register/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { hashPassword } from '@/lib/auth-utils';
+import { hashPassword } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
     const { name, email, password } = await request.json();
     
-    // Verifică dacă email-ul există deja
     const existingUser = await prisma.user.findUnique({
       where: { email }
     });
@@ -19,20 +17,23 @@ export async function POST(request: Request) {
       );
     }
     
-    // Creează noul utilizator cu parola hash-uită
     const hashedPassword = await hashPassword(password);
     const newUser = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: 'personal' // Rol implicit
+        role: 'personal',
+        emailVerified: new Date(), // Marchează ca verificat pentru Credentials
       }
     });
     
-    // Returnează răspuns fără parolă
-    const { password: _, ...userWithoutPassword } = newUser;
-    return NextResponse.json(userWithoutPassword);
+    return NextResponse.json({
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role
+    });
     
   } catch (error) {
     console.error('Registration error:', error);

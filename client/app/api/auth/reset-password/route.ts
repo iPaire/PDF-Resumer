@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
-import { generateToken } from '../../../lib/auth-utils';
+import { generateToken } from '../../../lib/auth';
 
 
 export async function POST(request: Request) {
