@@ -115,7 +115,7 @@ export default function PricingPage() {
               
               <p className="font-bold text-gray-800 text-lg mb-6">€0 / lună</p>
               
-              <button className="w-full py-3 px-4 rounded-lg border border-gray-300 text-gray-800 font-medium 
+              <button className="cursor-pointer w-full py-3 px-4 rounded-lg border border-gray-300 text-gray-800 font-medium 
                                 transition-all duration-300 hover:bg-gray-300 hover:text-white
                                 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50">
                 Începe acum
@@ -135,7 +135,7 @@ export default function PricingPage() {
               
               <p className="font-bold text-gray-800 text-lg mb-6">€5 / lună</p>
               
-              <button className="w-full py-3 px-4 rounded-lg border border-blue-500 text-blue-500 font-medium 
+              <button className="cursor-pointer w-full py-3 px-4 rounded-lg border border-blue-500 text-blue-500 font-medium 
                                 transition-all duration-300 hover:bg-blue-500 hover:text-white
                                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
                 Alege Standard
@@ -161,7 +161,7 @@ export default function PricingPage() {
                 
                 <p className="font-bold text-gray-800 text-lg mb-6">€10 / lună</p>
                 
-                <button className="w-full py-3 px-4 rounded-lg border border-yellow-500 text-yellow-500 font-medium 
+                <button className="cursor-pointer w-full py-3 px-4 rounded-lg border border-yellow-500 text-yellow-500 font-medium 
                                   transition-all duration-300 hover:bg-yellow-500 hover:text-white
                                   focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50">
                   Alege Premium
