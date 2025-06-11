@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       path: '/',
     });
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _unused, ...userWithoutPassword } = user;
     return NextResponse.json(userWithoutPassword);
     
   } catch (error) {

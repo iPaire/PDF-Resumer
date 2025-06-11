@@ -55,7 +55,7 @@ export default function SettingsPage() {
         });
         setProfileSuccess('Profil actualizat cu succes!');
       }
-    } catch (error) {
+    } catch {
       setProfileError('Eroare la actualizarea profilului');
     } finally {
       setIsLoading(false);

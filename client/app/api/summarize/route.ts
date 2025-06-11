@@ -1,112 +1,138 @@
-// app/api/summarize/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import pdf from 'pdf-parse';
+import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
+import pdf from 'pdf-parse';
 
-export const config = {
-  runtime: 'nodejs', // important pentru a avea acces la variabile de mediu și Node.js API
-};
-
-// In-memory rate limiter (5 requests/min/IP)
-const rateLimiter = new Map<string, number>();
-const windowSize = 60 * 1000; // 1 minut
-const maxRequests = 5;
-
-// Configurare OpenAI
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export async function POST(request: NextRequest) {
-  // Rate limiting
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  const ip = forwardedFor?.split(',')[0]?.trim() || 'unknown';
-
-  const current = Date.now();
-  const lastRequest = rateLimiter.get(ip) || 0;
-
-  if (current - lastRequest < windowSize / maxRequests) {
-    return NextResponse.json(
-      {
-        error: 'Prea multe solicitări. Încercați din nou în câteva secunde.',
-      },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': `${Math.ceil((windowSize - (current - lastRequest)) / 1000)}`,
-        },
-      }
-    );
-  }
-
-  rateLimiter.set(ip, current);
-
   try {
-    const formData = await request.formData();
-    const file = formData.get('pdf') as Blob | null;
-    const filename = formData.get('filename') as string | null;
-    const size = formData.get('size') as string | null;
-
-    if (!file || !filename) {
-      return NextResponse.json({ error: 'Niciun fișier PDF încărcat' }, { status: 400 });
-    }
-
-    const fileSize = size ? parseInt(size) : 0;
-    if (fileSize > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Fișierul depășește limita de 10MB' }, { status: 400 });
-    }
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const data = await pdf(buffer);
-    const text = data.text;
-
-    // Trunchiere text dacă e prea lung
-    const maxLength = 12000;
-    const truncatedText =
-      text.length > maxLength ? text.substring(0, maxLength) + '... [text trunchiat]' : text;
-
-    // Cerere către OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a helpful assistant that summarizes academic documents. Keep the summary concise and preserve the original language of the input. Structure it into short paragraphs.',
-        },
-        {
-          role: 'user',
-          content: `Summarize the following text in no more than 300 words, maintaining key information and using the same language as the original:\n\n${truncatedText}`,
-        },
-      ],
-      max_tokens: 500,
-      temperature: 0.3,
-    });
-
-    const summary = completion.choices?.[0]?.message?.content?.trim() || 'Nu s-a putut genera rezumatul.';
-
-    return NextResponse.json({
-      summary,
-      meta: {
-        filename,
-        pages: data.numpages,
-        size: fileSize,
-        characters: text.length,
-      },
-    });
-  } catch (error: any) {
-    console.error('Eroare procesare PDF:', error);
-
-    if (error.message?.includes('Unexpected token')) {
-      return NextResponse.json(
-        { error: 'Format PDF neacceptat. Încercați cu un alt fișier.' },
-        { status: 400 }
+    // Verifică dacă cererea este prea mare înainte de a procesa
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+      return new Response(
+        JSON.stringify({ error: 'Fișierul depășește limita de 10MB' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    return NextResponse.json(
-      { error: 'Eroare internă la procesarea documentului' },
-      { status: 500 }
+    const formData = await request.formData();
+    const file = formData.get('pdf') as Blob | null;
+    const filename = formData.get('filename') as string | null;
+    
+    if (!file || !filename) {
+      return new Response(
+        JSON.stringify({ error: 'Niciun fișier PDF încărcat' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verifică tipul fișierului
+    if (file.type !== 'application/pdf') {
+      return new Response(
+        JSON.stringify({ error: 'Tip fișier invalid. Vă rugăm să încărcați doar PDF-uri.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const buffer = await file.arrayBuffer();
+    
+    // Verifică magic number pentru PDF
+    const header = new Uint8Array(buffer, 0, 4);
+    const headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join('');
+    if (headerHex !== '25504446') {
+      return new Response(
+        JSON.stringify({ error: 'Fișierul nu este un PDF valid' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Procesare PDF
+    let text = '';
+    let numpages = 0;
+    
+    try {
+      const data = await pdf(Buffer.from(buffer));
+      text = data.text;
+      numpages = data.numpages;
+    } catch (parseError) {
+      console.error('Eroare parsare PDF:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Nu am putut extrage textul din PDF. Fișierul este protejat sau conține imagini.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verifică dacă PDF-ul conține text
+    if (!text.trim()) {
+      return new Response(
+        JSON.stringify({ error: 'PDF-ul conține doar imagini. Nu putem extrage text.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Trunchiere text pentru eficiență
+    const maxLength = 10000;
+    const truncatedText = text.length > maxLength 
+      ? text.substring(0, maxLength) + '... [text trunchiat]' 
+      : text;
+
+    // Generare rezumat cu OpenAI
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo-16k',
+      messages: [
+        {
+          role: 'system',
+          content: 'Generează un rezumat concis în limba documentului, păstrând informațiile cheie. Folosește paragrafe scurte.',
+        },
+        {
+          role: 'user',
+          content: `Rezumă următorul text în maxim 300 de cuvinte:\n\n${truncatedText}`,
+        },
+      ],
+      max_tokens: 800,
+      temperature: 0.2,
+    });
+
+    const summary = completion.choices[0]?.message?.content?.trim() || 'Nu s-a putut genera rezumatul.';
+
+    return new Response(
+      JSON.stringify({
+        summary,
+        meta: {
+          filename,
+          pages: numpages,
+          size: file.size,
+          characters: text.length,
+        },
+      }),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error: any) {
+    console.error('Eroare procesare PDF:', error);
+    
+    let errorMessage = 'Eroare internă la procesarea documentului';
+    let status = 500;
+
+    // Tratare specifică a erorilor
+    if (error.message?.includes('Unexpected token')) {
+      errorMessage = 'Format PDF neacceptat. Încercați cu un alt fișier.';
+      status = 400;
+    } else if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+      errorMessage = 'Timp de procesare depășit. Încercați cu un fișier mai mic.';
+      status = 408;
+    } else if (error.status === 429) {
+      errorMessage = 'Prea multe solicitări. Vă rugăm să așteptați un minut.';
+      status = 429;
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'Conexiune la server eșuată. Verificați internetul.';
+      status = 503;
+    }
+
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

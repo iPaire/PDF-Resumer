@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverActions: true,
+    largePageDataBytes: 128 * 100000, // 128KB
   },
+  serverExternalPackages: ['pdf-parse'], // Mutat la nivel superior
 };
-
 
 module.exports = nextConfig;

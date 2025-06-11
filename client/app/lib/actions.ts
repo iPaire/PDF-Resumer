@@ -26,7 +26,7 @@ export async function updateProfile(data: { name: string; email: string }) {
     }
 
     // Update user
-    const updatedUser = await prisma.user.update({
+    await prisma.user.update({
       where: { id: session.user.id },
       data: {
         name: data.name,
