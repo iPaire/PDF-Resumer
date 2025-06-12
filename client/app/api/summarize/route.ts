@@ -1,14 +1,66 @@
 import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
 import pdf from 'pdf-parse';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/authOptions";
+import prisma from "@/lib/prisma";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export async function POST(request: NextRequest) {
+  // Check authentication
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return new Response(
+      JSON.stringify({ error: 'Trebuie să fii autentificat pentru a utiliza acest serviciu' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
-    // Verifică dacă cererea este prea mare înainte de a procesa
+    // Get current user
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { 
+        usage: { 
+          where: { 
+            date: { 
+              gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+              lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+            } 
+          } 
+        } 
+      }
+    });
+
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Utilizatorul nu a fost găsit' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check usage limits
+    const usageCount = user.usage.length;
+    const planLimits = {
+      free: 3,
+      standard: 50,
+      premium: 200
+    };
+    const userLimit = planLimits[user.subscription as keyof typeof planLimits] || 0;
+
+    if (usageCount >= userLimit) {
+      return new Response(
+        JSON.stringify({ 
+          error: `Ai atins limita lunară de ${userLimit} rezumate. ${userLimit === 3 ? 'Trebuie să îți faci upgrade pentru a continua.' : 'Te rugăm să aștepți până la resetarea lunară.'}` 
+        }), 
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Process file size
     const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
       return new Response(
@@ -17,10 +69,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Process file upload
     const formData = await request.formData();
     const file = formData.get('pdf') as Blob | null;
     const filename = formData.get('filename') as string | null;
-    
+
     if (!file || !filename) {
       return new Response(
         JSON.stringify({ error: 'Niciun fișier PDF încărcat' }),
@@ -28,7 +81,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verifică tipul fișierului
     if (file.type !== 'application/pdf') {
       return new Response(
         JSON.stringify({ error: 'Tip fișier invalid. Vă rugăm să încărcați doar PDF-uri.' }),
@@ -37,8 +89,6 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = await file.arrayBuffer();
-    
-    // Verifică magic number pentru PDF
     const header = new Uint8Array(buffer, 0, 4);
     const headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join('');
     if (headerHex !== '25504446') {
@@ -48,10 +98,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Procesare PDF
+    // Parse PDF
     let text = '';
     let numpages = 0;
-    
+
     try {
       const data = await pdf(Buffer.from(buffer));
       text = data.text;
@@ -64,7 +114,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verifică dacă PDF-ul conține text
     if (!text.trim()) {
       return new Response(
         JSON.stringify({ error: 'PDF-ul conține doar imagini. Nu putem extrage text.' }),
@@ -72,30 +121,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Trunchiere text pentru eficiență
+    // Generate summary
     const maxLength = 10000;
     const truncatedText = text.length > maxLength 
       ? text.substring(0, maxLength) + '... [text trunchiat]' 
       : text;
 
-    // Generare rezumat cu OpenAI
+    const prompt = `
+Pe baza următorului text, generează un material educațional structurat care să ajute utilizatorul să învețe eficient:
+
+[textul este mai jos]
+
+---
+
+Text:
+${truncatedText}
+
+---
+
+Structura dorită a răspunsului:
+
+1. **Descriere pe subiecte principale** – identifică și explică pe scurt principalele idei sau teme.
+2. **Glosar de termeni** – listă de termeni importanți cu explicații clare și concise.
+3. **Cunoștințe necesare pentru înțelegere** – ce trebuie să știe utilizatorul dinainte.
+4. **Explicații detaliate ale conceptelor cheie** – dezvoltă subiectele complexe în mod clar.
+5. **Întrebări de autoevaluare** – între 3 și 7 întrebări relevante, cu răspunsuri ascunse (ex: scrie "(click pentru a vedea răspunsul)" sau similar).
+
+Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu titluri vizibile.
+`;
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo-16k',
       messages: [
-        {
-          role: 'system',
-          content: 'Generează un rezumat concis în limba documentului, păstrând informațiile cheie. Folosește paragrafe scurte.',
-        },
-        {
-          role: 'user',
-          content: `Rezumă următorul text în maxim 300 de cuvinte:\n\n${truncatedText}`,
-        },
+        { role: 'system', content: 'Ești un asistent care generează materiale educaționale din documente PDF.' },
+        { role: 'user', content: prompt },
       ],
-      max_tokens: 800,
-      temperature: 0.2,
+      max_tokens: 3000,
+      temperature: 0.4,
     });
 
-    const summary = completion.choices[0]?.message?.content?.trim() || 'Nu s-a putut genera rezumatul.';
+    const summary = completion.choices[0]?.message?.content?.trim() || 'Nu s-a putut genera conținutul.';
+
+    // Record usage
+    await prisma.usage.create({
+      data: {
+        userId: user.id
+      }
+    });
 
     return new Response(
       JSON.stringify({
@@ -111,11 +183,10 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('Eroare procesare PDF:', error);
-    
+
     let errorMessage = 'Eroare internă la procesarea documentului';
     let status = 500;
 
-    // Tratare specifică a erorilor
     if (error.message?.includes('Unexpected token')) {
       errorMessage = 'Format PDF neacceptat. Încercați cu un alt fișier.';
       status = 400;
@@ -128,6 +199,11 @@ export async function POST(request: NextRequest) {
     } else if (error.code === 'ENOTFOUND') {
       errorMessage = 'Conexiune la server eșuată. Verificați internetul.';
       status = 503;
+    } else if (error.message?.includes('limita lunară')) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     return new Response(

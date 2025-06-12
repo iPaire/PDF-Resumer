@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 const parseJSON = async (response: Response) => {
   const text = await response.text();
@@ -14,27 +16,61 @@ const parseJSON = async (response: Response) => {
 };
 
 export default function PDFSummarizer() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [summary, setSummary] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState(0);
+  const [usage, setUsage] = useState({ used: 0, limit: 3 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fetch usage data on component mount
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchUsage();
+    }
+  }, [status]);
+
+  const fetchUsage = async () => {
+    try {
+      const response = await fetch('/api/usage');
+      const data = await response.json();
+      if (response.ok) {
+        setUsage(data);
+      }
+    } catch (error) {
+      console.error('Error fetching usage:', error);
+    }
+  };
+
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    // Redirect to login if not authenticated
+    if (status !== 'authenticated') {
+      router.push('/login');
+      return;
+    }
+
+    // Check usage limit
+    if (usage.used >= usage.limit) {
+      setError(`Ai atins limita lunară de ${usage.limit} rezumate. ${usage.limit === 3 ? 'Trebuie să îți faci upgrade pentru a continua.' : 'Te rugăm să aștepți până la resetarea lunară.'}`);
+      return;
+    }
+
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
     const file = files[0];
     
-    // Resetare stări anterioare
+    // Reset states
     setError('');
     setSummary('');
     setFileName(file.name);
     setFileSize(file.size);
     setIsLoading(true);
     
-    // Verificări inițiale
+    // File validation
     if (file.size > 10 * 1024 * 1024) {
       setError('Fișierul depășește limita de 10MB');
       setIsLoading(false);
@@ -57,14 +93,12 @@ export default function PDFSummarizer() {
         body: formData
       });
 
-      // Verifică tipul răspunsului
+      // Handle response
       const contentType = response.headers.get('content-type');
       
-      // Dacă nu e JSON, tratează ca eroare
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
         
-        // Verifică dacă e pagină HTML de eroare Next.js
         if (text.startsWith('<!DOCTYPE html>')) {
           throw new Error('Eroare internă a serverului');
         }
@@ -72,7 +106,7 @@ export default function PDFSummarizer() {
         throw new Error(`Răspuns neașteptat: ${text.substring(0, 100)}`);
       }
 
-      const data = await response.json();
+      const data = await parseJSON(response);
       
       if (!response.ok) {
         throw new Error(data.error || 'Eroare necunoscută la procesare');
@@ -80,19 +114,22 @@ export default function PDFSummarizer() {
       
       if (data.summary) {
         setSummary(data.summary);
+        // Refresh usage after successful summary
+        fetchUsage();
       } else {
         setError('Nu s-a putut genera rezumatul. Încercați cu alt fișier.');
       }
     } catch (err: any) {
       console.error('Eroare procesare PDF:', err);
       
-      // Mesaj prietenos pentru utilizator
       let userMessage = err.message || 'Eroare necunoscută la procesare';
       
       if (err.message.includes('Failed to fetch')) {
         userMessage = 'Conexiunea cu serverul a eșuat. Verificați internetul.';
       } else if (err.message.includes('Eroare internă a serverului')) {
         userMessage = 'Eroare internă a serverului. Contactați suportul.';
+      } else if (err.message.includes('limita lunară')) {
+        userMessage = err.message;
       }
       
       setError(userMessage);
@@ -101,8 +138,17 @@ export default function PDFSummarizer() {
     }
   };
 
-
   const triggerFileInput = () => {
+    if (status !== 'authenticated') {
+      router.push('/login');
+      return;
+    }
+    
+    if (usage.used >= usage.limit) {
+      setError(`Ai atins limita lunară de ${usage.limit} rezumate. ${usage.limit === 3 ? 'Trebuie să îți faci upgrade pentru a continua.' : 'Te rugăm să aștepți până la resetarea lunară.'}`);
+      return;
+    }
+    
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
       fileInputRef.current.click();
@@ -120,6 +166,26 @@ export default function PDFSummarizer() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
+        {/* Usage Indicator */}
+        {status === 'authenticated' && (
+          <div className="mb-6 bg-white rounded-lg shadow-sm p-4 flex flex-col sm:flex-row justify-between items-center">
+            <div className="mb-2 sm:mb-0">
+              <span className="font-medium text-gray-700">Folosire lunară: </span>
+              <span className="font-semibold">
+                {usage.used} / {usage.limit} rezumate
+              </span>
+            </div>
+            {usage.used >= usage.limit && (
+              <button 
+                onClick={() => router.push('/pricing')}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full text-sm font-medium hover:from-blue-700 hover:to-indigo-800 transition"
+              >
+                Upgrade Plan
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="text-center mb-10">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
             PDF Summarizer
@@ -168,9 +234,11 @@ export default function PDFSummarizer() {
                 <button
                   type="button"
                   onClick={triggerFileInput}
-                  disabled={isLoading}
+                  disabled={isLoading || (status === 'authenticated' && usage.used >= usage.limit)}
                   className={`inline-flex items-center px-5 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 ${
-                    isLoading ? 'opacity-70 cursor-not-allowed' : 'transform hover:-translate-y-1'
+                    isLoading || (status === 'authenticated' && usage.used >= usage.limit) 
+                      ? 'opacity-70 cursor-not-allowed' 
+                      : 'transform hover:-translate-y-1'
                   }`}
                 >
                   {isLoading ? (

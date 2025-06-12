@@ -16,14 +16,21 @@ model User {
   emailVerified DateTime? @db.Timestamp(6)
   createdAt     DateTime? @default(now()) @db.Timestamp(6)
   updatedAt     DateTime? @default(now()) @db.Timestamp(6)
+  subscription  String?   @default("free") // free, standard, premium
+  usage         Usage[]
   
-  // Relații NextAuth (opționale)
   accounts      Account[]
   sessions      Session[]
-  
-  // Adăugăm câmpurile necesare pentru NextAuth
   image         String?
 }
+
+model Usage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now()) @db.Timestamp(6)
+}
+
 
 // Tabele NextAuth
 model Account {

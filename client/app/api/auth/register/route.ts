@@ -17,7 +17,6 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       } else {
-        // User-ul a fost creat prin alt provider (ex: Google) => completăm parola
         const hashedPassword = await hashPassword(password);
         const updatedUser = await prisma.user.update({
           where: { email },
@@ -28,15 +27,13 @@ export async function POST(request: Request) {
           }
         });
 
-    return NextResponse.json({
-      id: updatedUser.id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      role: updatedUser.role
-    });
-  }
-}
-
+        return NextResponse.json({
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email
+        });
+      }
+    }
     
     const hashedPassword = await hashPassword(password);
     const newUser = await prisma.user.create({
@@ -45,15 +42,14 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         role: 'personal',
-        emailVerified: new Date(), // Marchează ca verificat pentru Credentials
+        emailVerified: new Date(),
       }
     });
     
     return NextResponse.json({
       id: newUser.id,
       name: newUser.name,
-      email: newUser.email,
-      role: newUser.role
+      email: newUser.email
     });
     
   } catch (error) {

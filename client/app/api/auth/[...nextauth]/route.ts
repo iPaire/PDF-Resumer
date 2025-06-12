@@ -1,4 +1,3 @@
-// app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from '@/lib/prisma';
@@ -20,6 +19,7 @@ export const authOptions = {
         });
 
         if (!user) return null;
+        if (!user.password) return null;
 
         const passwordValid = await bcrypt.compare(
           credentials.password,
@@ -32,7 +32,9 @@ export const authOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
-          image: user.image // optional
+          role: user.role,
+          subscription: user.subscription,
+          image: user.image
         };
       }
     })
@@ -41,11 +43,15 @@ export const authOptions = {
     async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
+        token.subscription = user.subscription;
       }
       return token;
     },
     async session({ session, token }: any) {
       session.user.id = token.id;
+      session.user.role = token.role;
+      session.user.subscription = token.subscription;
       return session;
     }
   },
