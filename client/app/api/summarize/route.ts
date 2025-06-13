@@ -169,6 +169,18 @@ Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu ti
       }
     });
 
+    await prisma.file.create({
+      data: {
+        userId: user.id,
+        name: filename,
+        size: file.size,
+        pages: numpages,
+        characters: text.length,
+        summary: summary
+      }
+    });
+
+
     return new Response(
       JSON.stringify({
         summary,

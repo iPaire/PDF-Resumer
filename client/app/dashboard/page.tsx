@@ -6,38 +6,80 @@ import { useState, useEffect } from 'react';
 import { FileText, BarChart2, User, Book, Plus, Download, Trash2 } from 'react-feather';
 import Link from 'next/link';
 
-// Mock data - replace with real API calls
-const mockFiles = [
-  { id: 1, name: 'Istoria României.pdf', date: '2023-10-15', size: '4.2 MB', status: 'Procesat' },
-  { id: 2, name: 'Biologie-Celula.pdf', date: '2023-10-12', size: '2.8 MB', status: 'În așteptare' },
-  { id: 3, name: 'Matematică-Algebră.pdf', date: '2023-10-10', size: '3.5 MB', status: 'Procesat' },
-  { id: 4, name: 'Fizică-Mecanică.pdf', date: '2023-10-05', size: '5.1 MB', status: 'Eroare' },
-];
+type FileType = {
+  id: string;
+  name: string;
+  date: string;
+  size: string;
+  status: string;
+};
 
-const mockStats = {
-  filesProcessed: 12,
-  quizzesGenerated: 8,
-  summariesCreated: 15,
-  storageUsed: '35%',
+type StatsType = {
+  filesProcessed: number;
+  quizzesGenerated: number;
+  summariesCreated: number;
+  storageUsed: string;
 };
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [files, setFiles] = useState(mockFiles);
-  const [stats] = useState(mockStats);
+  const [files, setFiles] = useState<FileType[]>([]);
+  const [stats, setStats] = useState<StatsType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate data loading
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    if (session) {
+      fetchDashboardData();
+    }
+  }, [session]);
 
-  const handleDeleteFile = (id: number) => {
-    setFiles(files.filter(file => file.id !== id));
+  const fetchDashboardData = async () => {
+    try {
+      const [filesRes, statsRes] = await Promise.all([
+        fetch('/api/dashboard/files'),
+        fetch('/api/dashboard/stats')
+      ]);
+      
+      const filesData = await filesRes.json();
+      const statsData = await statsRes.json();
+      
+      if (filesRes.ok) setFiles(filesData);
+      if (statsRes.ok) setStats(statsData);
+      
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadFile = async (id: string, name: string) => {
+    try {
+      const response = await fetch(`/api/files/${id}`);
+      if (!response.ok) throw new Error('Failed to download file');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Nu s-a putut descărca fișierul');
+    }
+  };
+
+  const handleDeleteFile = async (id: string) => {
+    try {
+      // In a real app, you would call an API to delete the file
+      setFiles(files.filter(file => file.id !== id));
+      // Show success message or update stats
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
   };
 
   const statusColor = (status: string) => {
@@ -70,35 +112,37 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard 
-            icon={<FileText className="w-6 h-6" />}
-            title="Fișiere Procesate"
-            value={stats.filesProcessed}
-            color="bg-blue-100 text-blue-800"
-          />
-          
-          <StatCard 
-            icon={<Book className="w-6 h-6" />}
-            title="Rezumate Create"
-            value={stats.summariesCreated}
-            color="bg-green-100 text-green-800"
-          />
-          
-          <StatCard 
-            icon={<BarChart2 className="w-6 h-6" />}
-            title="Teste Generate"
-            value={stats.quizzesGenerated}
-            color="bg-purple-100 text-purple-800"
-          />
-          
-          <StatCard 
-            icon={<User className="w-6 h-6" />}
-            title="Spațiu Utilizat"
-            value={stats.storageUsed}
-            color="bg-yellow-100 text-yellow-800"
-          />
-        </div>
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatCard 
+              icon={<FileText className="w-6 h-6" />}
+              title="Fișiere Procesate"
+              value={stats.filesProcessed}
+              color="bg-blue-100 text-blue-800"
+            />
+            
+            <StatCard 
+              icon={<Book className="w-6 h-6" />}
+              title="Rezumate Create"
+              value={stats.summariesCreated}
+              color="bg-green-100 text-green-800"
+            />
+            
+            <StatCard 
+              icon={<BarChart2 className="w-6 h-6" />}
+              title="Teste Generate"
+              value={stats.quizzesGenerated}
+              color="bg-purple-100 text-purple-800"
+            />
+            
+            <StatCard 
+              icon={<User className="w-6 h-6" />}
+              title="Spațiu Utilizat"
+              value={stats.storageUsed}
+              color="bg-yellow-100 text-yellow-800"
+            />
+          </div>
+        )}
 
         {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -107,7 +151,7 @@ export default function DashboardPage() {
             description="Începe procesarea unui nou document"
             icon={<Plus className="w-8 h-8" />}
             buttonText="Încarcă Fișier"
-            buttonLink="/upload"
+            buttonLink="/"
             color="bg-blue-500"
           />
           
@@ -186,9 +230,11 @@ export default function DashboardPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-3">
-                        <Download className="w-4 h-4" />
-                      </button>
+                      <button className="text-blue-600 hover:text-blue-900 mr-3"
+                          onClick={() => handleDownloadFile(file.id, file.name)}
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
                       <button 
                         className="text-red-600 hover:text-red-900"
                         onClick={() => handleDeleteFile(file.id)}
@@ -210,7 +256,7 @@ export default function DashboardPage() {
                 </p>
                 <div className="mt-6">
                   <Link
-                    href="/upload"
+                    href="/"
                     className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -228,30 +274,18 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold text-gray-900">Activitate Recentă</h2>
           </div>
           <div className="divide-y divide-gray-200">
-            <ActivityItem 
-              action="Ai generat un rezumat"
-              file="Istoria României.pdf"
-              time="Acum 2 ore"
-              icon={<Book className="w-5 h-5 text-green-500" />}
-            />
-            <ActivityItem 
-              action="Ai încărcat un fișier nou"
-              file="Biologie-Celula.pdf"
-              time="Ieri, 14:30"
-              icon={<Plus className="w-5 h-5 text-blue-500" />}
-            />
-            <ActivityItem 
-              action="Ai completat un test"
-              file="Matematică-Algebră.pdf"
-              time="Ieri, 10:15"
-              icon={<BarChart2 className="w-5 h-5 text-purple-500" />}
-            />
-            <ActivityItem 
-              action="Ai descărcat un rezumat"
-              file="Fizică-Mecanică.pdf"
-              time="10 octombrie, 16:45"
-              icon={<Download className="w-5 h-5 text-yellow-500" />}
-            />
+            {files.slice(0, 4).map((file, index) => (
+              <ActivityItem 
+                key={file.id}
+                action={index === 0 ? "Ai generat un rezumat" : "Ai încărcat un fișier"}
+                file={file.name}
+                time={file.date}
+                icon={index === 0 ? 
+                  <Book className="w-5 h-5 text-green-500" /> : 
+                  <Plus className="w-5 h-5 text-blue-500" />
+                }
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -263,7 +297,7 @@ export default function DashboardPage() {
 function StatCard({ icon, title, value, color }: { 
   icon: React.ReactNode; 
   title: string; 
-  value: string | number;
+  value: number | string;
   color: string;
 }) {
   return (

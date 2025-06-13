@@ -6,7 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
+// user
 model User {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
@@ -18,7 +18,9 @@ model User {
   updatedAt     DateTime? @default(now()) @db.Timestamp(6)
   subscription  String?   @default("free") // free, standard, premium
   usage         Usage[]
+  files         File[]
   
+  // NextAuth relations
   accounts      Account[]
   sessions      Session[]
   image         String?
@@ -29,6 +31,19 @@ model Usage {
   userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime @default(now()) @db.Timestamp(6)
+}
+
+model File {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  size        Int
+  pages       Int
+  characters  Int
+  summary     String
+  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime @default(now()) @db.Timestamp(6)
 }
 
 
