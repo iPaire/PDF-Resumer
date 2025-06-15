@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  // Accesăm direct parametrul din destructurare
   const fileId = params.id;
 
   const session = await getServerSession(authOptions);
