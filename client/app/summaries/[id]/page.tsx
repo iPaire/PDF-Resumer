@@ -1,4 +1,3 @@
-// app/summaries/[id]/page.tsx
 'use client';
 
 import { useSession } from 'next-auth/react';
@@ -23,6 +22,9 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
   const [summary, setSummary] = useState<Summary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Check if user is free tier
+  const isFreeUser = session?.user?.subscription === 'free';
 
   useEffect(() => {
     if (session) {
@@ -55,6 +57,11 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
     
     try {
       const response = await fetch(`/api/summaries/${params.id}/download`);
+      if (response.status === 403) {
+      const errorData = await response.json();
+      alert(errorData.error || 'Utilizatorii gratuit nu pot descărca rezumate');
+      return;
+    }
       if (!response.ok) throw new Error('Failed to download summary');
       
       const blob = await response.blob();
@@ -146,13 +153,29 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
                 <Printer className="h-4 w-4" />
               </button>
               
-              <button
-                onClick={handleDownload}
-                className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <Download className="mr-1 h-4 w-4" />
-                Descarcă
-              </button>
+              {/* Disable download for free users */}
+              {isFreeUser ? (
+                <div className="relative group">
+                  <button
+                    disabled
+                    className="flex items-center px-4 py-2 rounded-md bg-gray-400 text-gray-100 cursor-not-allowed"
+                  >
+                    <Download className="mr-1 h-4 w-4" />
+                    Descarcă
+                  </button>
+                  <div className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 bg-black text-white text-xs rounded py-1 px-2 mb-2 w-48 text-center">
+                    Pentru a descărca, trebuie să fii utilizator standard sau premium
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  <Download className="mr-1 h-4 w-4" />
+                  Descarcă
+                </button>
+              )}
             </div>
           </div>
         </div>

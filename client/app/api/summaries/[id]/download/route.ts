@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  // Accesăm direct parametrul din destructurare
   const fileId = params.id;
 
   const session = await getServerSession(authOptions);
@@ -14,6 +13,29 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       status: 401,
       headers: { 'Content-Type': 'application/json' }
     });
+  }
+
+  // Get user subscription
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { subscription: true }
+  });
+
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Utilizatorul nu a fost găsit' }), { 
+      status: 404,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Block free users from downloading
+  if (user.subscription === 'free') {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Utilizatorii gratuit nu pot descărca rezumate. Faceți upgrade la standard sau premium.' 
+      }), 
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   try {

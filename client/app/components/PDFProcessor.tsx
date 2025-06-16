@@ -23,7 +23,11 @@ export default function PDFSummarizer() {
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState(0);
-  const [usage, setUsage] = useState({ used: 0, limit: 3 });
+  const [usage, setUsage] = useState({ 
+    used: 0, 
+    limit: 3,
+    fileSizeLimit: 10 * 1024 * 1024  // Default to 10MB
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch usage data on component mount
@@ -36,9 +40,13 @@ export default function PDFSummarizer() {
   const fetchUsage = async () => {
     try {
       const response = await fetch('/api/usage');
+      if (!response.ok) throw new Error('Failed to fetch usage');
+      
       const data = await response.json();
       if (response.ok) {
-        setUsage(data);
+        // Convert fileSizeLimit from MB to bytes
+        const fileSizeLimitBytes = data.fileSizeLimit * 1024 * 1024;
+        setUsage({ ...data, fileSizeLimit: fileSizeLimitBytes });
       }
     } catch (error) {
       console.error('Error fetching usage:', error);
@@ -70,9 +78,10 @@ export default function PDFSummarizer() {
     setFileSize(file.size);
     setIsLoading(true);
     
-    // File validation
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Fișierul depășește limita de 10MB');
+    // File validation with dynamic size limit
+    if (file.size > usage.fileSizeLimit) {
+      const maxSizeMB = usage.fileSizeLimit / (1024 * 1024);
+      setError(`Fișierul depășește limita de ${maxSizeMB}MB pentru planul dvs.`);
       setIsLoading(false);
       return;
     }
@@ -163,6 +172,9 @@ export default function PDFSummarizer() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Get current user's file size limit in MB for display
+  const maxSizeMB = usage.fileSizeLimit / (1024 * 1024);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
@@ -173,6 +185,9 @@ export default function PDFSummarizer() {
               <span className="font-medium text-gray-700">Folosire lunară: </span>
               <span className="font-semibold">
                 {usage.used} / {usage.limit} rezumate
+              </span>
+              <span className="ml-4 font-medium text-gray-700">
+                Limită fișier: {maxSizeMB}MB
               </span>
             </div>
             {usage.used >= usage.limit && (
@@ -348,7 +363,7 @@ export default function PDFSummarizer() {
               <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
               </svg>
-              Limită 10MB
+              Limită {maxSizeMB}MB
             </span>
             <span className="flex items-center">
               <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

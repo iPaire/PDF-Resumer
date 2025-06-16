@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { FileText, Download, Trash2, Search, Eye } from 'react-feather';
+import { FileText, Download, Trash2, Search, Eye, ArrowLeft } from 'react-feather';
 import Link from 'next/link';
 
 type Summary = {
@@ -45,6 +45,11 @@ export default function SummariesPage() {
   const handleDownload = async (id: string, name: string) => {
     try {
       const response = await fetch(`/api/summaries/${id}/download`);
+      if (response.status === 403) {
+      const errorData = await response.json();
+      alert(errorData.error || 'Utilizatorii gratuit nu pot descărca rezumate');
+      return;
+    }
       if (!response.ok) throw new Error('Failed to download summary');
       
       const blob = await response.blob();
@@ -82,6 +87,9 @@ export default function SummariesPage() {
     summary.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Check if user is free tier
+  const isFreeUser = session?.user?.subscription === 'free';
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -96,6 +104,16 @@ export default function SummariesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-4">
+          <Link 
+            href="/dashboard" 
+            className="inline-flex items-center text-blue-600 hover:text-blue-800"
+          >
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Înapoi la Dashboard
+          </Link>
+        </div>
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Rezumatele Tale</h1>
           <p className="mt-2 text-gray-600">Toate rezumatele generate din documentele tale PDF</p>
@@ -168,7 +186,6 @@ export default function SummariesPage() {
                           {summary.size}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {/* Buton nou pentru vizualizare */}
                           <Link
                             href={`/summaries/${summary.id}`}
                             className="text-blue-600 hover:text-blue-900 mr-3 inline-block"
@@ -177,15 +194,19 @@ export default function SummariesPage() {
                             <Eye className="w-4 h-4" />
                           </Link>
                           
-                          <button 
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownload(summary.id, summary.name);
-                            }}
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                          {/* Only show download button for non-free users */}
+                          {!isFreeUser && (
+                            <button 
+                              className="text-blue-600 hover:text-blue-900 mr-3"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(summary.id, summary.name);
+                              }}
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          )}
+                          
                           <button 
                             className="text-red-600 hover:text-red-900"
                             onClick={(e) => {
@@ -258,13 +279,16 @@ export default function SummariesPage() {
                         Vezi întreg rezumatul
                       </Link>
                       
-                      <button
-                        onClick={() => handleDownload(selectedSummary.id, selectedSummary.name)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      >
-                        <Download className="-ml-1 mr-2 h-5 w-5" />
-                        Descarcă
-                      </button>
+                      {/* Only show download button for non-free users */}
+                      {!isFreeUser && (
+                        <button
+                          onClick={() => handleDownload(selectedSummary.id, selectedSummary.name)}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          <Download className="-ml-1 mr-2 h-5 w-5" />
+                          Descarcă
+                        </button>
+                      )}
                     </div>
                   </>
                 ) : (

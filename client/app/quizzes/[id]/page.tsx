@@ -1,8 +1,8 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
-import { FileText, ArrowLeft, CheckCircle, XCircle } from 'react-feather';
+import { useState, useEffect, useCallback } from 'react';
+import { FileText, ArrowLeft, CheckCircle, XCircle, RefreshCw, Shuffle } from 'react-feather';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -11,6 +11,22 @@ interface QuizQuestion {
   options: string[];
   correctAnswer: number;
 }
+
+// Define the expected response type
+interface QuizResponse {
+  quiz: QuizQuestion[];
+  fileName: string;
+}
+
+// Shuffle function using Fisher-Yates algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 export default function QuizPage({ params }: { params: { id: string } }) {
   const { data: session } = useSession();
@@ -31,13 +47,15 @@ export default function QuizPage({ params }: { params: { id: string } }) {
   const fetchQuiz = async () => {
     try {
       const response = await fetch(`/api/quizzes/${params.id}`);
-      const data = await response.json();
+      const data: QuizResponse = await response.json();
       
       if (response.ok) {
-        setQuiz(data.quiz);
+        // Automatically shuffle the quiz when loading
+        const shuffledQuiz = shuffleArray<QuizQuestion>(data.quiz);
+        setQuiz(shuffledQuiz);
         setFileName(data.fileName);
       } else {
-        console.error('Error fetching quiz:', data.error);
+        console.error('Error fetching quiz:', data);
       }
     } catch (error) {
       console.error('Error fetching quiz:', error);
@@ -46,12 +64,30 @@ export default function QuizPage({ params }: { params: { id: string } }) {
     }
   };
 
+  // Improved readability: Larger text sizes and better contrast
   const handleOptionSelect = (questionIndex: number, optionIndex: number) => {
     if (!submitted) {
       const newSelectedOptions = [...selectedOptions];
       newSelectedOptions[questionIndex] = optionIndex;
       setSelectedOptions(newSelectedOptions);
     }
+  };
+
+  // Updated shuffle function using functional update
+  const shuffleQuestions = useCallback(() => {
+    setQuiz(prevQuiz => shuffleArray<QuizQuestion>(prevQuiz));
+    setSelectedOptions([]);
+    setSubmitted(false);
+    setScore(0);
+  }, []);
+
+  // New function to regenerate quiz
+  const regenerateQuiz = async () => {
+    setIsLoading(true);
+    setSelectedOptions([]);
+    setSubmitted(false);
+    setScore(0);
+    await fetchQuiz();
   };
 
   const calculateScore = () => {
@@ -121,6 +157,28 @@ export default function QuizPage({ params }: { params: { id: string } }) {
               </div>
             )}
           </div>
+
+          {/* New buttons container */}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              onClick={shuffleQuestions}
+              disabled={submitted}
+              className={`flex items-center px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium ${
+                submitted ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700'
+              }`}
+            >
+              <Shuffle className="mr-2 h-4 w-4" />
+              Amestecă întrebările
+            </button>
+            
+            <button
+              onClick={regenerateQuiz}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Generează alt test
+            </button>
+          </div>
         </div>
 
         <div className="space-y-8">
@@ -130,14 +188,15 @@ export default function QuizPage({ params }: { params: { id: string } }) {
               className="bg-white rounded-xl shadow-md overflow-hidden"
             >
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-start">
+                {/* Improved readability: Larger text and better spacing */}
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-start">
                   <span className="bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
                     {qIndex + 1}
                   </span>
-                  {question.question}
+                  <span className="leading-relaxed">{question.question}</span>
                 </h2>
                 
-                <div className="space-y-3 ml-11">
+                <div className="space-y-4 ml-11">
                   {question.options.map((option, oIndex) => {
                     const isSelected = selectedOptions[qIndex] === oIndex;
                     const isCorrect = oIndex === question.correctAnswer;
@@ -147,21 +206,23 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                       <div
                         key={oIndex}
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          !submitted && isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                          !submitted && isSelected 
+                            ? 'border-blue-600 bg-blue-50' 
+                            : 'border-gray-200 hover:border-blue-300'
                         } ${
-                          showFeedback ? 
-                            isCorrect ? 
-                              'border-green-500 bg-green-50' : 
-                              (isSelected ? 'border-red-500 bg-red-50' : 'border-gray-200') 
+                          showFeedback 
+                            ? isCorrect 
+                              ? 'border-green-500 bg-green-50' 
+                              : (isSelected ? 'border-red-500 bg-red-50' : '') 
                             : ''
-                        } ${!submitted ? 'hover:border-blue-300' : ''}`}
+                        }`}
                         onClick={() => handleOptionSelect(qIndex, oIndex)}
                       >
                         <div className="flex items-center">
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 ${
-                            isSelected ? 
-                              (submitted && !isCorrect ? 'border-red-500' : 'border-blue-500') : 
-                              'border-gray-300'
+                            isSelected 
+                              ? (submitted && !isCorrect ? 'border-red-500' : 'border-blue-500') 
+                              : 'border-gray-300'
                           }`}>
                             {isSelected && (
                               <div className={`w-3 h-3 rounded-full ${
@@ -169,7 +230,8 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                               }`}></div>
                             )}
                           </div>
-                          <span>{option}</span>
+                          {/* Improved readability: Larger text size */}
+                          <span className="text-gray-800 text-base">{option}</span>
                           
                           {showFeedback && (
                             <span className="ml-auto">

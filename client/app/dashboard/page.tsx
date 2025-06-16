@@ -1,10 +1,10 @@
-// app/dashboard/page.tsx
 'use client';
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { FileText, BarChart2, User, Book, Plus, Download, Trash2 } from 'react-feather';
+import { FileText, BarChart2, User, Book, Plus, Download, Trash2, Lock, ChevronRight } from 'react-feather';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 type FileType = {
   id: string;
@@ -19,32 +19,60 @@ type StatsType = {
   quizzesGenerated: number;
   summariesCreated: number;
   storageUsed: string;
+  storageLimit: string;
+  storagePercentage: number;
+};
+
+type SummaryType = {
+  id: string;
+  title: string;
+  date: string;
+  contentPreview: string;
+};
+
+type QuizType = {
+  id: string;
+  title: string;
+  date: string;
+  questions: number;
 };
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [files, setFiles] = useState<FileType[]>([]);
   const [stats, setStats] = useState<StatsType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    if (session) {
+    if (status === 'authenticated') {
+      if (session?.user?.subscription === 'free') {
+        setRedirecting(true);
+        router.push('/summaries');
+        return;
+      }
+      
       fetchDashboardData();
     }
-  }, [session]);
+  }, [session, status, router]);
 
   const fetchDashboardData = async () => {
     try {
+      setIsLoading(true);
       const [filesRes, statsRes] = await Promise.all([
         fetch('/api/dashboard/files'),
         fetch('/api/dashboard/stats')
       ]);
       
+      if (!filesRes.ok) throw new Error('Failed to fetch files');
+      if (!statsRes.ok) throw new Error('Failed to fetch stats');
+      
       const filesData = await filesRes.json();
       const statsData = await statsRes.json();
       
-      if (filesRes.ok) setFiles(filesData);
-      if (statsRes.ok) setStats(statsData);
+      setFiles(filesData);
+      setStats(statsData);
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -72,13 +100,15 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeleteFile = async (id: string) => {
+  const handleDeleteFromHistory = async (id: string) => {
     try {
-      // In a real app, you would call an API to delete the file
+      // This would call an API to remove from history without deleting the actual file
       setFiles(files.filter(file => file.id !== id));
-      // Show success message or update stats
+      
+      // In a real implementation, you would call:
+      // await fetch(`/api/files/${id}/history`, { method: 'DELETE' });
     } catch (error) {
-      console.error('Error deleting file:', error);
+      console.error('Error removing from history:', error);
     }
   };
 
@@ -91,24 +121,33 @@ export default function DashboardPage() {
     }
   };
 
-  if (isLoading) {
+  const storageColor = (percentage: number) => {
+    if (percentage > 90) return 'bg-red-500';
+    if (percentage > 75) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
+  if (isLoading || redirecting) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă dashboard-ul...</p>
+          <p className="mt-4 text-gray-600">
+            {redirecting ? 'Se redirecționează...' : 'Se încarcă dashboard-ul...'}
+          </p>
         </div>
       </div>
     );
   }
 
+  // Only paid users should see this page
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Dashboard Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Bun venit, {session?.user?.name || 'Utilizator'}!</h1>
-          <p className="mt-2 text-gray-600">Aici poți gestiona toate fișierele și rezultatele tale.</p>
+          <p className="mt-2 text-gray-600">Aici poți gestiona istoricul tău de activități.</p>
         </div>
 
         {/* Stats Cards */}
@@ -135,12 +174,33 @@ export default function DashboardPage() {
               color="bg-purple-100 text-purple-800"
             />
             
-            <StatCard 
-              icon={<User className="w-6 h-6" />}
-              title="Spațiu Utilizat"
-              value={stats.storageUsed}
-              color="bg-yellow-100 text-yellow-800"
-            />
+            {/* Storage Card with Percentage */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <div className="text-yellow-800">
+                      <User className="w-6 h-6" />
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-sm font-medium text-gray-500">Spațiu Utilizat</h3>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {stats.storagePercentage}%
+                    </p>
+                    <div className="mt-1 text-sm text-gray-500">
+                      {stats.storageUsed} / {stats.storageLimit}
+                    </div>
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${storageColor(stats.storagePercentage)}`}
+                        style={{ width: `${stats.storagePercentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -174,16 +234,16 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Recent Files Section */}
+        {/* Recent Activity Section */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Fișiere Recente</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Activitate Recentă</h2>
               <Link 
-                href="/files" 
+                href="/history" 
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Vezi toate fișierele
+                Vezi tot istoricul
               </Link>
             </div>
           </div>
@@ -193,13 +253,13 @@ export default function DashboardPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nume Fișier
+                    Activitate
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Dată Încărcare
+                    Detalii
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mărime
+                    Dată
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -215,14 +275,14 @@ export default function DashboardPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <FileText className="flex-shrink-0 h-5 w-5 text-gray-400 mr-2" />
-                        <div className="text-sm font-medium text-gray-900">{file.name}</div>
+                        <div className="text-sm font-medium text-gray-900">Procesare fișier</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {file.date}
+                      {file.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {file.size}
+                      {file.date}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor(file.status)}`}>
@@ -230,14 +290,15 @@ export default function DashboardPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-3"
-                          onClick={() => handleDownloadFile(file.id, file.name)}
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
+                      <button 
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                        onClick={() => handleDownloadFile(file.id, file.name)}
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
                       <button 
                         className="text-red-600 hover:text-red-900"
-                        onClick={() => handleDeleteFile(file.id)}
+                        onClick={() => handleDeleteFromHistory(file.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -250,7 +311,7 @@ export default function DashboardPage() {
             {files.length === 0 && (
               <div className="text-center py-12">
                 <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Niciun fișier încărcat</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Nicio activitate recentă</h3>
                 <p className="mt-1 text-sm text-gray-500">
                   Începe prin a încărca primul tău document PDF.
                 </p>
@@ -271,7 +332,7 @@ export default function DashboardPage() {
         {/* Activity Feed */}
         <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Activitate Recentă</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Istoric Activitate</h2>
           </div>
           <div className="divide-y divide-gray-200">
             {files.slice(0, 4).map((file, index) => (
@@ -291,6 +352,26 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+// Helper function to calculate storage percentage
+function calculateStoragePercentage(used: string, limit: string): string {
+  const parseSize = (size: string): number => {
+    const [value, unit] = size.split(' ');
+    const num = parseFloat(value);
+    switch (unit) {
+      case 'GB': return num * 1024 * 1024 * 1024;
+      case 'MB': return num * 1024 * 1024;
+      case 'KB': return num * 1024;
+      default: return num;
+    }
+  };
+  
+  const usedBytes = parseSize(used);
+  const limitBytes = parseSize(limit);
+  
+  if (limitBytes === 0) return '0%';
+  return `${Math.round((usedBytes / limitBytes) * 100)}%`;
 }
 
 // Stat Card Component

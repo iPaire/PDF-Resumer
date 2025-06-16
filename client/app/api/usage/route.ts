@@ -2,6 +2,13 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import prisma from "@/lib/prisma"
 
+// Define file size limits in MB
+const FILE_SIZE_LIMITS_MB = {
+  free: 10,
+  standard: 50,
+  premium: 250
+};
+
 export async function GET() {
   const session = await getServerSession(authOptions)
   
@@ -34,16 +41,20 @@ export async function GET() {
       })
     }
 
-    const usageCount = user.usage.length
+    const usageCount = user.usage.length;
     const planLimits = {
       free: 3,
       standard: 50,
       premium: 200
-    }
+    };
+    
+    // Get user's file size limit in MB
+    const fileSizeLimit = FILE_SIZE_LIMITS_MB[user.subscription as keyof typeof FILE_SIZE_LIMITS_MB] || 10;
     
     return new Response(JSON.stringify({ 
       used: usageCount, 
-      limit: planLimits[user.subscription as keyof typeof planLimits] || 0 
+      limit: planLimits[user.subscription as keyof typeof planLimits] || 0,
+      fileSizeLimit: fileSizeLimit
     }), {
       headers: { 'Content-Type': 'application/json' }
     })

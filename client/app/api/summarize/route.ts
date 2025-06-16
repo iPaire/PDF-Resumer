@@ -4,7 +4,6 @@ import pdf from 'pdf-parse';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
-import { FileCreateInputWithQuiz } from '@/types/fileTypes';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -128,13 +127,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate summary
+    // Determine AI model based on subscription
+    const isPremium = user.subscription === 'premium';
+    const summaryModel = isPremium ? 'gpt-4o' : 'gpt-3.5-turbo-16k';
+    const maxTokens = isPremium ? 6000 : 3000;
+    const temperature = isPremium ? 0.3 : 0.4;
+
+    // Generate summary with premium features
     const maxLength = 10000;
     const truncatedText = text.length > maxLength 
       ? text.substring(0, maxLength) + '... [text trunchiat]' 
       : text;
 
-    const prompt = `
+    let prompt = `
 Pe baza următorului text, generează un material educațional structurat care să ajute utilizatorul să învețe eficient:
 
 [textul este mai jos]
@@ -148,31 +153,60 @@ ${truncatedText}
 
 Structura dorită a răspunsului:
 
-1. **Descriere pe subiecte principale** – identifică și explică pe scurt principalele idei sau teme.
-2. **Glosar de termeni** – listă de termeni importanți cu explicații clare și concise.
-3. **Cunoștințe necesare pentru înțelegere** – ce trebuie să știe utilizatorul dinainte.
-4. **Explicații detaliate ale conceptelor cheie** – dezvoltă subiectele complexe în mod clar.
-5. **Întrebări de autoevaluare** – între 3 și 7 întrebări relevante, cu răspunsuri ascunse (ex: scrie "(click pentru a vedea răspunsul)" sau similar).
+1. Descriere pe subiecte principale – identifică și explică pe scurt principalele idei sau teme.
+2. Glosar de termeni – listă de termeni importanți cu explicații clare și concise.
+3. Cunoștințe necesare pentru înțelegere – ce trebuie să știe utilizatorul dinainte.
+4. Explicații detaliate ale conceptelor cheie – dezvoltă subiectele complexe în mod clar.
+`;
+
+    // Add advanced features for premium users
+    if (isPremium) {
+      prompt += `
+5. Diagrame conceptuale – descriere textuală a relațiilor dintre concepte
+6. Studii de caz/exemple practice – aplicații din viața reală
+7. Resurse recomandate – cărți, articole, video-uri pentru aprofundare
+`;
+    }
+
+    prompt += `
+${isPremium ? '8' : '5'}. **Întrebări de autoevaluare** – între 3 și ${isPremium ? '7' : '5'} întrebări relevante, cu răspunsuri ascunse (ex: scrie "(click pentru a vedea răspunsul)" sau similar).
 
 Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu titluri vizibile.
 `;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo-16k',
+      model: summaryModel,
       messages: [
         { role: 'system', content: 'Ești un asistent care generează materiale educaționale din documente PDF.' },
         { role: 'user', content: prompt },
       ],
-      max_tokens: 3000,
-      temperature: 0.4,
+      max_tokens: maxTokens,
+      temperature,
     });
 
     const summary = completion.choices[0]?.message?.content?.trim() || 'Nu s-a putut genera conținutul.';
 
-  const quizPrompt = `
-Pe baza acestui rezumat al unui curs, creează 5 întrebări grilă. 
+    let quiz: QuizQuestion[] = [];
+
+    // Generate quiz ONLY for non-free users
+    const isFreeUser = user.subscription === 'free';
+    if (!isFreeUser) {
+      // Determine number of questions based on subscription
+      const numQuestions = user.subscription === 'premium' ? 20 : 5;
+      const quizModel = user.subscription === 'premium' ? 'gpt-4o' : 'gpt-3.5-turbo';
+      const quizMaxTokens = user.subscription === 'premium' ? 3000 : 1500;
+
+      const quizPrompt = `
+Pe baza acestui rezumat al unui curs, creează ${numQuestions} întrebări grilă. 
 Fiecare întrebare trebuie să aibă 4 opțiuni și una să fie corectă.
 Întrebările trebuie să acopere conceptele cheie din rezumat.
+
+${user.subscription === 'premium' ? `
+Pentru utilizatorii premium:
+- Include întrebări complexe care necesită analiză
+- Adaugă întrebări de tip "aplicație practică"
+- Variantele de răspuns să includă și răspunsuri parțial corecte
+` : ''}
 
 Rezumat: ${summary}
 
@@ -188,24 +222,24 @@ Format așteptat (JSON):
 }
 `;
 
-  const quizCompletion = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: [
-      { role: 'system', content: 'Ești un profesor care creează teste grilă pentru evaluarea studenților.' },
-      { role: 'user', content: quizPrompt },
-    ],
-    response_format: { type: "json_object" },
-    max_tokens: 1500,
-    temperature: 0.5,
-  });
+      const quizCompletion = await openai.chat.completions.create({
+        model: quizModel,
+        messages: [
+          { role: 'system', content: 'Ești un profesor care creează teste grilă pentru evaluarea studenților.' },
+          { role: 'user', content: quizPrompt },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: quizMaxTokens,
+        temperature: 0.5,
+      });
 
-  let quiz: QuizQuestion[] = [];
-  try {
-    const quizJson = JSON.parse(quizCompletion.choices[0]?.message?.content?.trim() || '{}');
-    quiz = quizJson.questions || [];
-  } catch (error) {
-    console.error('Eroare parsare quiz JSON:', error);
-  }
+      try {
+        const quizJson = JSON.parse(quizCompletion.choices[0]?.message?.content?.trim() || '{}');
+        quiz = quizJson.questions || [];
+      } catch (error) {
+        console.error('Eroare parsare quiz JSON:', error);
+      }
+    }
 
     // Record usage
     await prisma.usage.create({
@@ -225,7 +259,6 @@ Format așteptat (JSON):
         quiz: quiz
       }
     });
-
 
     return new Response(
       JSON.stringify({
