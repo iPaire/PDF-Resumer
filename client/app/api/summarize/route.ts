@@ -4,10 +4,17 @@ import pdf from 'pdf-parse';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
+import { FileCreateInputWithQuiz } from '@/types/fileTypes';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
+
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+}
 
 export async function POST(request: NextRequest) {
   // Check authentication
@@ -162,6 +169,44 @@ Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu ti
 
     const summary = completion.choices[0]?.message?.content?.trim() || 'Nu s-a putut genera conținutul.';
 
+  const quizPrompt = `
+Pe baza acestui rezumat al unui curs, creează 5 întrebări grilă. 
+Fiecare întrebare trebuie să aibă 4 opțiuni și una să fie corectă.
+Întrebările trebuie să acopere conceptele cheie din rezumat.
+
+Rezumat: ${summary}
+
+Format așteptat (JSON):
+{
+  "questions": [
+    {
+      "question": "text întrebare",
+      "options": ["opțiune1", "opțiune2", "opțiune3", "opțiune4"],
+      "correctAnswer": 0
+    }
+  ]
+}
+`;
+
+  const quizCompletion = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [
+      { role: 'system', content: 'Ești un profesor care creează teste grilă pentru evaluarea studenților.' },
+      { role: 'user', content: quizPrompt },
+    ],
+    response_format: { type: "json_object" },
+    max_tokens: 1500,
+    temperature: 0.5,
+  });
+
+  let quiz: QuizQuestion[] = [];
+  try {
+    const quizJson = JSON.parse(quizCompletion.choices[0]?.message?.content?.trim() || '{}');
+    quiz = quizJson.questions || [];
+  } catch (error) {
+    console.error('Eroare parsare quiz JSON:', error);
+  }
+
     // Record usage
     await prisma.usage.create({
       data: {
@@ -169,14 +214,15 @@ Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu ti
       }
     });
 
-    await prisma.file.create({
+    const fileRecord = await prisma.file.create({
       data: {
         userId: user.id,
         name: filename,
         size: file.size,
         pages: numpages,
         characters: text.length,
-        summary: summary
+        summary: summary,
+        quiz: quiz
       }
     });
 
@@ -184,6 +230,8 @@ Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu ti
     return new Response(
       JSON.stringify({
         summary,
+        quiz,
+        fileID: fileRecord.id,
         meta: {
           filename,
           pages: numpages,
@@ -193,6 +241,7 @@ Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu ti
       }),
       { headers: { 'Content-Type': 'application/json' } }
     );
+    
   } catch (error: any) {
     console.error('Eroare procesare PDF:', error);
 

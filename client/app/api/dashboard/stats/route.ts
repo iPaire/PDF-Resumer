@@ -2,6 +2,7 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import prisma from "@/lib/prisma"
+import { Prisma } from '@prisma/client';
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -14,7 +15,7 @@ export async function GET() {
   }
 
   try {
-    const [filesProcessed, summariesCreated] = await Promise.all([
+    const [filesProcessed, summariesCreated, quizzesGenerated] = await Promise.all([
       prisma.file.count({
         where: { userId: session.user.id }
       }),
@@ -25,6 +26,12 @@ export async function GET() {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
             lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
           } 
+        }
+      }),
+      prisma.file.count({
+        where: { 
+          userId: session.user.id,
+          quiz: { not: Prisma.DbNull } // Corectie importantă aici
         }
       })
     ]);
@@ -41,7 +48,7 @@ export async function GET() {
     return new Response(JSON.stringify({ 
       filesProcessed,
       summariesCreated,
-      quizzesGenerated: 0, // Not implemented yet
+      quizzesGenerated,
       storageUsed
     }), {
       headers: { 'Content-Type': 'application/json' }
