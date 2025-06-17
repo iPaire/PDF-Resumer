@@ -17,6 +17,8 @@ model User {
   createdAt     DateTime? @default(now()) @db.Timestamp(6)
   updatedAt     DateTime? @default(now()) @db.Timestamp(6)
   subscription  String?   @default("free") // free, standard, premium
+  stripeCustomerId    String?   @unique
+  stripeSubscriptionId String?   @unique
   usage         Usage[]
   files         File[]
   
