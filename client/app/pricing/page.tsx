@@ -191,6 +191,7 @@ export default function PricingPage() {
                   <li>200 PDF-uri/lună</li>
                   <li>Limitare 250MB</li>
                   <li>Quiz 20 intrebări</li>
+                <li>Răspunsuri și rezumate cu AI avansat</li>
                 </ul>
                 <p className="font-bold text-gray-800 text-lg mb-6">€10 / lună</p>
                 <button 

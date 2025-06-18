@@ -1,3 +1,4 @@
+// app/api/summaries/[id]/download/route.ts
 import { NextRequest } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
@@ -13,29 +14,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       status: 401,
       headers: { 'Content-Type': 'application/json' }
     });
-  }
-
-  // Get user subscription
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { subscription: true }
-  });
-
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Utilizatorul nu a fost găsit' }), { 
-      status: 404,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  // Block free users from downloading
-  if (user.subscription === 'free') {
-    return new Response(
-      JSON.stringify({ 
-        error: 'Utilizatorii gratuit nu pot descărca rezumate. Faceți upgrade la standard sau premium.' 
-      }), 
-      { status: 403, headers: { 'Content-Type': 'application/json' } }
-    );
   }
 
   try {
@@ -56,6 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       });
     }
 
+    // Verificăm dacă utilizatorul are dreptul de acces la rezumat
     if (file.userId !== session.user.id) {
       return new Response(JSON.stringify({ error: 'Nu ai acces la acest rezumat' }), { 
         status: 403,
@@ -63,7 +42,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       });
     }
 
-    // Creare fișier text
+    // Creare fișier text pentru descărcare
     return new Response(file.summary, {
       headers: {
         'Content-Type': 'text/plain',

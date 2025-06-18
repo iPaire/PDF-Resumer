@@ -1,4 +1,3 @@
-// app/layout.tsx
 import './globals.css';
 import { Inter } from 'next/font/google';
 import AuthProvider from './providers/SessionProvider';
@@ -14,12 +13,16 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ro">
-      <body className={`${inter.className} bg-gray-50 text-gray-900`}>
+    <html lang="ro" className="h-full">
+      <body className={`${inter.className} bg-gray-50 text-gray-900 min-h-full flex flex-col`}>
         <AuthProvider>
-          <Navbar />
-          <main className="min-h-screen pt-10 bg-gray-50">{children}</main>
-          <Footer />
+          <div className="flex flex-col min-h-screen w-full">
+            <Navbar />
+            <main className="flex-grow pt-10 bg-gray-50 w-full max-w-full overflow-x-hidden">
+              {children}
+            </main>
+            <Footer />
+          </div>
         </AuthProvider>
       </body>
     </html>

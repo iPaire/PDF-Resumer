@@ -26,7 +26,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   image         String?
-}
+
 
 model Usage {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -44,6 +44,8 @@ model File {
   pages       Int
   characters  Int
   summary     String
+  isPremium   Boolean  @default(false)
+  language    String   @default("en")
   quiz        Json?
   createdAt   DateTime @default(now()) @db.Timestamp(6)
   updatedAt   DateTime @default(now()) @db.Timestamp(6)

@@ -1,33 +1,108 @@
+// app/components/PDFProcessor.tsx
 'use client';
-
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import FeedbackPopup from './FeedbackPopup';
 
 const parseJSON = async (response: Response) => {
   const text = await response.text();
-  console.log('Răspuns server:', text);
   try {
     return JSON.parse(text);
   } catch (err) {
     console.error('Invalid JSON response:', text);
-    throw new Error('Răspuns invalid de la server');
+    throw new Error('Invalid server response');
   }
 };
 
-export default function PDFSummarizer() {
+const getSectionTitles = (lang: string) => {
+  const titles: Record<string, Record<string, string>> = {
+    en: {
+      topics: "1. Key Topics Overview",
+      glossary: "2. Glossary of Terms",
+      prerequisites: "3. Prerequisite Knowledge",
+      concepts: "4. Key Concepts Explained",
+      diagrams: "5. Conceptual Diagrams",
+      examples: "6. Practical Examples/Case Studies",
+      resources: "7. Recommended Resources",
+      questions: "8. Self-Assessment Questions"
+    },
+    ro: {
+      topics: "1. Descriere pe Subiecte Principale",
+      glossary: "2. Glosar de Termeni",
+      prerequisites: "3. Cunoștințe Necesare",
+      concepts: "4. Explicații Detaliate ale Conceptelor Cheie",
+      diagrams: "5. Diagrame Conceptuale",
+      examples: "6. Studii de Caz/Exemple Practice",
+      resources: "7. Resurse Recomandate",
+      questions: "8. Întrebări de Autoevaluare"
+    },
+    fr: {
+      topics: "1. Aperçu des sujets clés",
+      glossary: "2. Glossaire des termes",
+      prerequisites: "3. Connaissances préalables",
+      concepts: "4. Explication des concepts clés",
+      diagrams: "5. Diagrammes conceptuels",
+      examples: "6. Exemples pratiques/Études de cas",
+      resources: "7. Ressources recommandées",
+      questions: "8. Questions d'auto-évaluation"
+    },
+    es: {
+      topics: "1. Descripción de temas principales",
+      glossary: "2. Glosario de términos",
+      prerequisites: "3. Conocimientos previos necesarios",
+      concepts: "4. Explicaciones detalladas de conceptos clave",
+      diagrams: "5. Diagramas conceptuales",
+      examples: "6. Ejemplos prácticos/Casos de estudio",
+      resources: "7. Recursos recomendados",
+      questions: "8. Preguntas de autoevaluación"
+    },
+    de: {
+      topics: "1. Überblick über Hauptthemen",
+      glossary: "2. Glossar der Begriffe",
+      prerequisites: "3. Voraussetzungen",
+      concepts: "4. Detaillierte Erklärungen der Schlüsselkonzepte",
+      diagrams: "5. Konzeptionelle Diagramme",
+      examples: "6. Praktische Beispiele/Fallstudien",
+      resources: "7. Empfohlene Ressourcen",
+      questions: "8. Selbstbewertungsfragen"
+    },
+    it: {
+      topics: "1. Panoramica degli argomenti principali",
+      glossary: "2. Glossario dei termini",
+      prerequisites: "3. Conoscenze preliminari necessarie",
+      concepts: "4. Spiegazioni dettagliate dei concetti chiave",
+      diagrams: "5. Diagrammi concettuali",
+      examples: "6. Esempi pratici/Casi di studio",
+      resources: "7. Risorse consigliate",
+      questions: "8. Domande di autovalutazione"
+    }
+  };
+  
+  return titles[lang] || titles.en;
+};
+
+export default function PDFProcessor() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [summary, setSummary] = useState('');
+  const [summaryLanguage, setSummaryLanguage] = useState('en');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState(0);
+  const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
   const [usage, setUsage] = useState({ 
     used: 0, 
     limit: 3,
     fileSizeLimit: 10 * 1024 * 1024  // Default to 10MB
   });
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch usage data on component mount
@@ -37,6 +112,16 @@ export default function PDFSummarizer() {
     }
   }, [status]);
 
+  // Check if we should show feedback request
+  useEffect(() => {
+    if (status === 'authenticated' && usage.used >= usage.limit && usage.limit === 3) {
+      const feedbackDismissed = localStorage.getItem('feedbackDismissed');
+      if (!feedbackDismissed) {
+        setTimeout(() => setShowFeedback(true), 1500);
+      }
+    }
+  }, [usage, status]);
+
   const fetchUsage = async () => {
     try {
       const response = await fetch('/api/usage');
@@ -44,7 +129,6 @@ export default function PDFSummarizer() {
       
       const data = await response.json();
       if (response.ok) {
-        // Convert fileSizeLimit from MB to bytes
         const fileSizeLimitBytes = data.fileSizeLimit * 1024 * 1024;
         setUsage({ ...data, fileSizeLimit: fileSizeLimitBytes });
       }
@@ -54,15 +138,15 @@ export default function PDFSummarizer() {
   };
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    // Redirect to login if not authenticated
     if (status !== 'authenticated') {
       router.push('/login');
       return;
     }
 
-    // Check usage limit
     if (usage.used >= usage.limit) {
-      setError(`Ai atins limita lunară de ${usage.limit} rezumate. ${usage.limit === 3 ? 'Trebuie să îți faci upgrade pentru a continua.' : 'Te rugăm să aștepți până la resetarea lunară.'}`);
+      setError(usage.limit === 3 
+        ? `You've reached the monthly limit of ${usage.limit} summaries. Upgrade to continue.` 
+        : `You've reached the monthly limit of ${usage.limit} summaries. Please wait until the monthly reset.`);
       return;
     }
 
@@ -71,23 +155,21 @@ export default function PDFSummarizer() {
     
     const file = files[0];
     
-    // Reset states
     setError('');
     setSummary('');
     setFileName(file.name);
     setFileSize(file.size);
     setIsLoading(true);
     
-    // File validation with dynamic size limit
     if (file.size > usage.fileSizeLimit) {
       const maxSizeMB = usage.fileSizeLimit / (1024 * 1024);
-      setError(`Fișierul depășește limita de ${maxSizeMB}MB pentru planul dvs.`);
+      setError(`File exceeds the ${maxSizeMB}MB limit for your plan`);
       setIsLoading(false);
       return;
     }
     
     if (file.type !== 'application/pdf') {
-      setError('Vă rugăm să încărcați doar fișiere PDF');
+      setError('Please upload only PDF files');
       setIsLoading(false);
       return;
     }
@@ -102,42 +184,39 @@ export default function PDFSummarizer() {
         body: formData
       });
 
-      // Handle response
       const contentType = response.headers.get('content-type');
       
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        
         if (text.startsWith('<!DOCTYPE html>')) {
-          throw new Error('Eroare internă a serverului');
+          throw new Error('Internal server error');
         }
-        
-        throw new Error(`Răspuns neașteptat: ${text.substring(0, 100)}`);
+        throw new Error(`Unexpected response: ${text.substring(0, 100)}`);
       }
 
       const data = await parseJSON(response);
       
       if (!response.ok) {
-        throw new Error(data.error || 'Eroare necunoscută la procesare');
+        throw new Error(data.error || 'Unknown processing error');
       }
       
       if (data.summary) {
         setSummary(data.summary);
-        // Refresh usage after successful summary
+        setSummaryLanguage(data.meta?.language || 'en');
         fetchUsage();
       } else {
-        setError('Nu s-a putut genera rezumatul. Încercați cu alt fișier.');
+        setError('Could not generate summary. Please try another file.');
       }
     } catch (err: any) {
-      console.error('Eroare procesare PDF:', err);
+      console.error('PDF processing error:', err);
       
-      let userMessage = err.message || 'Eroare necunoscută la procesare';
+      let userMessage = err.message || 'Unknown processing error';
       
       if (err.message.includes('Failed to fetch')) {
-        userMessage = 'Conexiunea cu serverul a eșuat. Verificați internetul.';
-      } else if (err.message.includes('Eroare internă a serverului')) {
-        userMessage = 'Eroare internă a serverului. Contactați suportul.';
-      } else if (err.message.includes('limita lunară')) {
+        userMessage = 'Connection to server failed. Please check your internet.';
+      } else if (err.message.includes('Internal server error')) {
+        userMessage = 'Internal server error. Please contact support.';
+      } else if (err.message.includes('monthly limit')) {
         userMessage = err.message;
       }
       
@@ -147,6 +226,13 @@ export default function PDFSummarizer() {
     }
   };
 
+  const toggleAnswer = (index: number) => {
+    setRevealedAnswers(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
   const triggerFileInput = () => {
     if (status !== 'authenticated') {
       router.push('/login');
@@ -154,7 +240,9 @@ export default function PDFSummarizer() {
     }
     
     if (usage.used >= usage.limit) {
-      setError(`Ai atins limita lunară de ${usage.limit} rezumate. ${usage.limit === 3 ? 'Trebuie să îți faci upgrade pentru a continua.' : 'Te rugăm să aștepți până la resetarea lunară.'}`);
+      setError(usage.limit === 3 
+        ? `You've reached the monthly limit of ${usage.limit} summaries. Upgrade to continue.` 
+        : `You've reached the monthly limit of ${usage.limit} summaries. Please wait until the monthly reset.`);
       return;
     }
     
@@ -172,22 +260,52 @@ export default function PDFSummarizer() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Get current user's file size limit in MB for display
+  const submitFeedback = async (rating: number, comment: string) => {
+    setIsSubmittingFeedback(true);
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          rating,
+          comment,
+        })
+      });
+
+      if (response.ok) {
+        setFeedbackSubmitted(true);
+        setTimeout(() => {
+          setShowFeedback(false);
+          localStorage.setItem('feedbackDismissed', 'true');
+        }, 2000);
+      } else {
+        throw new Error('Failed to submit feedback');
+      }
+    } catch (error) {
+      console.error('Feedback submission error:', error);
+      setError('Failed to submit feedback. Please try again.');
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
   const maxSizeMB = usage.fileSizeLimit / (1024 * 1024);
+  const sectionTitles = getSectionTitles(summaryLanguage);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        {/* Usage Indicator */}
         {status === 'authenticated' && (
           <div className="mb-6 bg-white rounded-lg shadow-sm p-4 flex flex-col sm:flex-row justify-between items-center">
             <div className="mb-2 sm:mb-0">
-              <span className="font-medium text-gray-700">Folosire lunară: </span>
+              <span className="font-medium text-gray-700">Monthly usage: </span>
               <span className="font-semibold">
-                {usage.used} / {usage.limit} rezumate
+                {usage.used} / {usage.limit} summaries
               </span>
               <span className="ml-4 font-medium text-gray-700">
-                Limită fișier: {maxSizeMB}MB
+                File limit: {maxSizeMB}MB
               </span>
             </div>
             {usage.used >= usage.limit && (
@@ -206,7 +324,7 @@ export default function PDFSummarizer() {
             PDF Summarizer
           </h1>
           <p className="mt-3 text-lg text-gray-600">
-            Transformă documentele PDF în rezumate concise cu ajutorul AI
+            Transform PDF documents into concise summaries with AI assistance
           </p>
         </div>
 
@@ -230,11 +348,11 @@ export default function PDFSummarizer() {
               </div>
               
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Încărcați un document PDF
+                Upload a PDF document
               </h3>
               
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Fișierul dvs. este procesat securizat și șters imediat după generarea rezumatului
+                Your file is processed securely and deleted immediately after summary generation
               </p>
               
               <div className="mt-6">
@@ -262,14 +380,14 @@ export default function PDFSummarizer() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Se procesează...
+                      Processing...
                     </>
                   ) : (
                     <>
                       <svg className="-ml-1 mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                       </svg>
-                      Selectează PDF
+                      Select PDF
                     </>
                   )}
                 </button>
@@ -294,7 +412,7 @@ export default function PDFSummarizer() {
             <div className="px-6 py-8 sm:p-10">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
-                  {summary ? 'Rezumat generat' : 'Eroare procesare'}
+                  {summary ? 'Generated summary' : 'Processing error'}
                 </h2>
                 
                 <button
@@ -325,25 +443,168 @@ export default function PDFSummarizer() {
                     <div className="ml-3">
                       <p className="text-sm font-medium text-red-800">{error}</p>
                       <div className="mt-2 text-sm text-red-700">
-                        <p>Recomandări:</p>
+                        <p>Recommendations:</p>
                         <ul className="list-disc pl-5 space-y-1 mt-1">
-                          <li>Verificați conexiunea la internet</li>
-                          <li>Încercați un fișier mai mic</li>
-                          <li>Contactați suportul dacă problema persistă</li>
+                          <li>Check your internet connection</li>
+                          <li>Try a smaller file</li>
+                          <li>Contact support if the problem persists</li>
                         </ul>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="prose prose-blue max-w-none bg-gray-50 p-5 rounded-lg border border-gray-200">
-                  <p className="text-gray-700 whitespace-pre-wrap">{summary}</p>
+                <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                  <div className="prose max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]} 
+                      rehypePlugins={[rehypeRaw]}
+                      components={{
+                        h1({ node, children, ...props }) {
+                          return <h1 className="text-3xl font-bold mt-8 mb-4 border-b pb-2" {...props}>{children}</h1>;
+                        },
+                        h2({ node, children, ...props }) {
+                          return <h2 className="text-2xl font-bold mt-6 mb-3 border-b pb-1" {...props}>{children}</h2>;
+                        },
+                        h3({ node, children, ...props }) {
+                          return <h3 className="text-xl font-bold mt-4 mb-2" {...props}>{children}</h3>;
+                        },
+                        h4({ node, children, ...props }) {
+                          return <h4 className="text-lg font-semibold mt-3 mb-1" {...props}>{children}</h4>;
+                        },
+                        p({ node, children, ...props }) {
+                          return <p className="mb-4 text-gray-700 leading-relaxed" {...props}>{children}</p>;
+                        },
+                        ul({ node, children, ...props }) {
+                          return <ul className="list-disc pl-6 mb-4 space-y-1" {...props}>{children}</ul>;
+                        },
+                        ol({ node, children, ...props }) {
+                          return <ol className="list-decimal pl-6 mb-4 space-y-1" {...props}>{children}</ol>;
+                        },
+                        li({ node, children, ...props }) {
+                          return <li className="mb-1" {...props}>{children}</li>;
+                        },
+                        code({ node, inline, className, children, ...props }) {
+                          return !inline ? (
+                            <code className={`${className} bg-gray-100 block p-4 rounded-md overflow-x-auto font-mono text-sm`} {...props}>
+                              {children}
+                            </code>
+                          ) : (
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-red-600 font-mono text-sm" {...props}>
+                              {children}
+                            </code>
+                          );
+                        },
+                        a({ node, href, children, ...props }) {
+                          return (
+                            <a 
+                              href={href} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              {...props}
+                            >
+                              {children}
+                            </a>
+                          );
+                        },
+                        table({ node, children, ...props }) {
+                          return (
+                            <div className="overflow-x-auto my-4">
+                              <table className="min-w-full border-collapse border border-gray-300" {...props}>
+                                {children}
+                              </table>
+                            </div>
+                          );
+                        },
+                        thead({ node, children, ...props }) {
+                          return <thead className="bg-gray-100" {...props}>{children}</thead>;
+                        },
+                        th({ node, children, ...props }) {
+                          return <th className="border border-gray-300 px-4 py-2 text-left font-semibold" {...props}>{children}</th>;
+                        },
+                        td({ node, children, ...props }) {
+                          return <td className="border border-gray-300 px-4 py-2" {...props}>{children}</td>;
+                        },
+                        blockquote({ node, children, ...props }) {
+                          return (
+                            <blockquote className="border-l-4 border-blue-500 bg-blue-50 italic text-gray-700 pl-4 py-2 my-4" {...props}>
+                              {children}
+                            </blockquote>
+                          );
+                        },
+                      }}
+                    >
+                      {summary}
+                    </ReactMarkdown>
+
+                    {summary.includes(sectionTitles.questions) && (
+                      <div className="mt-10 pt-6 border-t border-gray-200">
+                        <h2 className="text-2xl font-bold mb-4">{sectionTitles.questions}</h2>
+                        
+                        {summary.split('\n').map((line, index) => {
+                          const questionRegex = new RegExp(`\\d+\\.\\s(.+?)\\s\\((?:click|click|clique|klicken|clicca)\\s`, 'i');
+                          const match = line.match(questionRegex);
+                          
+                          if (match) {
+                            const question = match[1].trim();
+                            const answer = line.replace(match[0], '').replace(/\)$/, '').trim();
+                            
+                            return (
+                              <div key={`qa-${index}`} className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <p className="font-medium text-gray-800">{question}</p>
+                                <button 
+                                  onClick={() => toggleAnswer(index)}
+                                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+                                >
+                                  <span>
+                                    {summaryLanguage === 'ro' 
+                                      ? '(click pentru a vedea răspunsul)' 
+                                      : summaryLanguage === 'fr' 
+                                        ? '(cliquez pour voir la réponse)' 
+                                        : summaryLanguage === 'es' 
+                                          ? '(haga clic para ver la respuesta)'
+                                          : summaryLanguage === 'de'
+                                            ? '(klicken Sie, um die Antwort zu sehen)'
+                                            : summaryLanguage === 'it'
+                                              ? '(clicca per vedere la risposta)'
+                                              : '(click to see answer)'}
+                                  </span>
+                                </button>
+                                
+                                {revealedAnswers[index] && (
+                                  <div className="mt-3 p-3 bg-white rounded-md border border-blue-200">
+                                    <strong className="text-blue-700">
+                                      {summaryLanguage === 'ro' 
+                                        ? 'Răspuns: ' 
+                                        : summaryLanguage === 'fr' 
+                                          ? 'Réponse: ' 
+                                          : summaryLanguage === 'es' 
+                                            ? 'Respuesta: '
+                                            : summaryLanguage === 'de'
+                                              ? 'Antwort: '
+                                              : summaryLanguage === 'it'
+                                                ? 'Risposta: '
+                                                : 'Answer: '}
+                                    </strong>
+                                    {answer}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                          
+                          return null;
+                        })}
+                      </div>
+                    )}
+                  </div>
                   
                   <div className="mt-6 flex items-center text-sm text-gray-500">
                     <svg className="h-4 w-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span>Rezumat generat cu succes</span>
+                    <span>Summary generated successfully</span>
                   </div>
                 </div>
               )}
@@ -357,27 +618,126 @@ export default function PDFSummarizer() {
               <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
               </svg>
-              Date securizate
+              Secure data
             </span>
             <span className="flex items-center">
               <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
               </svg>
-              Limită {maxSizeMB}MB
+              {maxSizeMB}MB limit
             </span>
             <span className="flex items-center">
               <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
               </svg>
-              Procesare rapidă
+              Fast processing
             </span>
           </div>
           
           <p className="mt-4 text-xs text-gray-500">
-            Folosim modele AI avansate pentru a extrage esența documentelor dumneavoastră
+            We use advanced AI models to extract the essence of your documents
           </p>
         </div>
       </div>
+      
+      <FeedbackPopup 
+        show={showFeedback}
+        onClose={() => {
+          setShowFeedback(false);
+          localStorage.setItem('feedbackDismissed', 'true');
+        }}
+        onSubmit={submitFeedback}
+        isSubmitting={isSubmittingFeedback}
+        feedbackSubmitted={feedbackSubmitted}
+      />
+      
+      <style jsx global>{`
+        .prose {
+          line-height: 1.6;
+        }
+        .prose h1, 
+        .prose h2, 
+        .prose h3, 
+        .prose h4 {
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+          font-weight: 600;
+          color: #1a202c;
+        }
+        .prose h1 {
+          font-size: 1.875rem;
+          border-bottom: 2px solid #e2e8f0;
+          padding-bottom: 0.5rem;
+        }
+        .prose h2 {
+          font-size: 1.5rem;
+          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 0.3rem;
+        }
+        .prose h3 {
+          font-size: 1.25rem;
+        }
+        .prose p {
+          margin-bottom: 1em;
+          color: #2d3748;
+        }
+        .prose ul, 
+        .prose ol {
+          padding-left: 1.5em;
+          margin-bottom: 1em;
+        }
+        .prose li {
+          margin-bottom: 0.5em;
+        }
+        .prose code {
+          background-color: #edf2f7;
+          padding: 0.2em 0.4em;
+          border-radius: 0.25rem;
+          font-family: monospace;
+        }
+        .prose pre {
+          background-color: #2d3748;
+          color: #e2e8f0;
+          padding: 1em;
+          border-radius: 0.5rem;
+          overflow-x: auto;
+          margin-bottom: 1.5em;
+        }
+        .prose blockquote {
+          border-left: 4px solid #cbd5e0;
+          padding-left: 1em;
+          margin-left: 0;
+          color: #4a5568;
+        }
+        .prose table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 1.5em;
+        }
+        .prose th, 
+        .prose td {
+          border: 1px solid #cbd5e0;
+          padding: 0.5em 1em;
+          text-align: left;
+        }
+        .prose th {
+          background-color: #edf2f7;
+          font-weight: 600;
+        }
+        
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+          }
+          to {
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

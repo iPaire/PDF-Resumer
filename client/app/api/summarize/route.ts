@@ -133,14 +133,45 @@ export async function POST(request: NextRequest) {
     const maxTokens = isPremium ? 6000 : 3000;
     const temperature = isPremium ? 0.3 : 0.4;
 
-    // Generate summary with premium features
+    // Detect document language
+    const languageDetectionPrompt = `
+Identifică limba acestui text. Răspunde doar cu codul ISO 639-1 al limbii (ex: "en", "ro", "fr").
+Text: ${text.substring(0, 500)}...
+    `;
+
+    const languageResponse = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'Ești un expert în identificarea limbilor.' },
+        { role: 'user', content: languageDetectionPrompt },
+      ],
+      max_tokens: 10,
+      temperature: 0,
+    });
+
+    const documentLanguage = languageResponse.choices[0]?.message?.content?.trim() || 'en';
+
+    // Map language to full name for prompts
+    const languageMap: Record<string, string> = {
+      en: 'engleză',
+      ro: 'română',
+      fr: 'franceză',
+      de: 'germană',
+      es: 'spaniolă',
+      it: 'italiană'
+    };
+
+    const targetLanguage = languageMap[documentLanguage] || 'engleză';
+
+    // Generate summary with language adaptation
     const maxLength = 10000;
     const truncatedText = text.length > maxLength 
       ? text.substring(0, maxLength) + '... [text trunchiat]' 
       : text;
 
+    // PROMPT ACTUALIZAT: Folosim limba detectată
     let prompt = `
-Pe baza următorului text, generează un material educațional structurat care să ajute utilizatorul să învețe eficient:
+Pe baza următorului text (scris în ${targetLanguage}), generează un material educațional structurat care să ajute utilizatorul să învețe eficient:
 
 [textul este mai jos]
 
@@ -151,7 +182,7 @@ ${truncatedText}
 
 ---
 
-Structura dorită a răspunsului:
+Structura dorită a răspunsului (în ${targetLanguage}):
 
 1. Descriere pe subiecte principale – identifică și explică pe scurt principalele idei sau teme.
 2. Glosar de termeni – listă de termeni importanți cu explicații clare și concise.
@@ -159,25 +190,21 @@ Structura dorită a răspunsului:
 4. Explicații detaliate ale conceptelor cheie – dezvoltă subiectele complexe în mod clar.
 `;
 
-    // Add advanced features for premium users
-    if (isPremium) {
-      prompt += `
-5. Diagrame conceptuale – descriere textuală a relațiilor dintre concepte
-6. Studii de caz/exemple practice – aplicații din viața reală
-7. Resurse recomandate – cărți, articole, video-uri pentru aprofundare
-`;
-    }
-
     prompt += `
 ${isPremium ? '8' : '5'}. **Întrebări de autoevaluare** – între 3 și ${isPremium ? '7' : '5'} întrebări relevante, cu răspunsuri ascunse (ex: scrie "(click pentru a vedea răspunsul)" sau similar).
 
-Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu titluri vizibile.
-`;
+Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu titluri vizibile. Folosește aceeași limbă ca textul sursă (${targetLanguage}).
+`
+   if (isPremium) {
+      prompt += `
+  tratează toate subiectele cu mai multă profunzime, oferind descrieri complete, exemple detaliate, clarificări suplimentare și conexiuni între concepte. Nu te limita la răspunsuri scurte.
 
+    `;
+   }
     const completion = await openai.chat.completions.create({
       model: summaryModel,
       messages: [
-        { role: 'system', content: 'Ești un asistent care generează materiale educaționale din documente PDF.' },
+        { role: 'system', content: 'Ești un asistent care generează materiale educaționale din documente PDF. Folosește aceeași limbă ca documentul sursă.' },
         { role: 'user', content: prompt },
       ],
       max_tokens: maxTokens,
@@ -196,10 +223,12 @@ Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu ti
       const quizModel = user.subscription === 'premium' ? 'gpt-4o' : 'gpt-3.5-turbo';
       const quizMaxTokens = user.subscription === 'premium' ? 3000 : 1500;
 
+      // PROMPT ACTUALIZAT pentru quiz - specifică limba
       const quizPrompt = `
-Pe baza acestui rezumat al unui curs, creează ${numQuestions} întrebări grilă. 
+Pe baza acestui rezumat (scris în ${targetLanguage}), creează ${numQuestions} întrebări grilă. 
 Fiecare întrebare trebuie să aibă 4 opțiuni și una să fie corectă.
 Întrebările trebuie să acopere conceptele cheie din rezumat.
+Generați întrebările în aceeași limbă ca rezumatul (${targetLanguage}).
 
 ${user.subscription === 'premium' ? `
 Pentru utilizatorii premium:
@@ -225,7 +254,7 @@ Format așteptat (JSON):
       const quizCompletion = await openai.chat.completions.create({
         model: quizModel,
         messages: [
-          { role: 'system', content: 'Ești un profesor care creează teste grilă pentru evaluarea studenților.' },
+          { role: 'system', content: `Ești un profesor care creează teste grilă. Folosește limba: ${targetLanguage}` },
           { role: 'user', content: quizPrompt },
         ],
         response_format: { type: "json_object" },
@@ -270,6 +299,7 @@ Format așteptat (JSON):
           pages: numpages,
           size: file.size,
           characters: text.length,
+          language: targetLanguage
         },
       }),
       { headers: { 'Content-Type': 'application/json' } }

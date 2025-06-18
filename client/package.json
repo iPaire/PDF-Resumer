@@ -36,6 +36,9 @@
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
     "react-feather": "^2.0.10",
+    "react-markdown": "^10.1.0",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
     "stripe": "^18.2.1"
   },
   "devDependencies": {

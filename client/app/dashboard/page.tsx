@@ -100,15 +100,23 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeleteFromHistory = async (id: string) => {
+  const handleDeleteSummary = async (id: string) => {
     try {
-      // This would call an API to remove from history without deleting the actual file
-      setFiles(files.filter(file => file.id !== id));
-      
-      // In a real implementation, you would call:
-      // await fetch(`/api/files/${id}/history`, { method: 'DELETE' });
+      const response = await fetch(`/api/summaries/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Actualizăm starea pentru a elimina rezumatul șters
+        setFiles(files.filter(file => file.id !== id));
+        alert('Rezumatul a fost șters cu succes!');
+      } else {
+        const errorData = await response.json();
+        alert(`Eroare la ștergere: ${errorData.error}`);
+      }
     } catch (error) {
-      console.error('Error removing from history:', error);
+      console.error('Error deleting summary:', error);
+      alert('A apărut o eroare la ștergerea rezumatului');
     }
   };
 
@@ -298,7 +306,7 @@ export default function DashboardPage() {
                       </button>
                       <button 
                         className="text-red-600 hover:text-red-900"
-                        onClick={() => handleDeleteFromHistory(file.id)}
+                        onClick={() => handleDeleteSummary(file.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
