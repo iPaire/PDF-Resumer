@@ -1,7 +1,7 @@
 // app/login/page.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState , useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
@@ -12,8 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const registered = searchParams.get('registered');
+ const [registered, setRegistered] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
