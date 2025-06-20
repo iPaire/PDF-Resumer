@@ -1,15 +1,13 @@
 // app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
-import bcrypt from 'bcrypt';
+import { compare } from 'bcryptjs'; // Use bcryptjs instead of bcrypt
 import jwt from 'jsonwebtoken';
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
 
-    // Input validation
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email și parolă sunt obligatorii' },
@@ -22,7 +20,6 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      // Log failed attempts (security measure)
       console.warn(`Login attempt for non-existent email: ${email}`);
       return NextResponse.json(
         { error: 'Date de autentificare invalide' },
@@ -30,7 +27,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    // Use bcryptjs.compare instead of bcrypt.compare
+    const passwordMatch = await compare(password, user.password);
     if (!passwordMatch) {
       console.warn(`Invalid password attempt for user: ${user.id}`);
       return NextResponse.json(
@@ -39,23 +37,27 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET!,
       { expiresIn: '1d' }
     );
 
-    // Set HTTP-only cookie
-    cookies().set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 86400, // 1 day
-      path: '/',
+    const response = NextResponse.json({ 
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      // Include other user fields except password
     });
 
-    const { password: _unused, ...userWithoutPassword } = user;
-    return NextResponse.json(userWithoutPassword);
+    response.headers.set(
+      'Set-Cookie',
+      `auth-token=${token}; HttpOnly; Path=/; Max-Age=86400; ${
+        process.env.NODE_ENV === 'production' ? 'Secure; SameSite=Strict' : ''
+      }`
+    );
+
+    return response;
     
   } catch (error) {
     console.error('Login error:', error);
