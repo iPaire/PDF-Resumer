@@ -1,3 +1,4 @@
+//app/api/dashboard/stats/route.ts
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import prisma from "@/lib/prisma"
@@ -16,7 +17,10 @@ export async function GET() {
     // Get user with subscription
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { subscription: true }
+      select: { 
+        subscription: true,
+        tokens: true
+      }
     });
     
     if (!user) {
@@ -63,6 +67,11 @@ export async function GET() {
       file.quiz !== null && Object.keys(file.quiz).length > 0
     ).length;
     
+    // Count courses
+    const coursesCreated = await prisma.course.count({
+      where: { userId: session.user.id }
+    });
+    
     // Format file size function
     const formatFileSize = (bytes: number) => {
       if (bytes === 0) return '0 Bytes';
@@ -76,6 +85,8 @@ export async function GET() {
       filesProcessed: files.length,
       summariesCreated,
       quizzesGenerated,
+      coursesCreated,
+      tokens: user.tokens || 0,
       storageUsed: formatFileSize(totalSizeBytes),
       storageLimit: formatFileSize(storageLimitBytes),
       storagePercentage,

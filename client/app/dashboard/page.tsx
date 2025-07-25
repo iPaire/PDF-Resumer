@@ -1,8 +1,9 @@
+//app/dashboard/page.tsx
 'use client';
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { FileText, BarChart2, User, Book, Plus, Download, Trash2, Lock, ChevronRight } from 'react-feather';
+import { FileText, BarChart2, User, Book, Plus, Download, Trash2, Lock, ChevronRight, Folder } from 'react-feather';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -14,33 +15,30 @@ type FileType = {
   status: string;
 };
 
+type CourseType = {
+  id: string;
+  title: string;
+  description: string;
+  fileCount: number;
+  createdAt: string;
+};
+
 type StatsType = {
   filesProcessed: number;
   quizzesGenerated: number;
   summariesCreated: number;
+  coursesCreated: number;
   storageUsed: string;
   storageLimit: string;
   storagePercentage: number;
-};
-
-type SummaryType = {
-  id: string;
-  title: string;
-  date: string;
-  contentPreview: string;
-};
-
-type QuizType = {
-  id: string;
-  title: string;
-  date: string;
-  questions: number;
+  tokens: number;
 };
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [files, setFiles] = useState<FileType[]>([]);
+  const [courses, setCourses] = useState<CourseType[]>([]);
   const [stats, setStats] = useState<StatsType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
@@ -60,19 +58,23 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      const [filesRes, statsRes] = await Promise.all([
+      const [filesRes, statsRes, coursesRes] = await Promise.all([
         fetch('/api/dashboard/files'),
-        fetch('/api/dashboard/stats')
+        fetch('/api/dashboard/stats'),
+        fetch('/api/courses')
       ]);
       
       if (!filesRes.ok) throw new Error('Failed to fetch files');
       if (!statsRes.ok) throw new Error('Failed to fetch stats');
+      if (!coursesRes.ok) throw new Error('Failed to fetch courses');
       
       const filesData = await filesRes.json();
       const statsData = await statsRes.json();
+      const coursesData = await coursesRes.json();
       
       setFiles(filesData);
       setStats(statsData);
+      setCourses(coursesData);
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -107,7 +109,6 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
-        // Actualizăm starea pentru a elimina rezumatul șters
         setFiles(files.filter(file => file.id !== id));
         alert('Rezumatul a fost șters cu succes!');
       } else {
@@ -148,7 +149,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Only paid users should see this page
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -156,11 +156,17 @@ export default function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Bun venit, {session?.user?.name || 'Utilizator'}!</h1>
           <p className="mt-2 text-gray-600">Aici poți gestiona istoricul tău de activități.</p>
+          {stats?.tokens !== undefined && (
+            <div className="mt-4 bg-indigo-50 p-3 rounded-lg inline-block">
+              <span className="font-medium text-indigo-800">Tokenuri disponibile: </span>
+              <span className="font-bold text-indigo-900">{stats.tokens}</span>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
             <StatCard 
               icon={<FileText className="w-6 h-6" />}
               title="Fișiere Procesate"
@@ -182,13 +188,20 @@ export default function DashboardPage() {
               color="bg-purple-100 text-purple-800"
             />
             
+            <StatCard 
+              icon={<Folder className="w-6 h-6" />}
+              title="Cursuri Create"
+              value={stats.coursesCreated}
+              color="bg-indigo-100 text-indigo-800"
+            />
+            
             {/* Storage Card with Percentage */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
                     <div className="text-yellow-800">
-                      <User className="w-6 h-6" />
+                      <User className="w-6 w-6" />
                     </div>
                   </div>
                   <div className="ml-4">
@@ -213,7 +226,7 @@ export default function DashboardPage() {
         )}
 
         {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <ActionCard 
             title="Încarcă un PDF Nou"
             description="Începe procesarea unui nou document"
@@ -240,6 +253,99 @@ export default function DashboardPage() {
             buttonLink="/quizzes"
             color="bg-purple-500"
           />
+          
+          <ActionCard 
+            title="Gestionează Cursuri"
+            description="Creează și administrează cursurile tale"
+            icon={<Folder className="w-8 h-8" />}
+            buttonText="Accesează Cursuri"
+            buttonLink="/courses"
+            color="bg-indigo-500"
+          />
+        </div>
+
+        {/* Recent Courses Section */}
+        <div className="bg-white shadow rounded-lg overflow-hidden mb-8">
+          <div className="px-6 py-5 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">Cursuri Recente</h2>
+              <Link 
+                href="/courses" 
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Vezi toate cursurile
+              </Link>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Titlu
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Descriere
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fișiere
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Dată
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acțiuni
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {courses.map((course) => (
+                  <tr key={course.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{course.title}</div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {course.description || 'Fără descriere'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {course.fileCount}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {course.createdAt}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link 
+                        href={`/courses/${course.id}`}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
+                        Deschide
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {courses.length === 0 && (
+              <div className="text-center py-12">
+                <Folder className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Niciun curs creat</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Începe prin a crea primul tău curs.
+                </p>
+                <div className="mt-6">
+                  <Link
+                    href="/courses/new"
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                    Creează Curs
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Recent Activity Section */}
@@ -360,26 +466,6 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}
-
-// Helper function to calculate storage percentage
-function calculateStoragePercentage(used: string, limit: string): string {
-  const parseSize = (size: string): number => {
-    const [value, unit] = size.split(' ');
-    const num = parseFloat(value);
-    switch (unit) {
-      case 'GB': return num * 1024 * 1024 * 1024;
-      case 'MB': return num * 1024 * 1024;
-      case 'KB': return num * 1024;
-      default: return num;
-    }
-  };
-  
-  const usedBytes = parseSize(used);
-  const limitBytes = parseSize(limit);
-  
-  if (limitBytes === 0) return '0%';
-  return `${Math.round((usedBytes / limitBytes) * 100)}%`;
 }
 
 // Stat Card Component

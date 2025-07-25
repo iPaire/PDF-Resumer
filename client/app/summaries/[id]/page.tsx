@@ -23,19 +23,16 @@ type Summary = {
 
 // Funcție îmbunătățită pentru formatarea Markdown
 const formatMarkdownSpacing = (text: string) => {
-  // Adaugă 2 newline-uri înainte de titluri
-  let formatted = text.replace(/(?<=\n)(#+\s?.*)/g, '\n\n$1');
-  
-  // Adaugă spațiere după titlurile de secțiuni
-  formatted = formatted.replace(/(## \d+\.\s+[^\n]+)([^\n])/g, '$1\n\n$2');
-  
-  // Adaugă newline după fiecare bloc de cod
-  formatted = formatted.replace(/(```[\s\S]*?```)(?=\S)/g, '$1\n\n');
-  
-  // Adaugă spațiere între paragrafe
-  formatted = formatted.replace(/(?<=\S)\n(?=\S)/g, '\n\n');
-  
-  return formatted;
+  // Improved section title preservation
+  return text
+    // Preserve section titles exactly as they are
+    .replace(/(\n## \d+\.\s+[^\n]+)/g, '$1\n\n')
+    // Add spacing before headers
+    .replace(/(?<=\n)(#+\s?.*)/g, '\n\n$1')
+    // Add spacing around code blocks
+    .replace(/(```[\s\S]*?```)(?=\S)/g, '$1\n\n')
+    // Add spacing between paragraphs
+    .replace(/(?<=\S)\n(?=\S)/g, '\n\n');
 };
 
 // Funcție optimizată pentru parsarea conținutului premium

@@ -6,7 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-// user
+
 model User {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
@@ -16,13 +16,13 @@ model User {
   emailVerified DateTime? @db.Timestamp(6)
   createdAt     DateTime? @default(now()) @db.Timestamp(6)
   updatedAt     DateTime? @default(now()) @db.Timestamp(6)
-  subscription  String?   @default("free") // free, standard, premium
+  subscription  String?   @default("free")
   stripeCustomerId    String?   @unique
   stripeSubscriptionId String?   @unique
+  tokens        Int?      @default(0)
   usage         Usage[]
   files         File[]
-  
-  // NextAuth relations
+  courses       Course[]
   accounts      Account[]
   sessions      Session[]
   image         String?
@@ -33,6 +33,44 @@ model Usage {
   userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime @default(now()) @db.Timestamp(6)
+}
+
+model Course {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String?
+  userId      String    @db.Uuid
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files       File[]    @relation("CourseFiles")
+  summaries   Summary[]
+  quizzes     Quiz[]
+  cheatSheets CheatSheet[]
+  createdAt   DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime  @default(now()) @db.Timestamp(6)
+}
+
+model Summary {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content   String
+  courseId  String   @db.Uuid
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+}
+
+model Quiz {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  questions Json
+  courseId  String   @db.Uuid
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+}
+
+model CheatSheet {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content   String
+  courseId  String   @db.Uuid
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
 }
 
 model File {
@@ -49,10 +87,10 @@ model File {
   quiz        Json?
   createdAt   DateTime @default(now()) @db.Timestamp(6)
   updatedAt   DateTime @default(now()) @db.Timestamp(6)
+  courseId    String?  @db.Uuid
+  course      Course?  @relation("CourseFiles", fields: [courseId], references: [id], onDelete: Cascade)
 }
 
-
-// Tabele NextAuth
 model Account {
   id                 String  @id @default(cuid())
   userId             String  @db.Uuid

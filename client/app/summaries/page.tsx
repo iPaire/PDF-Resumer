@@ -1,8 +1,9 @@
+// app/summaries/page.tsx
 'use client';
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { FileText, Download, Trash2, Search, Eye, ArrowLeft } from 'react-feather';
+import { FileText, Download, Trash2, Search, Eye, ArrowLeft, FolderPlus } from 'react-feather';
 import Link from 'next/link';
 
 type Summary = {
@@ -13,30 +14,47 @@ type Summary = {
   pages: number;
   characters: number;
   summary: string;
+  courseId: string | null;
+};
+
+type Course = {
+  id: string;
+  title: string;
 };
 
 export default function SummariesPage() {
   const { data: session } = useSession();
   const [summaries, setSummaries] = useState<Summary[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null);
+  const [showCourseModal, setShowCourseModal] = useState(false);
 
   useEffect(() => {
     if (session) {
-      fetchSummaries();
+      fetchData();
     }
   }, [session]);
 
-  const fetchSummaries = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('/api/summaries');
-      const data = await response.json();
-      if (response.ok) {
-        setSummaries(data);
+      const [summariesRes, coursesRes] = await Promise.all([
+        fetch('/api/summaries'),
+        fetch('/api/courses')
+      ]);
+      
+      if (summariesRes.ok) {
+        const summariesData = await summariesRes.json();
+        setSummaries(summariesData);
+      }
+      
+      if (coursesRes.ok) {
+        const coursesData = await coursesRes.json();
+        setCourses(coursesData);
       }
     } catch (error) {
-      console.error('Error fetching summaries:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -46,10 +64,10 @@ export default function SummariesPage() {
     try {
       const response = await fetch(`/api/summaries/${id}/download`);
       if (response.status === 403) {
-      const errorData = await response.json();
-      alert(errorData.error || 'Utilizatorii gratuit nu pot descărca rezumate');
-      return;
-    }
+        const errorData = await response.json();
+        alert(errorData.error || 'Utilizatorii gratuit nu pot descărca rezumate');
+        return;
+      }
       if (!response.ok) throw new Error('Failed to download summary');
       
       const blob = await response.blob();
@@ -81,6 +99,63 @@ export default function SummariesPage() {
     } catch (error) {
       console.error('Delete error:', error);
     }
+  };
+
+  const assignToCourse = async (summaryId: string, courseId: string | null) => {
+    try {
+      const response = await fetch(`/api/summaries/${summaryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId })
+      });
+      
+      if (response.ok) {
+        setSummaries(prev => prev.map(s => 
+          s.id === summaryId ? {...s, courseId} : s
+        ));
+        
+        if (selectedSummary?.id === summaryId) {
+          setSelectedSummary(prev => prev ? {...prev, courseId} : null);
+        }
+        
+        setShowCourseModal(false);
+        alert('Rezumatul a fost asignat cursului cu succes!');
+      } else {
+        const errorData = await response.json();
+        alert(`Eroare: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Assignment error:', error);
+      alert('A apărut o eroare la asignare');
+    }
+  };
+
+  const createQuickCourse = async () => {
+    const title = prompt('Introduceți titlul cursului nou:');
+    if (!title) return null;
+    
+    try {
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      
+      if (response.ok) {
+        const newCourse = await response.json();
+        setCourses([...courses, newCourse]);
+        return newCourse.id;
+      }
+    } catch (error) {
+      console.error('Error creating course:', error);
+      alert('A apărut o eroare la crearea cursului');
+    }
+    return null;
+  };
+
+  const openAssignModal = (summary: Summary) => {
+    setSelectedSummary(summary);
+    setShowCourseModal(true);
   };
 
   const filteredSummaries = summaries.filter(summary => 
@@ -119,7 +194,7 @@ export default function SummariesPage() {
           <p className="mt-2 text-gray-600">Toate rezumatele generate din documentele tale PDF</p>
         </div>
 
-        <div className="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div className="bg-white shadow rounded-lg mb-8">
           <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
             <div className="relative w-full max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -194,7 +269,6 @@ export default function SummariesPage() {
                             <Eye className="w-4 h-4" />
                           </Link>
                           
-                          {/* Only show download button for non-free users */}
                           {!isFreeUser && (
                             <button 
                               className="text-blue-600 hover:text-blue-900 mr-3"
@@ -206,6 +280,16 @@ export default function SummariesPage() {
                               <Download className="w-4 h-4" />
                             </button>
                           )}
+                          
+                          <button 
+                            className="text-indigo-600 hover:text-indigo-900 mr-3"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openAssignModal(summary);
+                            }}
+                          >
+                            <FolderPlus className="w-4 h-4" />
+                          </button>
                           
                           <button 
                             className="text-red-600 hover:text-red-900"
@@ -279,7 +363,6 @@ export default function SummariesPage() {
                         Vezi întreg rezumatul
                       </Link>
                       
-                      {/* Only show download button for non-free users */}
                       {!isFreeUser && (
                         <button
                           onClick={() => handleDownload(selectedSummary.id, selectedSummary.name)}
@@ -305,6 +388,51 @@ export default function SummariesPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal pentru asignare la curs */}
+      {showCourseModal && selectedSummary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium mb-4">Asignează rezumatul la curs</h3>
+            <p className="mb-2"><span className="font-semibold">Rezumat:</span> {selectedSummary.name}</p>
+            
+            <div className="mb-4">
+              <label className="block mb-2">Selectează curs:</label>
+              <select 
+                className="w-full p-2 border rounded"
+                onChange={(e) => {
+                  if (e.target.value === 'new') {
+                    createQuickCourse().then(newCourseId => {
+                      if (newCourseId) {
+                        assignToCourse(selectedSummary.id, newCourseId);
+                      }
+                    });
+                  } else {
+                    assignToCourse(selectedSummary.id, e.target.value || null);
+                  }
+                }}
+              >
+                <option value="">-- Fără curs --</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>
+                    {course.title}
+                  </option>
+                ))}
+                <option value="new">+ Creează curs nou</option>
+              </select>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowCourseModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded"
+              >
+                Anulează
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

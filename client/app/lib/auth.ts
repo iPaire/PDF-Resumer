@@ -1,3 +1,4 @@
+// lib/auth.ts
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
