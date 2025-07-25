@@ -1,4 +1,3 @@
-// app/courses/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +10,10 @@ type Course = {
   title: string;
   description: string;
   createdAt: string;
-  summaryCount: number;
+  _count: {
+    summaries: number;
+    files: number;
+  };
 };
 
 export default function CoursesPage() {
@@ -28,18 +30,7 @@ export default function CoursesPage() {
       const res = await fetch('/api/courses');
       if (res.ok) {
         const data = await res.json();
-        // Adăugăm numărul de rezumate pentru fiecare curs
-        const coursesWithCounts = await Promise.all(
-          data.map(async (course: any) => {
-            const countRes = await fetch(`/api/courses/${course.id}/summary-count`);
-            const countData = await countRes.json();
-            return {
-              ...course,
-              summaryCount: countData.count
-            };
-          })
-        );
-        setCourses(coursesWithCounts);
+        setCourses(data);
       }
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -47,7 +38,6 @@ export default function CoursesPage() {
       setLoading(false);
     }
   };
-
 
   const deleteCourse = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -80,6 +70,27 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <a 
+  className="inline-flex items-center text-blue-600 hover:text-blue-800" 
+  href="/dashboard"
+>
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" 
+    height="24" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className="mr-2 h-5 w-5"
+  >
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
+  </svg>
+  Înapoi la Dashboard
+</a>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Cursurile Tale</h1>
           <p className="mt-2 text-gray-600">Gestionează și organizează rezumatele tale în cursuri</p>
@@ -119,9 +130,14 @@ export default function CoursesPage() {
                   {course.description || 'Fără descriere'}
                 </p>
                 <div className="mt-6 flex justify-between items-center">
-                  <span className="text-sm text-gray-500">
-                    {course.summaryCount} {course.summaryCount === 1 ? 'rezumat' : 'rezumate'}
-                  </span>
+                  <div className="flex space-x-4">
+                    <span className="text-sm text-gray-500">
+                      {course._count.summaries} {course._count.summaries === 1 ? 'rezumat' : 'rezumate'}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {course._count.files} {course._count.files === 1 ? 'fișier' : 'fișiere'}
+                    </span>
+                  </div>
                   <ChevronRight className="h-5 w-5 text-gray-400" />
                 </div>
               </div>
@@ -140,7 +156,7 @@ export default function CoursesPage() {
               <button
                 onClick={() => router.push('/courses/new')}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
->
+              >
                 <Plus className="-ml-1 mr-2 h-5 w-5" />
                 Creează Curs
               </button>

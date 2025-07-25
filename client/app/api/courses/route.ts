@@ -1,8 +1,7 @@
-// app/api/courses/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import prisma from '@/lib/prisma'
-import { authOptions } from '@/lib/authOptions' // Import corectat
+import { authOptions } from '@/lib/authOptions'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -13,8 +12,17 @@ export async function GET(req: NextRequest) {
   try {
     const courses = await prisma.course.findMany({
       where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: { 
+            summaries: true,
+            files: true
+          }
+        }
+      }
     });
+    
     return NextResponse.json(courses);
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -39,7 +47,7 @@ export async function POST(req: NextRequest) {
       data: {
         title: title.trim(),
         description: description?.trim(),
-        userId: session.user.id // Folosim ID-ul din sesiune
+        userId: session.user.id
       }
     });
     
