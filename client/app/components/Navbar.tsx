@@ -9,6 +9,7 @@ export default function Navbar() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -19,6 +20,17 @@ export default function Navbar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Calculează zilele rămase pentru trial
+  useEffect(() => {
+    if (session?.user?.subscription === 'trial' && session.user.trialExpires) {
+      const now = new Date();
+      const trialExpires = new Date(session.user.trialExpires);
+      const diffTime = trialExpires.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setDaysLeft(diffDays);
+    }
+  }, [session]);
 
   // Loading state
   if (status === 'loading') {
@@ -98,14 +110,25 @@ export default function Navbar() {
                       {session.user.subscription === 'free' 
                         ? 'Free' 
                         : session.user.subscription === 'standard' 
-                          ? 'Standard' 
+                          ? 'Standard'
+                          : session.user.subscription === 'trial'
+                          ? 'Premium Trial'
                           : 'Premium'}
                     </span>
                   </div>
+                  
+                  {/* Afișează zilele rămase pentru trial */}
+                  {session.user.subscription === 'trial' && daysLeft !== null && (
+                    <div className="mt-1 text-xs text-purple-600">
+                      {daysLeft > 0 
+                        ? `Expiră în ${daysLeft} ${daysLeft === 1 ? 'zi' : 'zile'}`
+                        : 'Trial expirat'}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Buton Upgrade pentru utilizatorii Free */}
-                {session.user.subscription === 'free' && (
+                {(session.user.subscription === 'free' || session.user.subscription === 'trial') && (
                   <Link
                     href="/pricing"
                     className="block text-center mx-2 my-2 px-3 py-2 text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 rounded transition"
@@ -148,5 +171,4 @@ export default function Navbar() {
         )}
       </div>
     </nav>
-  );
-}
+  );}

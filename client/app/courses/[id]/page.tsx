@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Folder, Plus, Trash2, ChevronRight, FileText, Copy, BookOpen, File, CheckSquare } from 'react-feather';
+import { Folder, Plus, ChevronRight, FileText, Copy, BookOpen, File, CheckSquare, Clipboard, Search } from 'react-feather';
 
 type Summary = {
   id: string;
   content: string;
   createdAt: string;
+  courses: { id: string }[];
 };
 
 type Course = {
@@ -24,7 +25,7 @@ type Course = {
 
 export default function CoursePage() {
   const router = useRouter();
-  const { id } = useParams();
+  const { id: courseId } = useParams();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [fullSummary, setFullSummary] = useState('');
@@ -33,79 +34,152 @@ export default function CoursePage() {
   const [generating, setGenerating] = useState({
     summary: false,
     cheatSheet: false,
-    quiz: false
+    quiz: false,
+    addSummary: false
   });
-  const [newSummary, setNewSummary] = useState('');
-  const [creatingSummary, setCreatingSummary] = useState(false);
   const [copied, setCopied] = useState({
     fullSummary: false,
     cheatSheet: false
   });
+  const [copiedSummaryId, setCopiedSummaryId] = useState<string | null>(null);
+  
+  // State for adding existing summaries
+  const [searchQuery, setSearchQuery] = useState('');
+  const [availableSummaries, setAvailableSummaries] = useState<Summary[]>([]);
+  const [selectedSummaries, setSelectedSummaries] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    if (!id) {
+    if (!courseId) {
       setLoading(false);
       return;
     }
 
-    const fetchCourse = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(`/api/courses/${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setCourse(data);
+        // Fetch course data
+        const courseRes = await fetch(`/api/courses/${courseId}`);
+        if (courseRes.ok) {
+          const courseData = await courseRes.json();
+          setCourse(courseData);
           
-          if (data.fullSummary) setFullSummary(data.fullSummary);
-          if (data.cheatSheet) setCheatSheet(data.cheatSheet);
-          if (data.quiz) setQuiz(data.quiz);
+          if (courseData.fullSummary) setFullSummary(courseData.fullSummary);
+          if (courseData.cheatSheet) setCheatSheet(courseData.cheatSheet);
+          if (courseData.quiz) setQuiz(courseData.quiz);
+          
+          // Pre-select existing summaries
+          setSelectedSummaries(courseData.summaries.map((s: Summary) => s.id));
         } else {
-          const errorText = await res.text();
-          console.error('Failed to fetch course:', res.status, errorText);
+          console.error('Failed to fetch course:', await courseRes.text());
+        }
+        
+        // Fetch available summaries
+        const summariesRes = await fetch('/api/summaries');
+        if (summariesRes.ok) {
+          const summariesData = await summariesRes.json();
+          setAvailableSummaries(summariesData);
+        } else {
+          console.error('Failed to fetch summaries:', await summariesRes.text());
         }
       } catch (error) {
-        console.error('Error fetching course:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchCourse();
-  }, [id]);
+    fetchData();
+  }, [courseId]);
 
-  const createSummary = async () => {
-    if (!newSummary.trim()) return;
+  const handleSummarySelection = (summaryId: string) => {
+    setSelectedSummaries(prev => {
+      if (prev.includes(summaryId)) {
+        return prev.filter(id => id !== summaryId);
+      } else {
+        return [...prev, summaryId];
+      }
+    });
+  };
+
+  const addSelectedSummaries = async () => {
+    if (selectedSummaries.length === 0) return;
     
-    setCreatingSummary(true);
+    setGenerating(prev => ({...prev, addSummary: true}));
+    
     try {
-      const res = await fetch(`/api/courses/${id}`, {
-        method: 'POST',
+      const res = await fetch(`/api/courses/${courseId}/summaries`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newSummary })
+        body: JSON.stringify({ summaryIds: selectedSummaries })
       });
       
       if (res.ok) {
-        const data = await res.json();
-        // Update course with new summary
-        setCourse(prev => prev ? {
-          ...prev,
-          summaries: [...prev.summaries, data]
-        } : null);
-        setNewSummary('');
+        const updatedCourse = await res.json();
+        setCourse(updatedCourse);
+        
+        // Reset selection
+        setSelectedSummaries(updatedCourse.summaries.map((s: Summary) => s.id));
+        setSearchQuery('');
       } else {
-        const errorText = await res.text();
-        console.error('Failed to create summary:', res.status, errorText);
+        console.error('Failed to add summaries:', await res.text());
+      }
+    } catch (error) {
+      console.error('Error adding summaries:', error);
+    } finally {
+      setGenerating(prev => ({...prev, addSummary: false}));
+    }
+  };
+
+  const createNewSummary = async () => {
+    const content = prompt('Introdu conținutul noului rezumat:');
+    if (!content) return;
+    
+    setGenerating(prev => ({...prev, addSummary: true}));
+    
+    try {
+      const res = await fetch('/api/summaries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      
+      if (res.ok) {
+        const newSummary = await res.json();
+        setAvailableSummaries(prev => [newSummary, ...prev]);
+        
+        // Automatically select the new summary
+        setSelectedSummaries(prev => [...prev, newSummary.id]);
+        
+        // Add to course
+        await addSelectedSummaries();
       }
     } catch (error) {
       console.error('Error creating summary:', error);
     } finally {
-      setCreatingSummary(false);
+      setGenerating(prev => ({...prev, addSummary: false}));
+    }
+  };
+
+  const searchSummaries = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/summaries?query=${encodeURIComponent(searchQuery)}`);
+      if (res.ok) {
+        setAvailableSummaries(await res.json());
+      }
+    } catch (error) {
+      console.error('Error searching summaries:', error);
+    } finally {
+      setIsSearching(false);
     }
   };
 
   const generateSummary = async () => {
     setGenerating(prev => ({...prev, summary: true}));
     try {
-      const res = await fetch(`/api/courses/${id}/summarize`, { 
+      const res = await fetch(`/api/courses/${courseId}/summarize`, { 
         method: 'POST' 
       });
       
@@ -128,7 +202,7 @@ export default function CoursePage() {
   const generateCheatSheet = async () => {
     setGenerating(prev => ({...prev, cheatSheet: true}));
     try {
-      const res = await fetch(`/api/courses/${id}/cheatsheet`, { 
+      const res = await fetch(`/api/courses/${courseId}/cheatsheet`, { 
         method: 'POST' 
       });
       
@@ -151,7 +225,7 @@ export default function CoursePage() {
   const generateQuiz = async () => {
     setGenerating(prev => ({...prev, quiz: true}));
     try {
-      const res = await fetch(`/api/courses/${id}/quiz`, { 
+      const res = await fetch(`/api/courses/${courseId}/quiz`, { 
         method: 'POST' 
       });
       
@@ -173,8 +247,14 @@ export default function CoursePage() {
 
   const copyToClipboard = (text: string, type: 'fullSummary' | 'cheatSheet') => {
     navigator.clipboard.writeText(text);
-    setCopied({ ...copied, [type]: true });
-    setTimeout(() => setCopied({ ...copied, [type]: false }), 2000);
+    setCopied(prev => ({...prev, [type]: true }));
+    setTimeout(() => setCopied(prev => ({...prev, [type]: false })), 2000);
+  };
+
+  const copySummary = (content: string, id: string) => {
+    navigator.clipboard.writeText(content);
+    setCopiedSummaryId(id);
+    setTimeout(() => setCopiedSummaryId(null), 2000);
   };
 
   if (loading) {
@@ -215,6 +295,11 @@ export default function CoursePage() {
                     cheatSheet || 
                     quiz.length > 0;
 
+  // Filter out summaries already in the course
+  const availableForCourse = availableSummaries.filter(
+    summary => !course.summaries.some(s => s.id === summary.id)
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -237,32 +322,137 @@ export default function CoursePage() {
           </div>
         </div>
 
-        {/* Summary Creation Section */}
+        {/* Summary Management Section */}
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <BookOpen className="h-6 w-6 text-indigo-600" />
-            <h2 className="text-xl font-bold text-gray-900">Adaugă rezumat</h2>
+            <h2 className="text-xl font-bold text-gray-900">Gestionează rezumate</h2>
           </div>
           
-          <div className="flex flex-col gap-4">
-            <textarea
-              value={newSummary}
-              onChange={(e) => setNewSummary(e.target.value)}
-              placeholder="Scrie rezumatul aici..."
-              className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[120px]"
-            />
+          <div className="mb-6">
+            <h3 className="font-medium text-gray-700 mb-3">Rezumate adăugate la curs:</h3>
+            <div className="flex flex-wrap gap-2">
+              {course.summaries.map(summary => (
+                <span 
+                  key={summary.id}
+                  className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full flex items-center"
+                >
+                  {summary.content?.substring(0, 30) || ''}...
+                  <button 
+                    onClick={() => copySummary(summary.content, summary.id)}
+                    className="ml-2 text-indigo-600 hover:text-indigo-900"
+                  >
+                    {copiedSummaryId === summary.id ? (
+                      <span className="text-xs">Copiat!</span>
+                    ) : (
+                      <Clipboard className="h-4 w-4" />
+                    )}
+                  </button>
+                </span>
+              ))}
+              {course.summaries.length === 0 && (
+                <p className="text-gray-500 italic">Niciun rezumat adăugat încă</p>
+              )}
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="font-medium text-gray-700 mb-3">Adaugă rezumate existente:</h3>
+            
+            <div className="flex gap-3 mb-4">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Caută rezumate..."
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                  onKeyDown={(e) => e.key === 'Enter' && searchSummaries()}
+                />
+                <button
+                  onClick={searchSummaries}
+                  className="absolute right-3 top-3 text-gray-500 hover:text-indigo-600"
+                  disabled={isSearching}
+                >
+                  {isSearching ? (
+                    <span className="loading">...</span>
+                  ) : (
+                    <Search className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+              <button
+                onClick={createNewSummary}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl flex items-center gap-2"
+              >
+                <Plus className="h-5 w-5" />
+                Rezumat nou
+              </button>
+            </div>
+            
+            <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl mb-4">
+              {availableForCourse.length > 0 ? (
+                availableForCourse.map(summary => (
+                  <div 
+                    key={summary.id}
+                    className={`p-3 border-b border-gray-200 flex items-center justify-between ${
+                      selectedSummaries.includes(summary.id) 
+                        ? 'bg-indigo-50' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedSummaries.includes(summary.id)}
+                        onChange={() => handleSummarySelection(summary.id)}
+                        className="mr-3 h-4 w-4 text-indigo-600 rounded"
+                      />
+                      <div>
+                        <p className="text-gray-800">
+                          {summary.content?.substring(0, 100) || ''}
+                          {summary.content && summary.content.length > 100 ? '...' : ''}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Creat la: {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {summary.courses?.length || 0} cursuri
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-gray-500">
+                  {availableSummaries.length > 0
+                    ? 'Toate rezumatele sunt deja adăugate în acest curs'
+                    : 'Nu ai rezumate disponibile'}
+                </div>
+              )}
+            </div>
+            
             <div className="flex justify-end">
               <button
-                onClick={createSummary}
-                disabled={creatingSummary || !newSummary.trim()}
+                onClick={addSelectedSummaries}
+                disabled={generating.addSummary || selectedSummaries.length === 0}
                 className={`px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 ${
-                  creatingSummary || !newSummary.trim()
+                  generating.addSummary || selectedSummaries.length === 0
                     ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md'
                 }`}
               >
-                <Plus className="h-5 w-5" />
-                {creatingSummary ? 'Se salvează...' : 'Salvează rezumat'}
+                {generating.addSummary ? (
+                  <>
+                    <span className="loading">...</span>
+                    Se adaugă...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-5 w-5" />
+                    Adaugă rezumate selectate ({selectedSummaries.length})
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -420,7 +610,16 @@ export default function CoursePage() {
                           Rezumat {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
                         </h3>
                       </div>
-                      <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0 ml-2" />
+                      <button 
+                        onClick={() => copySummary(summary.content, summary.id)}
+                        className="text-gray-500 hover:text-indigo-600"
+                      >
+                        {copiedSummaryId === summary.id ? (
+                          <span className="text-sm text-indigo-600 font-medium">Copiat!</span>
+                        ) : (
+                          <Clipboard className="h-5 w-5" />
+                        )}
+                      </button>
                     </div>
                     <p className="text-sm text-gray-700 bg-white p-3 rounded-lg border border-gray-200">
                       {summary.content}
@@ -525,20 +724,8 @@ export default function CoursePage() {
                 <Folder className="mx-auto h-16 w-16 text-gray-400" />
                 <h3 className="mt-4 text-xl font-bold text-gray-900">Curs gol</h3>
                 <p className="mt-2 text-gray-600">
-                  Începe prin a adăuga fișiere și rezumate la acest curs.
+                  Începe prin a adăuga rezumate la acest curs.
                 </p>
-                <div className="mt-6">
-                  <button
-                    onClick={() => {
-                      const textarea = document.querySelector('textarea');
-                      if (textarea) textarea.focus();
-                    }}
-                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                  >
-                    <Plus className="mr-2 h-5 w-5" />
-                    Adaugă primul rezumat
-                  </button>
-                </div>
               </div>
             </div>
           )}

@@ -5,8 +5,9 @@ import prisma from "@/lib/prisma"
 // Define file size limits in MB
 const FILE_SIZE_LIMITS_MB = {
   free: 10,
+  trial: 25,
   standard: 50,
-  premium: 250
+  premium: 50
 };
 
 export async function GET() {
@@ -44,8 +45,9 @@ export async function GET() {
     const usageCount = user.usage.length;
     const planLimits = {
       free: 3,
+      trial: 25,
       standard: 50,
-      premium: 200
+      premium: 50
     };
     
     // Get user's file size limit in MB

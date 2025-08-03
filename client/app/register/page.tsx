@@ -1,4 +1,3 @@
-// app/register/page.tsx
 "use client";
 
 import { useState } from 'react';
@@ -12,12 +11,14 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false); // Adăugăm starea pentru succes
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('Mesaj de eroare specific');
+    setError(null);
+    setSuccess(false);
 
     // Validări de bază
     if (password !== confirmPassword) {
@@ -48,8 +49,20 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Eroare la înregistrare');
       }
 
-      // După înregistrare cu succes, redirecționează către login
-      router.push('/login?registered=true');
+      // Afișează mesaj de succes
+      setSuccess(true);
+      setError(null);
+      
+      // Resetează formularul
+      setName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      
+      // Redirecționează automat după 2 secunde
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
     } catch (err: any) {
       setError(err.message || 'Eroare la înregistrare');
     } finally {
@@ -67,6 +80,12 @@ export default function RegisterPage() {
             {error}
           </div>
         )}
+        
+        {success && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-center">
+            Cont creat cu succes! Vei fi redirecționat către pagina de autentificare...
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -78,6 +97,7 @@ export default function RegisterPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
               placeholder="Prenume Nume"
               required
+              disabled={loading || success}
             />
           </div>
 
@@ -90,6 +110,7 @@ export default function RegisterPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
               placeholder="email@exemplu.com"
               required
+              disabled={loading || success}
             />
           </div>
 
@@ -103,6 +124,7 @@ export default function RegisterPage() {
               placeholder="••••••••"
               required
               minLength={6}
+              disabled={loading || success}
             />
             <p className="mt-1 text-xs text-gray-500">Minim 6 caractere</p>
           </div>
@@ -116,6 +138,7 @@ export default function RegisterPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
               placeholder="••••••••"
               required
+              disabled={loading || success}
             />
           </div>
 
@@ -125,6 +148,7 @@ export default function RegisterPage() {
               id="terms"
               required
               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              disabled={loading || success}
             />
             <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
               Sunt de acord cu <Link href="/termeni" className="text-blue-600 hover:underline">Termenii și Condițiile</Link>
@@ -133,9 +157,9 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || success}
             className={`w-full ${
-              loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+              loading || success ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
             } text-white font-semibold py-2 rounded-md transition flex items-center justify-center`}
           >
             {loading ? (
@@ -147,7 +171,7 @@ export default function RegisterPage() {
                 Se încarcă...
               </>
             ) : (
-              'Înregistrează-te'
+              success ? 'Cont creat!' : 'Înregistrează-te'
             )}
           </button>
         </form>

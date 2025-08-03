@@ -43,6 +43,8 @@ export async function POST(request: Request) {
         password: hashedPassword,
         role: 'personal',
         emailVerified: new Date(),
+        subscription: 'free',
+        trialOffered: false // Marcam că nu am oferit încă trial
       }
     });
     

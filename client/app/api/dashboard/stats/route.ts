@@ -33,11 +33,14 @@ export async function GET() {
     // Calculate storage limit based on subscription
     let storageLimitBytes: number;
     switch (user.subscription) {
-      case 'premium':
+      case 'premium'  :
         storageLimitBytes = 1024 * 1024 * 1024; // 1 GB
         break;
       case 'standard':
         storageLimitBytes = 250 * 1024 * 1024; // 250 MB
+        break;
+      case 'trial':
+        storageLimitBytes = 100 * 1024 * 1024; // 100 MB
         break;
       default: // free
         storageLimitBytes = 15 * 1024 * 1024; // 15 MB

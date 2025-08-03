@@ -3,6 +3,7 @@ import CredentialsProvider, { CredentialsConfig } from "next-auth/providers/cred
 import { CredentialInput } from "next-auth/providers";
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcrypt';
+import { getTrialDaysLeft } from '@/lib/auth';
 
 // Definim un tip extins pentru User
 interface CustomUser extends User {
@@ -10,6 +11,8 @@ interface CustomUser extends User {
   role?: string | null;
   subscription?: string | null;
   image?: string | null;
+  trialOffered?: boolean;
+  trialExpires?: string | null;
 }
 
 // Definim tipul pentru credentialele noastre
@@ -48,7 +51,9 @@ export const authOptions: AuthOptions = {
           email: user.email,
           role: user.role || null,
           subscription: user.subscription || null,
-          image: user.image || null
+          image: user.image || null,
+          trialOffered: user.trialOffered || false,
+          trialExpires: user.trialExpires || null
         } as CustomUser;
       }
     }) as CredentialsConfig<CustomCredentials>
@@ -59,7 +64,31 @@ export const authOptions: AuthOptions = {
         token.id = user.id;
         token.role = (user as CustomUser).role;
         token.subscription = (user as CustomUser).subscription;
+        token.trialOffered = (user as CustomUser).trialOffered;
+        token.trialExpires = (user as CustomUser).trialExpires;
       }
+      
+      // Verificăm dacă trial-ul a expirat
+      if (token.subscription === 'trial' && token.trialExpires) {
+        const now = new Date();
+        const trialExpires = new Date(token.trialExpires);
+        
+        if (now > trialExpires) {
+          // Actualizăm utilizatorul la abonament free
+          await prisma.user.update({
+            where: { id: token.id as string },
+            data: { 
+              subscription: 'free',
+              trialExpires: null
+            }
+          });
+          
+          // Actualizăm token-ul
+          token.subscription = 'free';
+          token.trialExpires = null;
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {
@@ -72,7 +101,9 @@ export const authOptions: AuthOptions = {
             subscription: true,
             name: true,
             email: true,
-            image: true
+            image: true,
+            trialOffered: true,
+            trialExpires: true
           }
         });
 
@@ -91,7 +122,7 @@ export const authOptions: AuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET!,
   session: {
-    strategy: "jwt" as SessionStrategy // Tip explicit
+    strategy: "jwt" as SessionStrategy
   }
 };
 

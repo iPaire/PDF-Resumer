@@ -1,18 +1,31 @@
-// app/login/page.tsx
 "use client";
 
-import { useState , useEffect} from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
   const router = useRouter();
- const [registered, setRegistered] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Verifică dacă există parametrul 'registered' în URL
+    if (searchParams.get('registered') === 'true') {
+      setRegistered(true);
+      
+      // Ascunde mesajul după 5 secunde
+      const timer = setTimeout(() => {
+        setRegistered(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +40,12 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError('Date de autentificare incorecte');
+        // Mesaje de eroare mai specifice
+        if (result.error === 'CredentialsSignin') {
+          setError('Email sau parolă incorectă');
+        } else {
+          setError(result.error);
+        }
       } else {
         router.push('/dashboard');
       }
@@ -73,6 +91,7 @@ export default function LoginPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
               placeholder="email@exemplu.com"
               required
+              disabled={loading}
             />
           </div>
 
@@ -86,6 +105,7 @@ export default function LoginPage() {
               placeholder="••••••••"
               required
               minLength={6}
+              disabled={loading}
             />
           </div>
 
@@ -123,6 +143,7 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleSignIn}
             className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-2.5 rounded-md hover:bg-gray-50 transition cursor-pointer"
+            disabled={loading}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
@@ -138,6 +159,7 @@ export default function LoginPage() {
           <button
             onClick={handleFacebookSignIn}
             className="w-full flex items-center justify-center gap-3 bg-[#1877F2] text-white py-2.5 rounded-md hover:bg-[#166FE5] transition cursor-pointer"
+            disabled={loading}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -150,6 +172,7 @@ export default function LoginPage() {
           <button 
             onClick={() => router.push('/reset-password')}
             className="text-blue-600 hover:text-blue-800 text-sm cursor-pointer"
+            disabled={loading}
           >
             Ai uitat parola?
           </button>
@@ -160,6 +183,7 @@ export default function LoginPage() {
               <button 
                 onClick={() => router.push('/register')}
                 className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                disabled={loading}
               >
                 Înregistrează-te
               </button>

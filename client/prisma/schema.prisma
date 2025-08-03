@@ -1,3 +1,4 @@
+// schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -26,6 +27,10 @@ model User {
   accounts      Account[]
   sessions      Session[]
   image         String?
+  summaries     Summary[] // Adăugat pentru relația cu Summary
+
+  trialOffered  Boolean?  @default(false)
+  trialExpires  DateTime? @db.Timestamp(6)
 }
 
 model Usage {
@@ -36,24 +41,25 @@ model Usage {
 }
 
 model Course {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title       String
   description String?
-  userId      String    @db.Uuid
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  files       File[]    @relation("CourseFiles")
-  summaries   Summary[]
+  userId      String       @db.Uuid
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files       File[]       @relation("CourseFiles")
+  summaries   Summary[]    @relation("CourseSummaries")
   quizzes     Quiz[]
   cheatSheets CheatSheet[]
-  createdAt   DateTime  @default(now()) @db.Timestamp(6)
-  updatedAt   DateTime  @default(now()) @db.Timestamp(6)
+  createdAt   DateTime     @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime     @default(now()) @db.Timestamp(6)
 }
 
 model Summary {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   content   String
-  courseId  String   @db.Uuid
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courses   Course[] @relation("CourseSummaries")
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @db.Timestamp(6)
 }
 

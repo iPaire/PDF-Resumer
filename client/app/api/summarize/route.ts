@@ -129,9 +129,9 @@ export async function POST(request: NextRequest) {
 
     // Determine AI model based on subscription
     const isPremium = user.subscription === 'premium';
-    const summaryModel = isPremium ? 'gpt-4o' : 'gpt-3.5-turbo-16k';
+    const summaryModel = isPremium ? 'gpt-3.5-turbo-16k' : 'gpt-3.5-turbo-16k';
     const maxTokens = isPremium ? 6000 : 3000;
-    const temperature = isPremium ? 0.3 : 0.4;
+    const temperature = isPremium ? 0.5 : 0.4;
 
     // Detect document language
     const languageDetectionPrompt = `
@@ -220,7 +220,7 @@ Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu ti
     if (!isFreeUser) {
       // Determine number of questions based on subscription
       const numQuestions = user.subscription === 'premium' ? 20 : 5;
-      const quizModel = user.subscription === 'premium' ? 'gpt-4o' : 'gpt-3.5-turbo';
+      const quizModel = user.subscription === 'premium' ? 'gpt-3.5-turbo' : 'gpt-3.5-turbo';
       const quizMaxTokens = user.subscription === 'premium' ? 3000 : 1500;
 
       // PROMPT ACTUALIZAT pentru quiz - specifică limba

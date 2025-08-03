@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google';
 import AuthProvider from './providers/SessionProvider';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { TrialProvider } from '@/context/TrialContext';
+import TrialModal from '@/components/TrialModal';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,13 +18,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ro" className="h-full">
       <body className={`${inter.className} bg-gray-50 text-gray-900 min-h-full flex flex-col`}>
         <AuthProvider>
-          <div className="flex flex-col min-h-screen w-full">
-            <Navbar />
-            <main className="flex-grow pt-10 bg-gray-50 w-full max-w-full overflow-x-hidden">
-              {children}
-            </main>
-            <Footer />
-          </div>
+          <TrialProvider>
+            <div className="flex flex-col min-h-screen w-full">
+              <Navbar />
+              <main className="flex-grow pt-10 bg-gray-50 w-full max-w-full overflow-x-hidden">
+                {children}
+              </main>
+              <Footer />
+              <TrialModal />
+            </div>
+          </TrialProvider>
         </AuthProvider>
       </body>
     </html>

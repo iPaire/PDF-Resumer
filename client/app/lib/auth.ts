@@ -1,4 +1,3 @@
-// lib/auth.ts
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
@@ -46,4 +45,19 @@ export const comparePasswords = async (
   hashedPassword: string
 ): Promise<boolean> => {
   return await bcrypt.compare(plainPassword, hashedPassword);
+};
+
+/**
+ * Calculează numărul de zile rămase până la expirarea trial-ului
+ * @param trialExpires Data de expirare a trial-ului
+ * @returns Numărul de zile rămase
+ */
+export const getTrialDaysLeft = (trialExpires: string | Date | null): number => {
+  if (!trialExpires) return 0;
+  
+  const now = new Date();
+  const expiresDate = new Date(trialExpires);
+  const diffTime = expiresDate.getTime() - now.getTime();
+  
+  return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 };

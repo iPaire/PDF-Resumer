@@ -391,48 +391,55 @@ export default function SummariesPage() {
 
       {/* Modal pentru asignare la curs */}
       {showCourseModal && selectedSummary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium mb-4">Asignează rezumatul la curs</h3>
-            <p className="mb-2"><span className="font-semibold">Rezumat:</span> {selectedSummary.name}</p>
-            
-            <div className="mb-4">
-              <label className="block mb-2">Selectează curs:</label>
-              <select 
-                className="w-full p-2 border rounded"
-                onChange={(e) => {
-                  if (e.target.value === 'new') {
-                    createQuickCourse().then(newCourseId => {
-                      if (newCourseId) {
-                        assignToCourse(selectedSummary.id, newCourseId);
-                      }
-                    });
-                  } else {
-                    assignToCourse(selectedSummary.id, e.target.value || null);
-                  }
-                }}
-              >
-                <option value="">-- Fără curs --</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>
-                    {course.title}
-                  </option>
-                ))}
-                <option value="new">+ Creează curs nou</option>
-              </select>
-            </div>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowCourseModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded"
-              >
-                Anulează
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-nunito">
+    <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
+      <h3 className="text-2xl font-semibold text-gray-800 mb-5">
+        Asignează rezumatul la curs
+      </h3>
+
+      <p className="text-base text-gray-700 mb-5">
+        <span className="font-semibold">Rezumat:</span> {selectedSummary.name}
+      </p>
+
+      <div className="mb-6">
+        <label className="block text-base font-medium text-gray-700 mb-2">
+          Selectează curs:
+        </label>
+        <select
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-150"
+          onChange={(e) => {
+            if (e.target.value === 'new') {
+              createQuickCourse().then((newCourseId) => {
+                if (newCourseId) {
+                  assignToCourse(selectedSummary.id, newCourseId);
+                }
+              });
+            } else {
+              assignToCourse(selectedSummary.id, e.target.value || null);
+            }
+          }}
+        >
+          <option value="">-- Fără curs --</option>
+          {courses.map((course) => (
+            <option key={course.id} value={course.id}>
+              {course.title}
+            </option>
+          ))}
+          <option value="new">➕ Creează curs nou</option>
+        </select>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowCourseModal(false)}
+          className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors duration-150 text-base"
+        >
+          Anulează
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

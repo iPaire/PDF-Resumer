@@ -1,52 +1,53 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import prisma from '@/lib/prisma'
 import { authOptions } from '@/lib/authOptions'
-import { combineSummaries, generateAIResponse } from '@/lib/ai'
+import { generateAIResponse } from '@/lib/ai'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions)
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized' })
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session || !session.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const courseId = req.query.id as string
+  const courseId = params.id
 
-  if (req.method === 'POST') {
-    try {
-      // Get course with summaries
-      const course = await prisma.course.findUnique({
-        where: { id: courseId },
-        include: { summaries: true }
-      })
-
-      if (!course) {
-        return res.status(404).json({ error: 'Course not found' })
+  try {
+    // Obținem cursul cu toate rezumatele asociate
+    const course = await prisma.course.findUnique({
+      where: { 
+        id: courseId,
+        userId: session.user.id 
+      },
+      include: { 
+        summaries: true 
       }
+    })
 
-      // Combine all summaries into one text
-      const combinedContent = combineSummaries(course.summaries)
-
-      // Generate full course summary using AI
-      const aiResponse = await generateAIResponse(
-        `Creează un rezumat detaliat al întregului curs bazat pe următoarele rezumate individuale:\n\n${combinedContent}`
-      )
-
-      // Save the generated summary to the course
-      const updatedCourse = await prisma.course.update({
-        where: { id: courseId },
-        data: { fullSummary: aiResponse }
-      })
-
-      return res.status(200).json({ summary: updatedCourse.fullSummary })
-    } catch (error) {
-      console.error('Error generating course summary:', error)
-      return res.status(500).json({ error: 'Failed to generate summary' })
+    if (!course) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 })
     }
-  }
 
-  return res.status(405).json({ error: 'Method not allowed' })
+    // Combinăm toate rezumatele într-un singur text
+    const combinedContent = course.summaries
+      .map(s => `## ${new Date(s.createdAt).toLocaleDateString('ro-RO')}\n\n${s.content}`)
+      .join('\n\n')
+
+    // Generăm rezumatul complet folosind AI
+    const aiResponse = await generateAIResponse(
+      `Creează un rezumat detaliat și coerent al întregului curs bazat pe următoarele rezumate individuale. 
+      Rezumatul final trebuie să fie bine structurat și să acopere toate subiectele importante:\n\n${combinedContent}`
+    )
+
+    // Actualizăm cursul cu noul rezumat complet
+    const updatedCourse = await prisma.course.update({
+      where: { id: courseId },
+      data: { fullSummary: aiResponse }
+    })
+
+    return NextResponse.json({ summary: updatedCourse.fullSummary })
+  } catch (error) {
+    console.error('Error generating course summary:', error)
+    return NextResponse.json({ error: 'Failed to generate summary' }, { status: 500 })
+  }
 }
