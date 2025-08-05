@@ -52,8 +52,9 @@ export async function POST(request: NextRequest) {
     const usageCount = user.usage.length;
     const planLimits = {
       free: 3,
-      standard: 50,
-      premium: 200
+      trial: 10,
+      standard: 25,
+      premium: 50
     };
     const userLimit = planLimits[user.subscription as keyof typeof planLimits] || 0;
 
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
     // Determine AI model based on subscription
     const isPremium = user.subscription === 'premium';
     const summaryModel = isPremium ? 'gpt-3.5-turbo-16k' : 'gpt-3.5-turbo-16k';
-    const maxTokens = isPremium ? 6000 : 3000;
+    const maxTokens = isPremium ? 4000 : 3000;
     const temperature = isPremium ? 0.5 : 0.4;
 
     // Detect document language
@@ -212,6 +213,7 @@ Folosește un stil prietenos, clar, accesibil și organizat în secțiuni, cu ti
     });
 
     const summary = completion.choices[0]?.message?.content?.trim() || 'Nu s-a putut genera conținutul.';
+     const summaryContent = completion.choices[0]?.message?.content?.trim() || 'Nu s-a putut genera conținutul.';
 
     let quiz: QuizQuestion[] = [];
 
@@ -284,14 +286,23 @@ Format așteptat (JSON):
         size: file.size,
         pages: numpages,
         characters: text.length,
-        summary: summary,
-        quiz: quiz
+        summary: summaryContent,
+        quiz: quiz,
+        language: documentLanguage
+      }
+    });
+    const summaryTitle = `Rezumat ${filename.substring(0, 30)}`;
+    await prisma.summary.create({
+      data: {
+        title: summaryTitle,
+        content: summaryContent,
+        userId: user.id,
       }
     });
 
     return new Response(
       JSON.stringify({
-        summary,
+        summary: summaryContent,
         quiz,
         fileID: fileRecord.id,
         meta: {
