@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { Download, ArrowLeft, Printer, Trash2 } from 'react-feather';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,14 +11,23 @@ import rehypeRaw from 'rehype-raw';
 
 type Summary = {
   id: string;
-  name: string;
+  title: string;
+  content: string;
   createdAt: string;
-  size: string;
-  pages: number;
-  characters: number;
-  summary: string;
-  language: string;
-  isPremium: boolean;
+  userId: string;
+  coursesCount: number;
+  courses: Array<{
+    id: string;
+    title: string;
+  }>;
+  // Backward compatibility properties
+  name?: string;
+  summary?: string;
+  size?: string;
+  pages?: number;
+  characters?: number;
+  language?: string;
+  isPremium?: boolean;
 };
 
 // Funcție îmbunătățită pentru formatarea Markdown
@@ -85,8 +94,12 @@ const parsePremiumContent = (content: string) => {
   return sections;
 };
 
-export default function SummaryDetailPage({ params }: { params: { id: string } }) {
-  const { data: session } = useSession();
+export default function SummaryDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Unwrap params using React.use()
+  const resolvedParams = use(params);
+  const { id } = resolvedParams;
+  
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,27 +107,48 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
   const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
-    if (session) {
+    console.log('Session status:', status);
+    console.log('Session data:', session);
+    
+    if (status === 'loading') {
+      // Session is still loading
+      console.log('Session is loading...');
+      return;
+    }
+    
+    if (status === 'authenticated' && session) {
+      console.log('User authenticated, fetching summary...');
       fetchSummary();
-    } else {
+    } else if (status === 'unauthenticated') {
+      console.log('User not authenticated');
       setIsLoading(false);
       setError('Trebuie să fii autentificat pentru a vizualiza acest rezumat.');
     }
-  }, [session, params.id]);
+  }, [session, status, id]);
 
   const fetchSummary = async () => {
     try {
-      const response = await fetch(`/api/summaries/${params.id}`);
+      console.log('Making request to:', `/api/summaries/${id}`);
+      const response = await fetch(`/api/summaries/${id}`);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       const data = await response.json();
+      console.log('Response data:', data);
       
       if (response.ok) {
-        // Aplică formatarea avansată Markdown
-        data.summary = formatMarkdownSpacing(data.summary);
+        // Apply formatting to content
+        const content = data.content || data.summary || '';
+        data.content = formatMarkdownSpacing(content);
+        data.summary = data.content; // For backward compatibility
         setSummary(data);
+        console.log('Summary set successfully');
       } else {
+        console.log('Error from API:', data.error);
         setError(data.error || 'Eroare la încărcarea rezumatului');
       }
     } catch (error) {
+      console.error('Fetch error:', error);
       setError('Eroare de conexiune');
     } finally {
       setIsLoading(false);
@@ -125,14 +159,20 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
     if (!summary) return;
     
     try {
-      const response = await fetch(`/api/summaries/${params.id}/download`);
+      const response = await fetch(`/api/summaries/${id}/download`);
+      if (response.status === 403) {
+        const errorData = await response.json();
+        alert(errorData.error || 'Utilizatorii gratuit nu pot descărca rezumate');
+        return;
+      }
       if (!response.ok) throw new Error('Descărcarea rezumatului a eșuat');
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${summary.name.replace('.pdf', '')}_summary.txt`;
+      const filename = (summary.title || summary.name || 'rezumat').replace('.pdf', '');
+      a.download = `${filename}_summary.txt`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -150,7 +190,7 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
     }
 
     try {
-      const response = await fetch(`/api/summaries/${params.id}`, {
+      const response = await fetch(`/api/summaries/${id}`, {
         method: 'DELETE'
       });
 
@@ -197,9 +237,11 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
       } else if (currentQuestion && line.trim().startsWith("- Răspuns:")) {
         // Extrage răspunsul
         currentQuestion.answer = line.replace("- Răspuns:", "").trim();
-      } else if (currentQuestion) {
+      } else if (currentQuestion && line.trim()) {
         // Adaugă la întrebarea curentă dacă nu e răspuns
-        currentQuestion.question += " " + line.trim();
+        if (!line.trim().startsWith("- Răspuns:")) {
+          currentQuestion.question += " " + line.trim();
+        }
       }
     }
 
@@ -257,15 +299,17 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
   }
 
   const lang = summary.language || 'ro';
+  const displayName = summary.title || summary.name || 'Untitled';
+  const displayContent = summary.content || summary.summary || 'Nu există conținut disponibil';
   
   // Detectare îmbunătățită a conținutului premium
   const hasPremiumStructure = 
-    /## 5\. Diagrame conceptuale/.test(summary.summary) || 
-    /5\. Diagrame conceptuale/.test(summary.summary);
+    /## 5\. Diagrame conceptuale/.test(displayContent) || 
+    /5\. Diagrame conceptuale/.test(displayContent);
   
   const isPremium = summary.isPremium && hasPremiumStructure;
   
-  const sections = isPremium ? parsePremiumContent(summary.summary) : null;
+  const sections = isPremium ? parsePremiumContent(displayContent) : null;
   const assessmentQuestions = sections?.["8. Întrebări de autoevaluare"] 
     ? parseAssessmentQuestions(sections["8. Întrebări de autoevaluare"])
     : [];
@@ -284,10 +328,24 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
           
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{summary.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{displayName}</h1>
               <p className="mt-2 text-gray-600">
-                {lang === 'ro' ? 'Generat pe' : 'Generated on'} {new Date(summary.createdAt).toLocaleDateString(lang === 'ro' ? 'ro-RO' : 'en-US')} • 
-                {summary.pages} {lang === 'ro' ? 'pagini' : 'pages'} • {summary.characters.toLocaleString()} {lang === 'ro' ? 'caractere' : 'characters'}
+                {lang === 'ro' ? 'Creat pe' : 'Created on'} {new Date(summary.createdAt).toLocaleDateString(lang === 'ro' ? 'ro-RO' : 'en-US')}
+                {summary.pages && (
+                  <>
+                    {' • '}{summary.pages} {lang === 'ro' ? 'pagini' : 'pages'}
+                  </>
+                )}
+                {summary.characters && (
+                  <>
+                    {' • '}{summary.characters.toLocaleString()} {lang === 'ro' ? 'caractere' : 'characters'}
+                  </>
+                )}
+                {summary.coursesCount > 0 && (
+                  <>
+                    {' • '}{summary.coursesCount} {lang === 'ro' ? 'cursuri' : 'courses'}
+                  </>
+                )}
                 {isPremium && <span className="ml-2 bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">PREMIUM</span>}
               </p>
             </div>
@@ -492,7 +550,7 @@ export default function SummaryDetailPage({ params }: { params: { id: string } }
                     },
                   }}
                 >
-                  {summary.summary}
+                  {displayContent}
                 </ReactMarkdown>
               )}
             </div>

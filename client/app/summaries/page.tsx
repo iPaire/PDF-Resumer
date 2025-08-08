@@ -8,13 +8,20 @@ import Link from 'next/link';
 
 type Summary = {
   id: string;
-  name: string;
+  title: string;
+  content: string;
   createdAt: string;
-  size: string;
-  pages: number;
-  characters: number;
-  summary: string;
-  courseId: string | null;
+  coursesCount: number;
+  courses: Array<{
+    id: string;
+    title: string;
+  }>;
+  name?: string;
+  size?: string;
+  pages?: number;
+  characters?: number;
+  summary?: string;
+  courseId?: string | null;
 };
 
 type Course = {
@@ -46,15 +53,23 @@ export default function SummariesPage() {
       
       if (summariesRes.ok) {
         const summariesData = await summariesRes.json();
-        setSummaries(summariesData);
+        setSummaries(Array.isArray(summariesData.summaries) ? summariesData.summaries : []);
+      } else {
+        console.error('Failed to fetch summaries');
+        setSummaries([]);
       }
       
       if (coursesRes.ok) {
         const coursesData = await coursesRes.json();
-        setCourses(coursesData);
+        setCourses(Array.isArray(coursesData) ? coursesData : []);
+      } else {
+        console.error('Failed to fetch courses');
+        setCourses([]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+      setSummaries([]);
+      setCourses([]);
     } finally {
       setIsLoading(false);
     }
@@ -158,11 +173,10 @@ export default function SummariesPage() {
     setShowCourseModal(true);
   };
 
-  const filteredSummaries = summaries.filter(summary => 
-    summary.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSummaries = Array.isArray(summaries) ? summaries.filter(summary => 
+    (summary.title || summary.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  ) : [];
 
-  // Check if user is free tier
   const isFreeUser = session?.user?.subscription === 'free';
 
   if (isLoading) {
@@ -226,13 +240,13 @@ export default function SummariesPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nume Fișier
+                        Titlu
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Dată Generare
+                        Dată Creare
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Mărime
+                        Cursuri
                       </th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Acțiuni
@@ -250,7 +264,7 @@ export default function SummariesPage() {
                           <div className="flex items-center">
                             <FileText className="flex-shrink-0 h-5 w-5 text-gray-400 mr-2" />
                             <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                              {summary.name}
+                              {summary.title || summary.name || 'Untitled'}
                             </div>
                           </div>
                         </td>
@@ -258,7 +272,7 @@ export default function SummariesPage() {
                           {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {summary.size}
+                          {summary.coursesCount ? `${summary.coursesCount} cursuri` : 'Niciun curs'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <Link
@@ -274,7 +288,7 @@ export default function SummariesPage() {
                               className="text-blue-600 hover:text-blue-900 mr-3"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDownload(summary.id, summary.name);
+                                handleDownload(summary.id, summary.title || summary.name || 'summary');
                               }}
                             >
                               <Download className="w-4 h-4" />
@@ -328,54 +342,79 @@ export default function SummariesPage() {
           </div>
           
           <div className="lg:col-span-1">
-            <div className="bg-white shadow rounded-lg overflow-hidden h-full">
+            <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">
                   {selectedSummary ? 'Rezumat Selectat' : 'Previzualizare Rezumat'}
                 </h2>
               </div>
               
-              <div className="p-6 h-[calc(100%-65px)] flex flex-col">
+              <div className="p-6">
                 {selectedSummary ? (
-                  <>
-                    <div className="mb-4">
-                      <h3 className="text-lg font-medium text-gray-900">{selectedSummary.name}</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 truncate">
+                        {selectedSummary.title || selectedSummary.name || 'Untitled'}
+                      </h3>
                       <p className="text-sm text-gray-500 mt-1">
-                        Generat pe {new Date(selectedSummary.createdAt).toLocaleString('ro-RO')}
+                        Creat pe {new Date(selectedSummary.createdAt).toLocaleString('ro-RO')}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {selectedSummary.pages} pagini, {selectedSummary.characters.toLocaleString()} caractere
-                      </p>
+                      
+                      {selectedSummary.coursesCount > 0 && (
+                        <p className="text-sm text-gray-500">
+                          Asignat la {selectedSummary.coursesCount} cursuri: {' '}
+                          {selectedSummary.courses.map(course => course.title).join(', ')}
+                        </p>
+                      )}
+                      
+                      {selectedSummary.pages && selectedSummary.characters && (
+                        <p className="text-sm text-gray-500">
+                          {selectedSummary.pages} pagini, {selectedSummary.characters.toLocaleString()} caractere
+                        </p>
+                      )}
                     </div>
                     
-                    <div className="bg-gray-50 p-4 rounded-lg flex-grow overflow-y-auto">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                        {selectedSummary.summary}
-                      </pre>
-                    </div>
-                    
-                    <div className="mt-4 flex justify-between">
+                    <div className="flex flex-col gap-3 pt-4">
                       <Link
                         href={`/summaries/${selectedSummary.id}`}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        <Eye className="-ml-1 mr-2 h-5 w-5" />
+                        <Eye className="mr-2 h-5 w-5" />
                         Vezi întreg rezumatul
                       </Link>
                       
                       {!isFreeUser && (
                         <button
-                          onClick={() => handleDownload(selectedSummary.id, selectedSummary.name)}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          onClick={() => handleDownload(
+                            selectedSummary.id, 
+                            selectedSummary.title || selectedSummary.name || 'summary'
+                          )}
+                          className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
-                          <Download className="-ml-1 mr-2 h-5 w-5" />
-                          Descarcă
+                          <Download className="mr-2 h-5 w-5" />
+                          Descarcă TXT
                         </button>
                       )}
+                      
+                      <button
+                        onClick={() => openAssignModal(selectedSummary)}
+                        className="inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        <FolderPlus className="mr-2 h-5 w-5" />
+                        Asignează la curs
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDelete(selectedSummary.id)}
+                        className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <Trash2 className="mr-2 h-5 w-5" />
+                        Șterge rezumat
+                      </button>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                  <div className="flex flex-col items-center justify-center text-center py-8">
                     <FileText className="mx-auto h-16 w-16 text-gray-400" />
                     <h3 className="mt-4 text-lg font-medium text-gray-900">Selectează un rezumat</h3>
                     <p className="mt-2 text-sm text-gray-500">
@@ -389,57 +428,56 @@ export default function SummariesPage() {
         </div>
       </div>
 
-      {/* Modal pentru asignare la curs */}
       {showCourseModal && selectedSummary && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-nunito">
-    <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
-      <h3 className="text-2xl font-semibold text-gray-800 mb-5">
-        Asignează rezumatul la curs
-      </h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-nunito">
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-5">
+              Asignează rezumatul la curs
+            </h3>
 
-      <p className="text-base text-gray-700 mb-5">
-        <span className="font-semibold">Rezumat:</span> {selectedSummary.name}
-      </p>
+            <p className="text-base text-gray-700 mb-5">
+              <span className="font-semibold">Rezumat:</span> {selectedSummary.title || selectedSummary.name || 'Untitled'}
+            </p>
 
-      <div className="mb-6">
-        <label className="block text-base font-medium text-gray-700 mb-2">
-          Selectează curs:
-        </label>
-        <select
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-150"
-          onChange={(e) => {
-            if (e.target.value === 'new') {
-              createQuickCourse().then((newCourseId) => {
-                if (newCourseId) {
-                  assignToCourse(selectedSummary.id, newCourseId);
-                }
-              });
-            } else {
-              assignToCourse(selectedSummary.id, e.target.value || null);
-            }
-          }}
-        >
-          <option value="">-- Fără curs --</option>
-          {courses.map((course) => (
-            <option key={course.id} value={course.id}>
-              {course.title}
-            </option>
-          ))}
-          <option value="new">➕ Creează curs nou</option>
-        </select>
-      </div>
+            <div className="mb-6">
+              <label className="block text-base font-medium text-gray-700 mb-2">
+                Selectează curs:
+              </label>
+              <select
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-150"
+                onChange={(e) => {
+                  if (e.target.value === 'new') {
+                    createQuickCourse().then((newCourseId) => {
+                      if (newCourseId) {
+                        assignToCourse(selectedSummary.id, newCourseId);
+                      }
+                    });
+                  } else {
+                    assignToCourse(selectedSummary.id, e.target.value || null);
+                  }
+                }}
+              >
+                <option value="">-- Fără curs --</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title}
+                  </option>
+                ))}
+                <option value="new">➕ Creează curs nou</option>
+              </select>
+            </div>
 
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowCourseModal(false)}
-          className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors duration-150 text-base"
-        >
-          Anulează
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowCourseModal(false)}
+                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors duration-150 text-base"
+              >
+                Anulează
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

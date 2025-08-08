@@ -1,130 +1,211 @@
 // app/api/summaries/[id]/route.ts
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const fileId = params.id;
-
+export async function GET(
+  req: NextRequest,
+  context: { params: { id: string } }
+) {
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
-    return new Response(JSON.stringify({ error: 'Neautorizat' }), { 
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
   }
 
+  const summaryId = context.params.id;
+  const userId = session.user.id;
+
   try {
-    const file = await prisma.file.findUnique({
-      where: { id: fileId },
-      select: {
-        id: true,
-        name: true,
-        createdAt: true,
-        size: true,
-        pages: true,
-        characters: true,
-        summary: true,
-        userId: true
+    console.log('Fetching summary:', summaryId, 'for user:', userId);
+
+    // Obține rezumatul cu verificarea că aparține utilizatorului
+    const summary = await prisma.summary.findFirst({
+      where: { 
+        id: summaryId,
+        userId: userId // Verifică că rezumatul aparține utilizatorului
+      },
+      include: {
+        courses: {
+          include: {
+            course: {
+              select: {
+                id: true,
+                title: true
+              }
+            }
+          }
+        }
       }
     });
 
-    if (!file) {
-      return new Response(JSON.stringify({ error: 'Rezumatul nu a fost găsit' }), { 
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
+    if (!summary) {
+      return NextResponse.json({ 
+        error: "Rezumatul nu a fost găsit sau nu ai permisiunea să îl vizualizezi" 
+      }, { status: 404 });
     }
 
-    if (file.userId !== session.user.id) {
-      return new Response(JSON.stringify({ error: 'Nu ai acces la acest rezumat' }), { 
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Formatare răspuns
-    const responseData = {
-      id: file.id,
-      name: file.name,
-      createdAt: file.createdAt.toISOString(),
-      size: formatFileSize(file.size),
-      pages: file.pages,
-      characters: file.characters,
-      summary: file.summary
+    // Formatează răspunsul pentru frontend
+    const formattedSummary = {
+      id: summary.id,
+      title: summary.title,
+      content: summary.content,
+      createdAt: summary.createdAt,
+      userId: summary.userId,
+      coursesCount: summary.courses.length,
+      courses: summary.courses.map(cs => ({
+        id: cs.course.id,
+        title: cs.course.title
+      })),
+      // Pentru compatibilitate cu codul vechi
+      name: summary.title,
+      summary: summary.content
     };
 
-    return new Response(JSON.stringify(responseData), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.log('Summary found and formatted');
+    return NextResponse.json(formattedSummary);
 
   } catch (error) {
-    console.error('Eroare API:', error);
-    return new Response(JSON.stringify({ error: 'Eroare server' }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error("Failed to fetch summary:", error);
+    return NextResponse.json({ 
+      error: "Eroare server la obținerea rezumatului" 
+    }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const fileId = params.id;
-
+export async function DELETE(
+  request: NextRequest, 
+  { params }: { params: { id: string } }
+) {
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
-    return new Response(JSON.stringify({ error: 'Neautorizat' }), { 
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
   }
 
+  const summaryId = params.id;
+  const userId = session.user.id;
+
   try {
-    // Verificăm dacă rezumatul există și aparține utilizatorului
-    const file = await prisma.file.findUnique({
-      where: { id: fileId },
-      select: { userId: true }
+    console.log('Attempting to delete summary:', summaryId, 'for user:', userId);
+
+    // Verifică că rezumatul există și aparține utilizatorului
+    const summary = await prisma.summary.findFirst({
+      where: { 
+        id: summaryId,
+        userId: userId
+      }
     });
 
-    if (!file) {
-      return new Response(JSON.stringify({ error: 'Rezumatul nu a fost găsit' }), { 
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
+    if (!summary) {
+      return NextResponse.json({ 
+        error: 'Rezumatul nu a fost găsit sau nu ai permisiunea să îl ștergi' 
+      }, { status: 404 });
     }
 
-    if (file.userId !== session.user.id) {
-      return new Response(JSON.stringify({ error: 'Nu ai permisiunea să ștergi acest rezumat' }), { 
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Ștergem rezumatul (care include și quiz-ul asociat)
-    await prisma.file.delete({
-      where: { id: fileId }
+    // Șterge asocierile cu cursurile mai întâi (dacă există)
+    await prisma.courseSummary.deleteMany({
+      where: { summaryId: summaryId }
     });
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
+    // Apoi șterge rezumatul
+    await prisma.summary.delete({
+      where: { id: summaryId }
     });
+
+    console.log('Summary deleted successfully:', summaryId);
+    return NextResponse.json({ success: true });
 
   } catch (error) {
     console.error('Eroare ștergere rezumat:', error);
-    return new Response(JSON.stringify({ error: 'Eroare server la ștergerea rezumatului' }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return NextResponse.json({ 
+      error: 'Eroare server la ștergerea rezumatului' 
+    }, { status: 500 });
   }
 }
 
-// Funcție helper pentru formatarea dimensiunii fișierului
-function formatFileSize(bytes: number) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
+  }
+
+  const summaryId = params.id;
+  const userId = session.user.id;
+
+  try {
+    const { courseId, title, content } = await request.json();
+
+    // Verifică că rezumatul există și aparține utilizatorului
+    const summary = await prisma.summary.findFirst({
+      where: { 
+        id: summaryId,
+        userId: userId
+      }
+    });
+
+    if (!summary) {
+      return NextResponse.json({ 
+        error: 'Rezumatul nu a fost găsit sau nu ai permisiunea să îl modifici' 
+      }, { status: 404 });
+    }
+
+    // Dacă se actualizează cursul
+    if (courseId !== undefined) {
+      // Șterge asocierile existente
+      await prisma.courseSummary.deleteMany({
+        where: { summaryId: summaryId }
+      });
+
+      // Adaugă noua asociere dacă courseId nu este null
+      if (courseId) {
+        // Verifică că cursul aparține utilizatorului
+        const course = await prisma.course.findFirst({
+          where: { 
+            id: courseId,
+            userId: userId
+          }
+        });
+
+        if (!course) {
+          return NextResponse.json({ 
+            error: 'Cursul nu a fost găsit sau nu ai permisiunea să îl folosești' 
+          }, { status: 404 });
+        }
+
+        await prisma.courseSummary.create({
+          data: {
+            courseId: courseId,
+            summaryId: summaryId
+          }
+        });
+      }
+    }
+
+    // Actualizează rezumatul dacă sunt furnizate title sau content
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+
+    if (Object.keys(updateData).length > 0) {
+      await prisma.summary.update({
+        where: { id: summaryId },
+        data: updateData
+      });
+    }
+
+    console.log('Summary updated successfully:', summaryId);
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Eroare actualizare rezumat:', error);
+    return NextResponse.json({ 
+      error: 'Eroare server la actualizarea rezumatului' 
+    }, { status: 500 });
+  }
 }

@@ -1,4 +1,3 @@
-// schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -27,7 +26,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   image         String?
-  summaries     Summary[] // Adăugat pentru relația cu Summary
+  summaries     Summary[]
 
   trialOffered  Boolean?  @default(false)
   trialExpires  DateTime? @db.Timestamp(6)
@@ -47,7 +46,7 @@ model Course {
   userId      String       @db.Uuid
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   files       File[]       @relation("CourseFiles")
-  summaries   Summary[]    @relation("CourseSummaries")
+  summaries   CourseSummary[] // Relație prin tabelă de joncțiune
   quizzes     Quiz[]
   cheatSheets CheatSheet[]
   createdAt   DateTime     @default(now()) @db.Timestamp(6)
@@ -56,12 +55,24 @@ model Course {
 
 model Summary {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title     String   @default("") // ADD THIS LINE ONLY
+  title     String   @default("")
   content   String
-  courses   Course[] @relation("CourseSummaries")
   userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses   CourseSummary[] // Relație prin tabelă de joncțiune
   createdAt DateTime @default(now()) @db.Timestamp(6)
+}
+
+// Tabelă de joncțiune explicită pentru many-to-many
+model CourseSummary {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId  String   @db.Uuid
+  summaryId String   @db.Uuid
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  summary   Summary  @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([courseId, summaryId]) // Un rezumat nu poate fi adăugat de două ori în același curs
 }
 
 model Quiz {

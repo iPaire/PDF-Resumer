@@ -149,6 +149,13 @@ export default function DashboardPage() {
     );
   }
 
+  /* {stats?.tokens !== undefined && (
+            <div className="mt-4 bg-indigo-50 p-3 rounded-lg inline-block">
+              <span className="font-medium text-indigo-800">Tokenuri disponibile: </span>   // asta vine dupa istoricul de activitati
+              <span className="font-bold text-indigo-900">{stats.tokens}</span>
+            </div>
+          )}*/ 
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -156,12 +163,6 @@ export default function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Bun venit, {session?.user?.name || 'Utilizator'}!</h1>
           <p className="mt-2 text-gray-600">Aici poți gestiona istoricul tău de activități.</p>
-          {stats?.tokens !== undefined && (
-            <div className="mt-4 bg-indigo-50 p-3 rounded-lg inline-block">
-              <span className="font-medium text-indigo-800">Tokenuri disponibile: </span>
-              <span className="font-bold text-indigo-900">{stats.tokens}</span>
-            </div>
-          )}
         </div>
 
         {/* Stats Cards */}
