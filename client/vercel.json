@@ -1,9 +1,13 @@
 {
   "build": {
     "env": {
-      "PRISMA_GENERATE_DATAPROXY": "false"
+      "PRISMA_GENERATE_DATAPROXY": "false",
+      "DATABASE_URL": "postgresql://user:pass@host.supabase.co:5432/postgres"
     }
   },
+    "env": {
+      "DATABASE_URL": "postgresql://user:pass@host.supabase.co:6543/postgres"
+    },
   "routes": [
     {
       "src": "/api/migrations/status",
