@@ -27,6 +27,8 @@ model User {
   sessions      Session[]
   image         String?
   summaries     Summary[]
+  quizzes       Quiz[]
+  cheatSheets   CheatSheet[]
 
   trialOffered  Boolean?  @default(false)
   trialExpires  DateTime? @db.Timestamp(6)
@@ -80,6 +82,8 @@ model Quiz {
   questions Json
   courseId  String   @db.Uuid
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid  // Fixed: Added @db.Uuid annotation
   createdAt DateTime @default(now()) @db.Timestamp(6)
 }
 
@@ -87,6 +91,8 @@ model CheatSheet {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   content   String
   courseId  String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid  // Fixed: Added @db.Uuid annotation
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @db.Timestamp(6)
 }

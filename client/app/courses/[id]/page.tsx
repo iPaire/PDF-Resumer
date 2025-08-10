@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Folder, Plus, FileText, Copy, BookOpen, File, CheckSquare, Clipboard, Search, Trash2, Edit } from 'react-feather';
+import { Folder, Plus, FileText, Copy, BookOpen, File, CheckSquare, Clipboard, Search, Trash2, Edit, ChevronDown, ChevronUp, Printer, RefreshCw, Loader , Download,X } from 'react-feather';
 
 type Summary = {
   id: string;
@@ -26,9 +26,26 @@ type Course = {
   updatedAt: string;
   summaries: Summary[];
   files: any[];
-  fullSummary?: string;
-  cheatSheet?: string;
-  quiz?: any[];
+};
+
+type FinalSummary = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  addedAt: string;
+};
+
+type CheatSheet = {
+  id: string;
+  content: string;
+  createdAt: string;
+};
+
+type Quiz = {
+  id: string;
+  content: any[];
+  createdAt: string;
 };
 
 export default function CoursePage() {
@@ -44,16 +61,13 @@ export default function CoursePage() {
   
   // Generation states
   const [fullSummary, setFullSummary] = useState('');
-  const [cheatSheet, setCheatSheet] = useState('');
-  const [quiz, setQuiz] = useState<any[]>([]);
   const [generating, setGenerating] = useState({
     summary: false,
     cheatSheet: false,
     quiz: false,
   });
   const [copied, setCopied] = useState({
-    fullSummary: false,
-    cheatSheet: false
+    fullSummary: false
   });
   const [copiedSummaryId, setCopiedSummaryId] = useState<string | null>(null);
   
@@ -70,6 +84,22 @@ export default function CoursePage() {
   const [selectedSummaryIds, setSelectedSummaryIds] = useState<string[]>([]);
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
 
+  // Final summary state
+  const [finalSummary, setFinalSummary] = useState<FinalSummary | null>(null);
+  
+  // Cheat sheets and quizzes
+  const [cheatSheets, setCheatSheets] = useState<CheatSheet[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [activeCheatSheet, setActiveCheatSheet] = useState<string | null>(null);
+  const [activeQuiz, setActiveQuiz] = useState<string | null>(null);
+  
+  // Success messages
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // Expandable sections
+  const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
+  const [activeMaterialTab, setActiveMaterialTab] = useState<'summary' | 'cheatsheet' | 'quiz'>('summary');
+
   // Helper function to get summary display name
   const getSummaryName = (summary: Summary) => {
     if (summary.name) return summary.name;
@@ -78,6 +108,19 @@ export default function CoursePage() {
     
     const date = new Date(summary.createdAt).toLocaleDateString('ro-RO');
     return `Rezumat ${date}`;
+  };
+
+  // Toggle summary expansion
+  const toggleSummary = (summaryId: string) => {
+    setExpandedSummaries(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(summaryId)) {
+        newSet.delete(summaryId);
+      } else {
+        newSet.add(summaryId);
+      }
+      return newSet;
+    });
   };
 
   // Fetch course data
@@ -98,9 +141,6 @@ export default function CoursePage() {
       if (courseData) {
         setEditTitle(courseData.title || '');
         setEditDescription(courseData.description || '');
-        if (courseData.fullSummary) setFullSummary(courseData.fullSummary);
-        if (courseData.cheatSheet) setCheatSheet(courseData.cheatSheet);
-        if (courseData.quiz) setQuiz(courseData.quiz);
       }
       
       return courseData;
@@ -128,6 +168,76 @@ export default function CoursePage() {
     }
   };
 
+  // Fetch final summary for course
+  const fetchFinalSummary = async () => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/final-summary`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.finalSummary) {
+          setFinalSummary(data.finalSummary);
+          setFullSummary(data.finalSummary.content);
+        } else {
+          setFinalSummary(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching final summary:', error);
+    }
+  };
+
+  // Fetch cheat sheets for course
+  const fetchCheatSheets = async () => {
+  try {
+    const response = await fetch(`/api/courses/${courseId}/cheat-sheet`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      // Add null check and ensure data.cheatSheets exists and is an array
+      const cheatSheets = data?.cheatSheets || [];
+      setCheatSheets(cheatSheets);
+      if (cheatSheets.length > 0) {
+        setActiveCheatSheet(cheatSheets[0].id);
+      }
+    } else {
+      // Handle non-200 responses
+      console.error('Failed to fetch cheat sheets:', response.status, response.statusText);
+      setCheatSheets([]);
+    }
+  } catch (error) {
+    console.error('Error fetching cheat sheets:', error);
+    // Set empty array on error to prevent undefined access
+    setCheatSheets([]);
+  }
+};
+
+  // Fetch quizzes for course
+  const fetchQuizzes = async () => {
+  try {
+    const response = await fetch(`/api/courses/${courseId}/quiz`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      // Add null check and ensure data.quizzes exists and is an array
+      const quizzes = data?.quizzes || [];
+      setQuizzes(quizzes);
+      if (quizzes.length > 0) {
+        setActiveQuiz(quizzes[0].id);
+      }
+    } else {
+      // Handle non-200 responses
+      console.error('Failed to fetch quizzes:', response.status, response.statusText);
+      setQuizzes([]);
+    }
+  } catch (error) {
+    console.error('Error fetching quizzes:', error);
+    // Set empty array on error to prevent undefined access
+    setQuizzes([]);
+  }
+};
+
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -137,6 +247,9 @@ export default function CoursePage() {
     if (status === 'authenticated' && courseId) {
       const loadData = async () => {
         await fetchCourse();
+        await fetchFinalSummary();
+        await fetchCheatSheets();
+        await fetchQuizzes();
         setLoading(false);
       };
       loadData();
@@ -171,12 +284,15 @@ export default function CoursePage() {
 
       // Refresh course data
       await fetchCourse();
+      await fetchFinalSummary();
       
       // Close modal and reset selection
       setShowAddSummaries(false);
       setSelectedSummaryIds([]);
       
-      alert('Rezumate adăugate cu succes!');
+      // Show success message
+      setSuccessMessage('Rezumate adăugate cu succes!');
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error('Error adding summaries:', error);
       const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
@@ -200,11 +316,62 @@ export default function CoursePage() {
       if (response.ok) {
         // Refresh course data
         await fetchCourse();
-        alert('Rezumat eliminat cu succes!');
+        await fetchFinalSummary();
+        // Show success message
+        setSuccessMessage('Rezumat eliminat cu succes!');
+        setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error removing summary:', error);
       alert('Eroare la eliminarea rezumatului');
+    }
+  };
+
+  // Delete cheat sheet
+  const deleteCheatSheet = async (cheatSheetId: string) => {
+    if (!confirm('Ești sigur că vrei să ștergi această copiuță?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/courses/${courseId}/cheat-sheet`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cheatSheetId }),
+      });
+
+      if (response.ok) {
+        await fetchCheatSheets();
+        setSuccessMessage('Copiuță ștearsă cu succes!');
+        setTimeout(() => setSuccessMessage(null), 5000);
+      }
+    } catch (error) {
+      console.error('Error deleting cheat sheet:', error);
+      alert('Eroare la ștergerea copiuței');
+    }
+  };
+
+  // Delete quiz
+  const deleteQuiz = async (quizId: string) => {
+    if (!confirm('Ești sigur că vrei să ștergi acest test?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/courses/${courseId}/quiz`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quizId }),
+      });
+
+      if (response.ok) {
+        await fetchQuizzes();
+        setSuccessMessage('Test șters cu succes!');
+        setTimeout(() => setSuccessMessage(null), 5000);
+      }
+    } catch (error) {
+      console.error('Error deleting quiz:', error);
+      alert('Eroare la ștergerea testului');
     }
   };
 
@@ -228,7 +395,9 @@ export default function CoursePage() {
       if (response.ok) {
         setShowEditCourse(false);
         await fetchCourse();
-        alert('Curs actualizat cu succes!');
+        // Show success message
+        setSuccessMessage('Curs actualizat cu succes!');
+        setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error updating course:', error);
@@ -245,18 +414,22 @@ export default function CoursePage() {
 
     setGenerating(prev => ({...prev, summary: true}));
     try {
-      const res = await fetch(`/api/courses/${courseId}/summarize`, { 
+      const res = await fetch(`/api/courses/${courseId}/final-summary`, { 
         method: 'POST' 
       });
       
       if (res.ok) {
         const data = await res.json();
-        setFullSummary(data.summary);
-        // Update course state
-        setCourse(prev => prev ? {...prev, fullSummary: data.summary} : null);
+        setFullSummary(data.finalSummary.content);
+        setFinalSummary(data.finalSummary);
+        
+        // Show success message
+        setSuccessMessage('Rezumat final generat cu succes!');
+        setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error generating summary:', error);
+      alert('Eroare la generarea rezumatului final. Te rog încearcă din nou.');
     } finally {
       setGenerating(prev => ({...prev, summary: false}));
     }
@@ -270,17 +443,19 @@ export default function CoursePage() {
 
     setGenerating(prev => ({...prev, cheatSheet: true}));
     try {
-      const res = await fetch(`/api/courses/${courseId}/cheatsheet`, { 
+      const res = await fetch(`/api/courses/${courseId}/cheat-sheet`, { 
         method: 'POST' 
       });
       
       if (res.ok) {
-        const data = await res.json();
-        setCheatSheet(data.cheatSheet);
-        setCourse(prev => prev ? {...prev, cheatSheet: data.cheatSheet} : null);
+        await fetchCheatSheets();
+        // Show success message
+        setSuccessMessage('Copiuță generată cu succes!');
+        setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error generating cheat sheet:', error);
+      alert('Eroare la generarea copiuței. Te rog încearcă din nou.');
     } finally {
       setGenerating(prev => ({...prev, cheatSheet: false}));
     }
@@ -299,27 +474,67 @@ export default function CoursePage() {
       });
       
       if (res.ok) {
-        const data = await res.json();
-        setQuiz(data.quiz);
-        setCourse(prev => prev ? {...prev, quiz: data.quiz} : null);
+        await fetchQuizzes();
+        // Show success message
+        setSuccessMessage('Test generat cu succes!');
+        setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error generating quiz:', error);
+      alert('Eroare la generarea testului. Te rog încearcă din nou.');
     } finally {
       setGenerating(prev => ({...prev, quiz: false}));
     }
   };
 
-  const copyToClipboard = (text: string, type: 'fullSummary' | 'cheatSheet') => {
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    setCopied(prev => ({...prev, [type]: true }));
-    setTimeout(() => setCopied(prev => ({...prev, [type]: false })), 2000);
+    setCopied(prev => ({...prev, fullSummary: true }));
+    setTimeout(() => setCopied(prev => ({...prev, fullSummary: false })), 2000);
   };
 
   const copySummary = (content: string, id: string) => {
     navigator.clipboard.writeText(content);
     setCopiedSummaryId(id);
     setTimeout(() => setCopiedSummaryId(null), 2000);
+  };
+
+  const handlePrintCheatSheet = () => {
+    if (!activeCheatSheet) return;
+    
+    const activeCheatSheetData = cheatSheets.find(cs => cs.id === activeCheatSheet);
+    if (!activeCheatSheetData) return;
+
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Write the cheat sheet content directly (it's already formatted HTML)
+    printWindow.document.write(activeCheatSheetData.content);
+    printWindow.document.close();
+    
+    // Wait for content to load then print
+    printWindow.onload = () => {
+      printWindow.print();
+      printWindow.close();
+    };
+  };
+
+  const downloadCheatSheetHTML = () => {
+    if (!activeCheatSheet) return;
+    
+    const activeCheatSheetData = cheatSheets.find(cs => cs.id === activeCheatSheet);
+    if (!activeCheatSheetData || !course) return;
+
+    const blob = new Blob([activeCheatSheetData.content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `copiuta-${course.title.toLowerCase().replace(/\s+/g, '-')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   if (status === 'loading' || loading) {
@@ -378,11 +593,21 @@ export default function CoursePage() {
   const hasContent = course.files?.length > 0 || 
                     course.summaries?.length > 0 || 
                     fullSummary || 
-                    cheatSheet || 
-                    quiz.length > 0;
+                    cheatSheets.length > 0 || 
+                    quizzes.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Success Message Banner */}
+      {successMessage && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center">
+            <CheckSquare className="mr-2" />
+            <span>{successMessage}</span>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
@@ -439,7 +664,7 @@ export default function CoursePage() {
                 >
                   {generating.summary ? (
                     <>
-                      <span className="loading">...</span>
+                      <Loader  className="mr-2 h-4 w-4 animate-spin" />
                       Se generează...
                     </>
                   ) : (
@@ -463,56 +688,70 @@ export default function CoursePage() {
           <div className="mb-6">
             <h3 className="font-medium text-gray-700 mb-3">Rezumate adăugate ({course.summaries.length}):</h3>
             {course.summaries.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {course.summaries.map(summary => (
-                  <div 
-                    key={summary.id}
-                    className="border rounded-xl p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-indigo-50 to-indigo-100"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-indigo-100 rounded-lg">
-                          <BookOpen className="h-5 w-5 text-indigo-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">
-                            {getSummaryName(summary)}
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            Creat la: {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
-                            {summary.addedAt && (
-                              <span className="ml-2">
-                                • Adăugat: {new Date(summary.addedAt).toLocaleDateString('ro-RO')}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => copySummary(summary.content, summary.id)}
-                          className="text-gray-500 hover:text-indigo-600"
-                        >
-                          {copiedSummaryId === summary.id ? (
-                            <span className="text-sm text-indigo-600 font-medium">Copiat!</span>
-                          ) : (
-                            <Clipboard className="h-5 w-5" />
-                          )}
-                        </button>
-                        <button 
-                          onClick={() => removeSummaryFromCourse(summary.id)}
-                          className="text-gray-500 hover:text-red-600"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
+              <div className="grid grid-cols-1 gap-4">
+                {course.summaries.map(summary => {
+                  const isExpanded = expandedSummaries.has(summary.id);
+                  return (
                     <div 
-                      className="prose max-h-40 overflow-y-auto bg-white p-3 rounded-lg border border-gray-200 text-sm"
-                      dangerouslySetInnerHTML={{ __html: summary.content }}
-                    />
-                  </div>
-                ))}
+                      key={summary.id}
+                      className="border rounded-xl p-5 hover:shadow-md transition-shadow bg-gradient-to-br from-indigo-50 to-indigo-100"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="p-2 bg-indigo-100 rounded-lg">
+                            <BookOpen className="h-5 w-5 text-indigo-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">
+                              {getSummaryName(summary)}
+                            </h3>
+                            <p className="text-xs text-gray-500">
+                              Creat la: {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
+                              {summary.addedAt && (
+                                <span className="ml-2">
+                                  • Adăugat: {new Date(summary.addedAt).toLocaleDateString('ro-RO')}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => copySummary(summary.content, summary.id)}
+                            className="text-gray-500 hover:text-indigo-600"
+                          >
+                            {copiedSummaryId === summary.id ? (
+                              <span className="text-sm text-indigo-600 font-medium">Copiat!</span>
+                            ) : (
+                              <Clipboard className="h-5 w-5" />
+                            )}
+                          </button>
+                          <button 
+                            onClick={() => toggleSummary(summary.id)}
+                            className="text-gray-500 hover:text-indigo-600"
+                          >
+                            {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                          </button>
+                          <button 
+                            onClick={() => removeSummaryFromCourse(summary.id)}
+                            className="text-gray-500 hover:text-red-600"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {isExpanded && (
+                        <div className="mt-4">
+                          <div 
+                            className="prose overflow-y-auto bg-white p-3 rounded-lg border border-gray-200 text-sm"
+                            dangerouslySetInnerHTML={{ __html: summary.content }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
@@ -528,239 +767,373 @@ export default function CoursePage() {
           </div>
         </div>
 
-        {/* Generation Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-          <div className={`bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-lg overflow-hidden ${
-            !hasSummaries ? 'opacity-80' : ''
-          }`}>
-            <button 
-              onClick={generateFinalSummary}
-              disabled={!hasSummaries || generating.summary}
-              className={`w-full h-full p-6 flex flex-col items-center justify-center ${
-                !hasSummaries 
-                  ? 'cursor-not-allowed' 
-                  : 'hover:bg-blue-50'
+        {/* Course Materials Section */}
+        <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Folder className="h-6 w-6 text-indigo-600" />
+            <h2 className="text-xl font-bold text-gray-900">Materiale Curs</h2>
+          </div>
+
+          {/* Material Tabs */}
+          <div className="flex border-b border-gray-200 mb-6">
+            <button
+              onClick={() => setActiveMaterialTab('summary')}
+              className={`px-4 py-2 font-medium ${
+                activeMaterialTab === 'summary'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <div className="mb-4 p-3 bg-blue-100 rounded-full">
-                <BookOpen className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="font-bold text-lg text-gray-900 mb-2">Generează rezumat complet</h3>
-              <p className="text-gray-600 text-center text-sm mb-3">
-                Rezumat detaliat al întregului curs
-              </p>
-              {!hasSummaries ? (
-                <span className="text-xs font-medium text-red-500 bg-red-50 px-3 py-1 rounded-full">
-                  Adaugă rezumate mai întâi
-                </span>
-              ) : generating.summary ? (
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                  Se generează...
-                </span>
-              ) : (
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                  Disponibil
-                </span>
-              )}
+              Rezumat Final
             </button>
-          </div>
-          
-          <div className={`bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-lg overflow-hidden ${
-            !hasSummaries ? 'opacity-80' : ''
-          }`}>
-            <button 
-              onClick={generateCheatSheet}
-              disabled={!hasSummaries || generating.cheatSheet}
-              className={`w-full h-full p-6 flex flex-col items-center justify-center ${
-                !hasSummaries 
-                  ? 'cursor-not-allowed' 
-                  : 'hover:bg-green-50'
+            <button
+              onClick={() => setActiveMaterialTab('cheatsheet')}
+              className={`px-4 py-2 font-medium ${
+                activeMaterialTab === 'cheatsheet'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <div className="mb-4 p-3 bg-green-100 rounded-full">
-                <File className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="font-bold text-lg text-gray-900 mb-2">Generează fișă de sinteză</h3>
-              <p className="text-gray-600 text-center text-sm mb-3">
-                Cheat sheet cu informații cheie
-              </p>
-              {!hasSummaries ? (
-                <span className="text-xs font-medium text-red-500 bg-red-50 px-3 py-1 rounded-full">
-                  Adaugă rezumate mai întâi
-                </span>
-              ) : generating.cheatSheet ? (
-                <span className="text-xs font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                  Se generează...
-                </span>
-              ) : (
-                <span className="text-xs font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                  Disponibil
-                </span>
-              )}
+              Copiuță
             </button>
-          </div>
-          
-          <div className={`bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-lg overflow-hidden ${
-            !hasSummaries ? 'opacity-80' : ''
-          }`}>
-            <button 
-              onClick={generateQuiz}
-              disabled={!hasSummaries || generating.quiz}
-              className={`w-full h-full p-6 flex flex-col items-center justify-center ${
-                !hasSummaries 
-                  ? 'cursor-not-allowed' 
-                  : 'hover:bg-purple-50'
+            <button
+              onClick={() => setActiveMaterialTab('quiz')}
+              className={`px-4 py-2 font-medium ${
+                activeMaterialTab === 'quiz'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <div className="mb-4 p-3 bg-purple-100 rounded-full">
-                <CheckSquare className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="font-bold text-lg text-gray-900 mb-2">Generează test grilă</h3>
-              <p className="text-gray-600 text-center text-sm mb-3">
-                Test de evaluare a cunoștințelor
-              </p>
-              {!hasSummaries ? (
-                <span className="text-xs font-medium text-red-500 bg-red-50 px-3 py-1 rounded-full">
-                  Adaugă rezumate mai întâi
-                </span>
-              ) : generating.quiz ? (
-                <span className="text-xs font-medium text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
-                  Se generează...
-                </span>
-              ) : (
-                <span className="text-xs font-medium text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
-                  Disponibil
-                </span>
-              )}
+              Test
             </button>
           </div>
-        </div>
 
-        {/* Content Sections */}
-        <div className="space-y-8">
-          {/* Course Files */}
-          {course.files?.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <FileText className="h-6 w-6 text-indigo-600" />
-                <h2 className="text-xl font-bold text-gray-900">Fișiere în curs</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {course.files.map((file) => (
-                  <div key={file.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gray-50">
-                    <div className="flex items-center">
-                      <FileText className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
-                      <h3 className="font-medium truncate">{file.name}</h3>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Adăugat pe {new Date(file.createdAt).toLocaleDateString('ro-RO')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Full Summary */}
-          {fullSummary && (
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                <div className="flex items-center gap-3">
-                  <BookOpen className="h-6 w-6 text-indigo-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Rezumat complet al cursului</h2>
-                </div>
-                <button
-                  onClick={() => copyToClipboard(fullSummary, 'fullSummary')}
-                  className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg flex items-center gap-2"
-                >
-                  <Copy className="h-4 w-4" />
-                  {copied.fullSummary ? 'Copiat!' : 'Copiază'}
-                </button>
-              </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-                <p className="whitespace-pre-line text-gray-700">{fullSummary}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Cheat Sheet */}
-          {cheatSheet && (
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                <div className="flex items-center gap-3">
-                  <File className="h-6 w-6 text-green-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Fișă de sinteză</h2>
-                </div>
-                <button
-                  onClick={() => copyToClipboard(cheatSheet, 'cheatSheet')}
-                  className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg flex items-center gap-2"
-                >
-                  <Copy className="h-4 w-4" />
-                  {copied.cheatSheet ? 'Copiat!' : 'Copiază'}
-                </button>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-5">
-                <p className="whitespace-pre-line text-gray-700 font-medium">{cheatSheet}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Quiz */}
-          {quiz.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <CheckSquare className="h-6 w-6 text-purple-600" />
-                <h2 className="text-xl font-bold text-gray-900">Test grilă</h2>
-              </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6">
-                {quiz.map((q, index) => (
-                  <div key={index} className="mb-8 last:mb-0">
-                    <h3 className="font-semibold text-lg mb-4 flex">
-                      <span className="bg-purple-600 text-white rounded-full h-8 w-8 flex items-center justify-center mr-3">
-                        {index + 1}
-                      </span>
-                      {q.question}
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
-                      {q.options.map((option: string, optIndex: number) => (
-                        <div key={optIndex} className="flex items-start bg-white p-3 rounded-lg border border-gray-200">
-                          <input 
-                            type="radio" 
-                            id={`q${index}-opt${optIndex}`}
-                            name={`question-${index}`} 
-                            className="mt-1 mr-3"
-                          />
-                          <label 
-                            htmlFor={`q${index}-opt${optIndex}`} 
-                            className="text-gray-700 cursor-pointer"
-                          >
-                            {option}
-                          </label>
+          {/* Material Content */}
+          <div className="min-h-[300px]">
+            {/* Final Summary Tab */}
+            {activeMaterialTab === 'summary' && (
+              <div>
+                {finalSummary ? (
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                      <div className="flex items-center gap-3">
+                        <BookOpen className="h-6 w-6 text-indigo-600" />
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">Rezumat Final Generat</h3>
+                          <p className="text-sm text-gray-500">
+                            Creat la: {new Date(finalSummary.createdAt).toLocaleDateString('ro-RO')}
+                          </p>
                         </div>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(fullSummary)}
+                        className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        {copied.fullSummary ? 'Copiat!' : 'Copiază'}
+                      </button>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto">
+                      <p className="whitespace-pre-line text-gray-700">{fullSummary}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-4 text-lg font-bold text-gray-900">Niciun rezumat final generat</h3>
+                    <p className="mt-2 text-gray-600">
+                      Generează un rezumat final combinând toate rezumatele cursului.
+                    </p>
+                    <button
+                      onClick={generateFinalSummary}
+                      disabled={!hasSummaries || generating.summary}
+                      className={`mt-4 px-4 py-2 rounded-lg font-medium flex items-center gap-2 mx-auto ${
+                        !hasSummaries || generating.summary
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
+                      }`}
+                    >
+                      {generating.summary ? (
+                        <>
+                          <Loader  className="h-5 w-5 animate-spin" />
+                          Se generează...
+                        </>
+                      ) : (
+                        <>
+                          <BookOpen className="h-5 w-5" />
+                          Generează Rezumat Final
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cheat Sheet Tab */}
+            {activeMaterialTab === 'cheatsheet' && (
+              <div>
+                {cheatSheets.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {cheatSheets.map((cs) => (
+                      <div
+                        key={cs.id}
+                        className={`px-3 py-1 text-sm rounded-lg flex items-center justify-between ${
+                          activeCheatSheet === cs.id
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 hover:bg-gray-300'
+                        }`}
+                      >
+                        <button
+                          onClick={() => setActiveCheatSheet(cs.id)}
+                          className="flex-1 text-left"
+                        >
+                          {new Date(cs.createdAt).toLocaleDateString('ro-RO')}
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCheatSheet(cs.id);
+                          }}
+                          className="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                    </div>
+                    
+                    {activeCheatSheet && (
+                      <div className="print-container">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                          <div className="flex items-center gap-3">
+                            <File className="h-6 w-6 text-green-600" />
+                            <h3 className="text-lg font-bold text-gray-900">Fișă de Sinteză</h3>
+                            <span className="text-sm text-gray-500">
+                              {new Date(
+                                cheatSheets.find(cs => cs.id === activeCheatSheet)?.createdAt || ''
+                              ).toLocaleDateString('ro-RO')}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={generateCheatSheet}
+                              disabled={generating.cheatSheet}
+                              className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg flex items-center gap-2"
+                            >
+                              {generating.cheatSheet ? (
+                                <Loader  className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4" />
+                              )}
+                              Regenerare
+                            </button>
+                            <button
+                              onClick={handlePrintCheatSheet}
+                              className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg flex items-center gap-2"
+                            >
+                              <Printer className="h-4 w-4" />
+                              Printează
+                            </button>
+                            <button
+                              onClick={downloadCheatSheetHTML}
+                              className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg flex items-center gap-2"
+                            >
+                              <Download className="h-4 w-4" />
+                              Descarcă
+                            </button>
+                          </div>
+                        </div>
+                        <div 
+                          className="border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto"
+                          dangerouslySetInnerHTML={{ 
+                            __html: cheatSheets.find(cs => cs.id === activeCheatSheet)?.content || '' 
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <File className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-4 text-lg font-bold text-gray-900">Nicio copiuță generată</h3>
+                    <p className="mt-2 text-gray-600">
+                      Generează o copiuță cu formule și concepte cheie.
+                    </p>
+                    <button
+                      onClick={generateCheatSheet}
+                      disabled={!hasSummaries || generating.cheatSheet}
+                      className={`mt-4 px-4 py-2 rounded-lg font-medium flex items-center gap-2 mx-auto ${
+                        !hasSummaries || generating.cheatSheet
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+                      }`}
+                    >
+                      {generating.cheatSheet ? (
+                        <>
+                          <Loader  className="h-5 w-5 animate-spin" />
+                          Se generează...
+                        </>
+                      ) : (
+                        <>
+                          <File className="h-5 w-5" />
+                          Generează Copiuță
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quiz Tab */}
+            {activeMaterialTab === 'quiz' && (
+              <div>
+                {quizzes.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {quizzes.map((quiz) => (
+                        <button
+                          key={quiz.id}
+                          onClick={() => setActiveQuiz(quiz.id)}
+                          className={`px-3 py-1 text-sm rounded-lg ${
+                            activeQuiz === quiz.id
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-gray-200 hover:bg-gray-300'
+                          }`}
+                        >
+                          {new Date(quiz.createdAt).toLocaleDateString('ro-RO')}
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteQuiz(quiz.id);
+                            }}
+                            className="ml-2 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="inline h-4 w-4" />
+                          </button>
+                        </button>
                       ))}
                     </div>
+                    
+                    {activeQuiz && (
+                      <div>
+                        <div className="flex items-center gap-3 mb-5">
+                          <CheckSquare className="h-6 w-6 text-purple-600" />
+                          <h3 className="text-lg font-bold text-gray-900">Test de Evaluare</h3>
+                          <span className="text-sm text-gray-500">
+                            {new Date(
+                              quizzes.find(q => q.id === activeQuiz)?.createdAt || ''
+                            ).toLocaleDateString('ro-RO')}
+                          </span>
+                        </div>
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6">
+                          {quizzes.find(q => q.id === activeQuiz)?.content.map((q: any, index: number) => (
+                            <div key={index} className="mb-8 last:mb-0">
+                              <h3 className="font-semibold text-lg mb-4 flex">
+                                <span className="bg-purple-600 text-white rounded-full h-8 w-8 flex items-center justify-center mr-3">
+                                  {index + 1}
+                                </span>
+                                {q.question}
+                              </h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-4">
+                                {q.options.map((option: string, optIndex: number) => (
+                                  <div key={optIndex} className="flex items-start bg-white p-3 rounded-lg border border-gray-200">
+                                    <input 
+                                      type="radio" 
+                                      id={`q${index}-opt${optIndex}`}
+                                      name={`question-${index}`} 
+                                      className="mt-1 mr-3"
+                                    />
+                                    <label 
+                                      htmlFor={`q${index}-opt${optIndex}`} 
+                                      className="text-gray-700 cursor-pointer"
+                                    >
+                                      {option}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                          <button className="mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-md">
+                            Trimite răspunsurile
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-                <button className="mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-md">
-                  Trimite răspunsurile
-                </button>
+                ) : (
+                  <div className="text-center py-12">
+                    <CheckSquare className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-4 text-lg font-bold text-gray-900">Niciun test generat</h3>
+                    <p className="mt-2 text-gray-600">
+                      Generează un test pentru a-ți verifica cunoștințele.
+                    </p>
+                    <button
+                      onClick={generateQuiz}
+                      disabled={!hasSummaries || generating.quiz}
+                      className={`mt-4 px-4 py-2 rounded-lg font-medium flex items-center gap-2 mx-auto ${
+                        !hasSummaries || generating.quiz
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
+                      }`}
+                    >
+                      {generating.quiz ? (
+                        <>
+                          <Loader  className="h-5 w-5 animate-spin" />
+                          Se generează...
+                        </>
+                      ) : (
+                        <>
+                          <CheckSquare className="h-5 w-5" />
+                          Generează Test
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!hasContent && (
-            <div className="text-center py-12 bg-white rounded-2xl shadow-lg">
-              <div className="max-w-md mx-auto">
-                <Folder className="mx-auto h-16 w-16 text-gray-400" />
-                <h3 className="mt-4 text-xl font-bold text-gray-900">Curs gol</h3>
-                <p className="mt-2 text-gray-600">
-                  Începe prin a adăuga rezumate la acest curs.
-                </p>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Course Files */}
+        {course.files?.length > 0 && (
+          <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <FileText className="h-6 w-6 text-indigo-600" />
+              <h2 className="text-xl font-bold text-gray-900">Fișiere în curs</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {course.files.map((file) => (
+                <div key={file.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gray-50">
+                  <div className="flex items-center">
+                    <FileText className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
+                    <h3 className="font-medium truncate">{file.name}</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Adăugat pe {new Date(file.createdAt).toLocaleDateString('ro-RO')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!hasContent && (
+          <div className="text-center py-12 bg-white rounded-2xl shadow-lg">
+            <div className="max-w-md mx-auto">
+              <Folder className="mx-auto h-16 w-16 text-gray-400" />
+              <h3 className="mt-4 text-xl font-bold text-gray-900">Curs gol</h3>
+              <p className="mt-2 text-gray-600">
+                Începe prin a adăuga rezumate la acest curs.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Summaries Modal */}
@@ -774,7 +1147,7 @@ export default function CoursePage() {
                   onClick={() => setShowAddSummaries(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  ✕
+                  <X className="h-5 w-5" />
                 </button>
               </div>
               
@@ -915,6 +1288,30 @@ export default function CoursePage() {
           </div>
         </div>
       )}
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-container, .print-container * {
+            visibility: visible;
+          }
+          .print-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 15px;
+            box-shadow: none;
+            border: none;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
