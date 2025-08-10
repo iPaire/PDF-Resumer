@@ -7,9 +7,7 @@
   },
     "env": {
       "DATABASE_URL": "postgresql://user:pass@host.supabase.co:6543/postgres"
-    },"scripts": {
-  "vercel-build": "next build"
-},
+    },
   "routes": [
     {
       "src": "/api/migrations/status",
