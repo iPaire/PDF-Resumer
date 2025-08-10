@@ -2,12 +2,14 @@
   "build": {
     "env": {
       "PRISMA_GENERATE_DATAPROXY": "false",
-      "DATABASE_URL": "postgresql://user:pass@host.supabase.co:6543/postgres"
+      "DATABASE_URL":"postgresql://postgres.oovlfycpjngxbwlpcxsd:5Gn9kAagvFWqnUoT@aws-0-eu-central-1.pooler.supabase.com:5432/postgres",
+      "STRIPE_SECRET_KEY":"sk_test_51RakBSPRCTOomzu9FZRlA4RT1J6ce464F3FrrbA4PQoi4RLfqVekBm8wvQFNf2t5Hh9WONtJVNwdA57FqoTr5JNX005kALdaUB"
+    }
+  },"functions": {
+    "app/api/**/*.js": {
+      "maxDuration": 30
     }
   },
-    "env": {
-      "DATABASE_URL": "postgresql://user:pass@host.supabase.co:6543/postgres"
-    },
   "routes": [
     {
       "src": "/api/migrations/status",
