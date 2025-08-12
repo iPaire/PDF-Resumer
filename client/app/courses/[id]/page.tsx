@@ -1108,6 +1108,30 @@ export default function CoursePage() {
                         </button>
                       ))}
                     </div>
+
+                    <div className="flex justify-end">
+                        <button
+                          onClick={generateQuiz}
+                          disabled={generating.quiz}
+                          className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                            generating.quiz
+                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                              : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
+                          }`}
+                        >
+                          {generating.quiz ? (
+                            <>
+                              <Loader className="h-4 w-4 animate-spin" />
+                              Se generează...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4" />
+                              Generează alt test
+                            </>
+                          )}
+                        </button>
+                      </div>
                     
                     {activeQuiz && (
                       <div>
