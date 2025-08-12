@@ -3,9 +3,9 @@ import CredentialsProvider, { CredentialsConfig } from "next-auth/providers/cred
 import { CredentialInput } from "next-auth/providers";
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcrypt';
-import { getTrialDaysLeft } from '@/lib/auth';
+import GoogleProvider from "next-auth/providers/google";
 
-// Definim un tip extins pentru User
+// Tip extins pentru User
 interface CustomUser extends User {
   id: string;
   role?: string | null;
@@ -15,7 +15,6 @@ interface CustomUser extends User {
   trialExpires?: string | null;
 }
 
-// Definim tipul pentru credentialele noastre
 interface CustomCredentials extends Record<string, CredentialInput> {
   email: CredentialInput;
   password: CredentialInput;
@@ -56,9 +55,50 @@ export const authOptions: AuthOptions = {
           trialExpires: user.trialExpires || null
         } as CustomUser;
       }
-    }) as CredentialsConfig<CustomCredentials>
+    }) as CredentialsConfig<CustomCredentials>,
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
+
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        // user.email vine de la Google
+        if (!user.email) return false;
+
+        // Caută user-ul în DB după email
+        let dbUser = await prisma.user.findUnique({
+          where: { email: user.email }
+        });
+
+        if (!dbUser) {
+          // Dacă nu există, creează unul nou
+          dbUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name || user.email.split("@")[0],
+              role: "personal",
+              subscription: "free",
+              image: user.image,
+              trialOffered: false,
+              trialExpires: null,
+              password: "", // Poți să pui un string gol pentru că nu se folosește parola în OAuth
+            }
+          });
+        }
+
+        // Modificăm user-ul din NextAuth cu datele din DB
+        user.id = dbUser.id;
+        user.role = dbUser.role;
+        user.subscription = dbUser.subscription;
+        user.trialOffered = dbUser.trialOffered;
+        user.trialExpires = dbUser.trialExpires;
+      }
+      return true;
+    },
+
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -67,30 +107,27 @@ export const authOptions: AuthOptions = {
         token.trialOffered = (user as CustomUser).trialOffered;
         token.trialExpires = (user as CustomUser).trialExpires;
       }
-      
-      // Verificăm dacă trial-ul a expirat
+
       if (token.subscription === 'trial' && token.trialExpires) {
         const now = new Date();
         const trialExpires = new Date(token.trialExpires);
-        
+
         if (now > trialExpires) {
-          // Actualizăm utilizatorul la abonament free
           await prisma.user.update({
             where: { id: token.id as string },
-            data: { 
+            data: {
               subscription: 'free',
               trialExpires: null
             }
           });
-          
-          // Actualizăm token-ul
           token.subscription = 'free';
           token.trialExpires = null;
         }
       }
-      
+
       return token;
     },
+
     async session({ session, token }) {
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
@@ -117,12 +154,14 @@ export const authOptions: AuthOptions = {
       return session;
     }
   },
+
   pages: {
     signIn: '/login',
   },
+
   secret: process.env.NEXTAUTH_SECRET!,
   session: {
-    strategy: "jwt" as SessionStrategy
+    strategy: "jwt" as SessionStrategy,
   }
 };
 

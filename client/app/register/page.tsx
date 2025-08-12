@@ -14,6 +14,12 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false); // Adăugăm starea pentru succes
   const router = useRouter();
 
+  function validateEmail(email: string) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -32,6 +38,13 @@ export default function RegisterPage() {
       setLoading(false);
       return;
     }
+
+    if (!validateEmail(email)) {
+      setError('Adresa de email nu este validă');
+      setLoading(false);
+      return;
+    }
+
 
     try {
       // Trimite cererea de înregistrare la API
