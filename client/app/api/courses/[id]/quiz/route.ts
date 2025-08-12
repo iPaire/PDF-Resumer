@@ -24,6 +24,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const userId = session.user.id;
 
   try {
+    // Obține datele utilizatorului pentru a verifica abonamentul
+    const userData = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscription: true }
+    });
+
+    if (!userData) {
+      return NextResponse.json({ error: 'Utilizatorul nu a fost găsit' }, { status: 404 });
+    }
+
+    const isPremium = userData.subscription === 'premium';
+
     // Obține cursul cu toate rezumatele
     const course = await prisma.course.findUnique({
       where: { 
@@ -61,8 +73,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .map(cs => `## ${cs.summary.title}\n\n${cs.summary.content}`)
       .join('\n\n---\n\n');
 
-    // Generează quiz-ul
-    const quizData = await generateQuiz(course.title, combinedContent);
+    // Generează quiz-ul cu statusul premium
+    const quizData = await generateQuiz(course.title, combinedContent, isPremium);
 
     // Verifică dacă există deja un quiz pentru acest curs
     const existingQuiz = await prisma.quiz.findFirst({
@@ -77,7 +89,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         data: { questions: quizData }
       });
     } else {
-      // Creează un quiz nou - FIX: folosește connect pentru ambele relații
+      // Creează un quiz nou
       savedQuiz = await prisma.quiz.create({
         data: {
           questions: quizData,
@@ -98,7 +110,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         content: savedQuiz.questions,
         createdAt: savedQuiz.createdAt
       },
-      questionCount: Array.isArray(savedQuiz.questions) ? (savedQuiz.questions as any[]).length : 0
+      questionCount: Array.isArray(savedQuiz.questions) ? (savedQuiz.questions as any[]).length : 0,
+      isPremium: isPremium
     });
 
   } catch (error) {
@@ -236,7 +249,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   try {
     const body = await req.json();
-    const { answers, quizId } = body; // Array de răspunsuri: [0, 1, 2, ...]
+    const { answers, quizId } = body;
 
     if (!quizId) {
       return NextResponse.json({ error: 'Quiz ID este necesar' }, { status: 400 });
@@ -309,7 +322,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // Funcție principală pentru generarea quiz-ului
-async function generateQuiz(courseTitle: string, combinedContent: string): Promise<QuizQuestion[]> {
+async function generateQuiz(
+  courseTitle: string, 
+  combinedContent: string,
+  isPremium: boolean
+): Promise<QuizQuestion[]> {
   const questions: QuizQuestion[] = [];
   
   // Extrage concepte și informații pentru întrebări
@@ -318,26 +335,31 @@ async function generateQuiz(courseTitle: string, combinedContent: string): Promi
   const definitions = extractDefinitionsForQuiz(combinedContent);
   const procedures = extractProcedures(combinedContent);
   
-  // Generează diferite tipuri de întrebări
+  // Setează numărul de întrebări pe categorii în funcție de statusul premium
+  const defCount = isPremium ? 5 : 3;
+  const formCount = isPremium ? 4 : 2;
+  const concCount = isPremium ? 4 : 3;
+  const appCount = isPremium ? 2 : 2;
   
-  // 1. Întrebări despre definiții (30%)
+  // 1. Întrebări despre definiții
   const definitionQuestions = generateDefinitionQuestions(definitions);
-  questions.push(...definitionQuestions.slice(0, 3));
+  questions.push(...definitionQuestions.slice(0, defCount));
   
-  // 2. Întrebări despre formule (25%)
+  // 2. Întrebări despre formule
   const formulaQuestions = generateFormulaQuestions(formulas);
-  questions.push(...formulaQuestions.slice(0, 2));
+  questions.push(...formulaQuestions.slice(0, formCount));
   
-  // 3. Întrebări despre concepte (25%)
+  // 3. Întrebări despre concepte
   const conceptQuestions = generateConceptQuestions(concepts);
-  questions.push(...conceptQuestions.slice(0, 3));
+  questions.push(...conceptQuestions.slice(0, concCount));
   
-  // 4. Întrebări despre aplicații (20%)
+  // 4. Întrebări despre aplicații
   const applicationQuestions = generateApplicationQuestions(procedures, concepts);
-  questions.push(...applicationQuestions.slice(0, 2));
+  questions.push(...applicationQuestions.slice(0, appCount));
   
-  // Amestecă întrebările pentru varietate și limitează la 10
-  return shuffleArray(questions).slice(0, 10);
+  // Amestecă întrebările și limitează la numărul corespunzător
+  const totalQuestions = isPremium ? 15 : 10;
+  return shuffleArray(questions).slice(0, totalQuestions);
 }
 
 // Generează întrebări despre definiții
@@ -470,7 +492,6 @@ function generateApplicationQuestions(procedures: string[], concepts: string[]):
 }
 
 // Funcții helper pentru extragerea informațiilor
-
 function extractConcepts(text: string): string[] {
   const concepts = new Set<string>();
   const conceptPatterns = [
@@ -559,7 +580,6 @@ function extractProcedures(text: string): string[] {
 }
 
 // Funcții utilitare
-
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
