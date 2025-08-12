@@ -830,10 +830,8 @@ export default function CoursePage() {
                       {isExpanded && (
                         <div className="mt-4">
                           <div 
-                            className="cheat-sheet-container border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto"
-                            dangerouslySetInnerHTML={{ 
-                              __html: cheatSheets.find(cs => cs.id === activeCheatSheet)?.content || '' 
-                            }}
+                            className="prose overflow-y-auto bg-white p-3 rounded-lg border border-gray-200 text-sm"
+                            dangerouslySetInnerHTML={{ __html: summary.content }}
                           />
                         </div>
                       )}
@@ -1011,7 +1009,7 @@ export default function CoursePage() {
                               className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg flex items-center gap-2"
                             >
                               {generating.cheatSheet ? (
-                                <Loader className="h-4 w-4 animate-spin" />
+                                <Loader  className="h-4 w-4 animate-spin" />
                               ) : (
                                 <RefreshCw className="h-4 w-4" />
                               )}
@@ -1033,13 +1031,12 @@ export default function CoursePage() {
                             </button>
                           </div>
                         </div>
-                        <div className="cheat-sheet-isolated-container">
-                          <iframe
-                            srcDoc={cheatSheets.find(cs => cs.id === activeCheatSheet)?.content || ''}
-                            className="cheat-sheet-iframe"
-                            title="Cheat Sheet"
-                          />
-                        </div>
+                        <div 
+                          className="border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto"
+                          dangerouslySetInnerHTML={{ 
+                            __html: cheatSheets.find(cs => cs.id === activeCheatSheet)?.content || '' 
+                          }}
+                        />
                       </div>
                     )}
                   </div>
@@ -1485,41 +1482,6 @@ export default function CoursePage() {
           }
           .no-print {
             display: none !important;
-          }
-        }
-        
-        /* Izolare completă pentru cheat sheet cu iframe */
-        .cheat-sheet-isolated-container {
-          width: 100% !important;
-          max-width: 100% !important;
-          overflow: hidden !important;
-          border: 1px solid #e5e7eb;
-          border-radius: 0.75rem;
-          background: white;
-        }
-        
-        .cheat-sheet-iframe {
-          width: 100% !important;
-          height: 500px !important;
-          min-height: 400px !important;
-          border: none !important;
-          display: block !important;
-          background: white !important;
-        }
-        
-        /* Forțează menținerea layout-ului original */
-        .cheat-sheet-isolated-container * {
-          box-sizing: border-box !important;
-        }
-        
-        /* Previne orice schimbare de layout */
-        @media (max-width: 768px) {
-          .cheat-sheet-isolated-container {
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-          .cheat-sheet-iframe {
-            width: 100% !important;
           }
         }
       `}</style>
