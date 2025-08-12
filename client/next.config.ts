@@ -9,6 +9,9 @@ const nextConfig = {
   experimental: {
     largePageDataBytes: 128 * 100000, // 128KB
   },
+  images: {
+    domains: ['lh3.googleusercontent.com'], // adaugă aici hostname-ul
+  },
   serverExternalPackages: ['pdf-parse'], // Mutat la nivel superior
 };
 
