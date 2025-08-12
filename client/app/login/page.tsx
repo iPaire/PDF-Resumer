@@ -35,9 +35,10 @@ function LoginForm() {
     setError('');
     
     try {
+      const normalizedEmail = email.toLowerCase();
       const result = await signIn('credentials', {
         redirect: false,
-        email,
+        email : normalizedEmail,
         password,
       });
 

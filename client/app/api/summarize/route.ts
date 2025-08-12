@@ -165,7 +165,7 @@ Text: ${text.substring(0, 500)}...
     const targetLanguage = languageMap[documentLanguage] || 'engleză';
 
     // Generate summary with language adaptation
-    const maxLength = 10000;
+    const maxLength = isPremium ? 20000 : 10000;
     const truncatedText = text.length > maxLength 
       ? text.substring(0, maxLength) + '... [text trunchiat]' 
       : text;

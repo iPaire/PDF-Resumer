@@ -77,18 +77,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         data: { questions: quizData }
       });
     } else {
-      // Creează un quiz nou
+      // Creează un quiz nou - FIX: folosește connect pentru ambele relații
       savedQuiz = await prisma.quiz.create({
         data: {
-          courseId: courseId,
-          questions: quizData
+          questions: quizData,
+          course: {
+            connect: { id: courseId }
+          },
+          user: {
+            connect: { id: userId }
+          }
         }
       });
     }
 
     return NextResponse.json({ 
       success: true,
-      quiz: savedQuiz.questions,
+      quiz: {
+        id: savedQuiz.id,
+        content: savedQuiz.questions,
+        createdAt: savedQuiz.createdAt
+      },
       questionCount: Array.isArray(savedQuiz.questions) ? (savedQuiz.questions as any[]).length : 0
     });
 
@@ -124,25 +133,93 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Cursul nu a fost găsit' }, { status: 404 });
     }
 
-    // Găsește quiz-ul pentru acest curs
-    const quiz = await prisma.quiz.findFirst({
+    // Găsește toate quiz-urile pentru acest curs
+    const quizzes = await prisma.quiz.findMany({
       where: { courseId: courseId },
       orderBy: { createdAt: 'desc' }
     });
 
-    if (!quiz || !quiz.questions) {
-      return NextResponse.json({ error: 'Nu există test pentru acest curs' }, { status: 404 });
+    if (!quizzes || quizzes.length === 0) {
+      return NextResponse.json({ 
+        quizzes: [],
+        courseTitle: course.title
+      });
     }
 
+    // Formatează quiz-urile pentru afișare
+    const formattedQuizzes = quizzes.map(quiz => ({
+      id: quiz.id,
+      content: quiz.questions,
+      createdAt: quiz.createdAt
+    }));
+
     return NextResponse.json({
-      quiz: quiz.questions,
-      courseTitle: course.title,
-      questionCount: Array.isArray(quiz.questions) ? (quiz.questions as any[]).length : 0
+      quizzes: formattedQuizzes,
+      courseTitle: course.title
     });
 
   } catch (error) {
-    console.error('Error fetching quiz:', error);
+    console.error('Error fetching quizzes:', error);
     return NextResponse.json({ error: 'Eroare server' }, { status: 500 });
+  }
+}
+
+// DELETE - Șterge un quiz
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
+  }
+
+  const courseId = params.id;
+  const userId = session.user.id;
+
+  try {
+    const body = await req.json();
+    const { quizId } = body;
+
+    if (!quizId) {
+      return NextResponse.json({ error: 'Quiz ID este necesar' }, { status: 400 });
+    }
+
+    // Verifică dacă cursul aparține utilizatorului
+    const course = await prisma.course.findUnique({
+      where: {
+        id: courseId,
+        userId: userId
+      }
+    });
+
+    if (!course) {
+      return NextResponse.json({ error: 'Cursul nu a fost găsit' }, { status: 404 });
+    }
+
+    // Verifică dacă quiz-ul aparține cursului
+    const quiz = await prisma.quiz.findFirst({
+      where: {
+        id: quizId,
+        courseId: courseId
+      }
+    });
+
+    if (!quiz) {
+      return NextResponse.json({ error: 'Quiz-ul nu a fost găsit' }, { status: 404 });
+    }
+
+    // Șterge quiz-ul
+    await prisma.quiz.delete({
+      where: { id: quizId }
+    });
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Quiz șters cu succes'
+    });
+
+  } catch (error) {
+    console.error('Error deleting quiz:', error);
+    return NextResponse.json({ error: 'Eroare la ștergerea quiz-ului' }, { status: 500 });
   }
 }
 
@@ -159,7 +236,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   try {
     const body = await req.json();
-    const { answers } = body; // Array de răspunsuri: [0, 1, 2, ...]
+    const { answers, quizId } = body; // Array de răspunsuri: [0, 1, 2, ...]
+
+    if (!quizId) {
+      return NextResponse.json({ error: 'Quiz ID este necesar' }, { status: 400 });
+    }
 
     // Verifică cursul și obține quiz-ul
     const course = await prisma.course.findUnique({
@@ -174,8 +255,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const quiz = await prisma.quiz.findFirst({
-      where: { courseId: courseId },
-      orderBy: { createdAt: 'desc' }
+      where: { 
+        id: quizId,
+        courseId: courseId 
+      }
     });
 
     if (!quiz || !quiz.questions) {
