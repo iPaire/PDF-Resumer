@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import FeedbackPopup from './FeedbackPopup';
+import Link from 'next/link';
 
 const parseJSON = async (response: Response) => {
   const text = await response.text();
@@ -637,6 +638,17 @@ export default function PDFProcessor() {
           <p className="mt-4 text-xs text-gray-500">
             We use advanced AI models to extract the essence of your documents
           </p>
+        <div className="mt-4">
+            <Link 
+              href="/convert-to-pdf" 
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center"
+            >
+              Nu ai PDF? Transformă acum
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
       
