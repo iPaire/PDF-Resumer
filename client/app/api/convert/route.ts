@@ -1,84 +1,55 @@
 // app/api/convert/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, unlink } from 'fs/promises';
+import { PDFDocument, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
+import { readFileSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import mammoth from 'mammoth';
-import * as libre from 'libreoffice-convert';
-import { chromium } from 'playwright-chromium';
-import sharp from 'sharp';
-
-// Extend libreoffice-convert to work with promises
-libre.convertAsync = (buffer: Buffer, ext: string, options: any): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    libre.convert(buffer, ext, options, (err, result) => {
-      if (err) reject(err);
-      else resolve(result as Buffer);
-    });
-  });
-};
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const files = formData.getAll('files') as File[];
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!files || files.length === 0) {
+      return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    // Check file type
-    const fileType = file.type;
-    const fileName = file.name;
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    // Creăm un PDF nou care va conține toate fișierele
+    const pdfDoc = await PDFDocument.create();
+    pdfDoc.registerFontkit(fontkit);
+    
+    // Procesăm fiecare fișier
+    for (const file of files) {
+      const fileType = file.type;
+      const fileName = file.name;
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    let pdfBuffer: Buffer;
-
-    // Process based on file type
-    switch (fileType) {
-      case 'application/pdf':
-        // If it's already PDF, return directly
-        pdfBuffer = fileBuffer;
-        break;
-
-      case 'image/jpeg':
-      case 'image/png':
-      case 'image/gif':
-      case 'image/bmp':
-      case 'image/tiff':
-      case 'image/webp':
-        // Convert image to PDF using sharp
-        pdfBuffer = await convertImageToPdf(fileBuffer);
-        break;
-
-      case 'text/plain':
-        // Convert plain text to PDF
-        pdfBuffer = await convertTextToPdf(fileBuffer.toString());
-        break;
-
-      case 'application/msword':
-      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        // Convert Word document to PDF
-        pdfBuffer = await convertWordToPdf(fileBuffer, fileType);
-        break;
-
-      case 'text/html':
-        // Convert HTML to PDF
-        pdfBuffer = await convertHtmlToPdf(fileBuffer.toString());
-        break;
-
-      default:
-        // For other formats, use LibreOffice
-        pdfBuffer = await convertWithLibreOffice(fileBuffer, fileType);
+      try {
+        // Adăugăm conținutul fișierului ca pagină nouă în PDF
+        await addFileToPdf(pdfDoc, fileBuffer, fileType, fileName);
+      } catch (error) {
+        console.error(`Error processing file ${fileName}:`, error);
+        // Adăugăm o pagină cu mesaj de eroare pentru acest fișier
+        await addErrorPage(pdfDoc, fileName, error as Error);
+      }
     }
 
-    // Return the generated PDF
-    return new NextResponse(pdfBuffer, {
+    // Salvăm PDF-ul final
+    const pdfBytes = await pdfDoc.save();
+    
+    // Determinăm numele fișierului de output
+    let outputFilename = "converted-documents.pdf";
+    if (files.length === 1) {
+      const firstFile = files[0];
+      outputFilename = `${firstFile.name.replace(/\.[^/.]+$/, '')}.pdf`;
+    }
+    
+    // Returnăm PDF-ul generat
+    return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName.replace(/\.[^/.]+$/, '')}.pdf"`,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(outputFilename)}"`,
       },
     });
   } catch (error) {
@@ -90,122 +61,307 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper functions for conversion
-
-async function convertImageToPdf(imageBuffer: Buffer): Promise<Buffer> {
+// Funcție pentru a încărca fontul Roboto cu suport Unicode
+async function getUnicodeFont(pdfDoc: PDFDocument) {
   try {
-    // Use sharp to process the image
-    const image = sharp(imageBuffer);
-    const metadata = await image.metadata();
-    
-    // Create PDF
-    const pdfDoc = await PDFDocument.create();
-    
-    // Convert image to JPEG to embed in PDF
-    const jpegBuffer = await image.jpeg().toBuffer();
-    const jpegImage = await pdfDoc.embedJpg(jpegBuffer);
-    
-    // Add a page with image dimensions
-    const page = pdfDoc.addPage([
-      metadata.width || 595.28,
-      metadata.height || 841.89
-    ]);
-    
-    page.drawImage(jpegImage, {
-      x: 0,
-      y: 0,
-      width: metadata.width || 595.28,
-      height: metadata.height || 841.89,
-    });
-    
-    return Buffer.from(await pdfDoc.save());
+    const fontPath = join(process.cwd(), 'public', 'fonts', 'Roboto-Regular.ttf');
+    const fontBytes = readFileSync(fontPath);
+    return await pdfDoc.embedFont(fontBytes);
   } catch (error) {
-    console.error('Image conversion error:', error);
-    throw new Error('Failed to convert image to PDF');
+    console.error('Could not load Roboto font:', error);
+    throw new Error('Font loading failed');
   }
 }
 
-async function convertTextToPdf(text: string): Promise<Buffer> {
-  try {
-    // Use HTML conversion for text to handle special characters
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              font-size: 12px;
-              line-height: 1.5;
-              white-space: pre-wrap;
-              padding: 20px;
-            }
-          </style>
-        </head>
-        <body>${text}</body>
-      </html>
-    `;
-    
-    return await convertHtmlToPdf(htmlContent);
-  } catch (error) {
-    console.error('Text conversion error:', error);
-    throw new Error('Failed to convert text to PDF');
-  }
-}
-
-async function convertWordToPdf(buffer: Buffer, fileType: string): Promise<Buffer> {
-  try {
-    // Use mammoth for DOCX
-    if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      const result = await mammoth.convertToHtml({ buffer });
-      return convertHtmlToPdf(result.value);
+// Funcție pentru a adăuga un fișier la PDF
+async function addFileToPdf(
+  pdfDoc: PDFDocument, 
+  fileBuffer: Buffer, 
+  fileType: string, 
+  fileName: string
+): Promise<void> {
+  switch (fileType) {
+    case 'application/pdf': {
+      // Dacă este PDF, extragem paginile și le adăugăm
+      const pdf = await PDFDocument.load(fileBuffer);
+      const pages = await pdfDoc.copyPages(pdf, pdf.getPageIndices());
+      pages.forEach(page => pdfDoc.addPage(page));
+      break;
     }
-    
-    // For DOC use LibreOffice
-    return convertWithLibreOffice(buffer, fileType);
-  } catch (error) {
-    console.error('Word conversion error:', error);
-    throw new Error('Failed to convert Word document to PDF');
-  }
-}
 
-async function convertHtmlToPdf(html: string): Promise<Buffer> {
-  let browser: any = null;
-  try {
-    // Use Playwright to convert HTML to PDF
-    browser = await chromium.launch();
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    
-    await page.setContent(html, { waitUntil: 'networkidle' });
-    
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' },
-      printBackground: true,
-    });
-    
-    return pdfBuffer;
-  } catch (error) {
-    console.error('HTML conversion error:', error);
-    throw new Error('Failed to convert HTML to PDF');
-  } finally {
-    if (browser) {
-      await browser.close();
+    case 'image/jpeg':
+    case 'image/jpg': {
+      await addImageToPdf(pdfDoc, fileBuffer, 'jpeg');
+      break;
+    }
+
+    case 'image/png': {
+      await addImageToPdf(pdfDoc, fileBuffer, 'png');
+      break;
+    }
+
+    case 'text/plain': {
+      // Convertim textul și îl adăugăm ca pagină nouă
+      await addTextToPdf(pdfDoc, fileBuffer.toString(), fileName);
+      break;
+    }
+
+    default: {
+      // Pentru alte formate, creăm o pagină cu informația despre fișier
+      await addUnsupportedFilePage(pdfDoc, fileName, fileType);
     }
   }
 }
 
-async function convertWithLibreOffice(buffer: Buffer, inputFormat: string): Promise<Buffer> {
+// Funcție pentru a adăuga o imagine la PDF
+async function addImageToPdf(pdfDoc: PDFDocument, imageBuffer: Buffer, format: 'jpeg' | 'png'): Promise<void> {
   try {
-    // Convert using LibreOffice
-    const extend = '.pdf';
-    const pdfBuffer = await libre.convertAsync(buffer, extend, undefined);
+    let image;
+    if (format === 'jpeg') {
+      image = await pdfDoc.embedJpg(imageBuffer);
+    } else {
+      image = await pdfDoc.embedPng(imageBuffer);
+    }
     
-    return pdfBuffer;
+    // Calculăm dimensiunile pentru a se potrivi pe pagină
+    const maxWidth = 550;
+    const maxHeight = 750;
+    
+    let { width, height } = image;
+    
+    // Redimensionăm dacă este prea mare
+    if (width > maxWidth || height > maxHeight) {
+      const ratio = Math.min(maxWidth / width, maxHeight / height);
+      width *= ratio;
+      height *= ratio;
+    }
+    
+    // Adăugăm pagina
+    const page = pdfDoc.addPage([595.28, 841.89]); // A4
+    
+    // Centram imaginea
+    const x = (595.28 - width) / 2;
+    const y = (841.89 - height) / 2;
+    
+    page.drawImage(image, {
+      x,
+      y,
+      width,
+      height,
+    });
   } catch (error) {
-    console.error('LibreOffice conversion error:', error);
-    throw new Error('Failed to convert document with LibreOffice');
+    console.error('Error adding image:', error);
+    throw new Error('Failed to process image');
   }
+}
+
+// Funcție pentru a adăuga text la PDF cu suport complet Unicode
+async function addTextToPdf(pdfDoc: PDFDocument, text: string, fileName: string): Promise<void> {
+  const font = await getUnicodeFont(pdfDoc);
+  
+  const fontSize = 12; // Redus de la 14 la 12
+  const lineHeight = fontSize * 1.3; // Redus spațiul între linii
+  const margin = 50; // Redus marginile
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const maxWidth = pageWidth - (margin * 2);
+  const maxHeight = pageHeight - (margin * 2);
+  
+  // Împărțim textul în paragrafe pentru spațiere mai bună
+  const paragraphs = text.split(/\n\s*\n/);
+  const allLines: string[] = [];
+  
+  for (const paragraph of paragraphs) {
+    if (paragraph.trim()) {
+      // Procesăm fiecare paragraf separat
+      const words = paragraph.trim().split(/\s+/);
+      const paragraphLines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine + (currentLine ? ' ' : '') + word;
+        const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+        
+        if (textWidth <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            paragraphLines.push(currentLine);
+            currentLine = word;
+          } else {
+            // Cuvântul este prea lung, îl tăiem
+            const maxChars = Math.floor(maxWidth / (fontSize * 0.5));
+            paragraphLines.push(word.substring(0, maxChars));
+            currentLine = word.substring(maxChars);
+          }
+        }
+      }
+      
+      if (currentLine) {
+        paragraphLines.push(currentLine);
+      }
+      
+      // Adăugăm liniile paragrafului
+      allLines.push(...paragraphLines);
+      // Adăugăm o linie goală după paragraf pentru spațiere (doar dacă nu e ultimul)
+      if (paragraphs.indexOf(paragraph) < paragraphs.length - 1) {
+        allLines.push('');
+      }
+    }
+  }
+  
+  // Calculăm câte pagini avem nevoie
+  const linesPerPage = Math.floor((maxHeight - 80) / lineHeight); // -80 pentru header
+  const totalPages = Math.ceil(allLines.length / linesPerPage);
+  
+  for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+    const page = pdfDoc.addPage([pageWidth, pageHeight]);
+    
+    // Adăugăm header doar pe prima pagină
+    if (pageIndex === 0) {
+      page.drawText(`Fișier: ${fileName}`, {
+        x: margin,
+        y: pageHeight - margin,
+        size: fontSize + 2, // Header mai mare
+        font,
+        color: rgb(0, 0, 0.8),
+      });
+      
+      // Linie separatoare mai vizibilă
+      page.drawRectangle({
+        x: margin,
+        y: pageHeight - margin - 25,
+        width: maxWidth,
+        height: 1,
+        color: rgb(0.7, 0.7, 0.7),
+      });
+    }
+    
+    // Calculăm poziția de start pentru text
+    let startY = pageIndex === 0 ? pageHeight - margin - 50 : pageHeight - margin - 20;
+    
+    // Adăugăm textul pentru această pagină
+    const startLine = pageIndex * linesPerPage;
+    const endLine = Math.min(startLine + linesPerPage, allLines.length);
+    
+    for (let i = startLine; i < endLine; i++) {
+      const line = allLines[i];
+      if (line.trim() || i === startLine) { // Afișăm și liniile goale pentru spațiere
+        page.drawText(line, {
+          x: margin,
+          y: startY - ((i - startLine) * lineHeight),
+          size: fontSize,
+          font,
+          color: rgb(0, 0, 0),
+        });
+      }
+    }
+    
+    // Adăugăm numărul paginii dacă avem mai multe pagini
+    if (totalPages > 1) {
+      page.drawText(`Pagina ${pageIndex + 1} din ${totalPages}`, {
+        x: pageWidth - margin - 80,
+        y: 30,
+        size: fontSize - 2,
+        font,
+        color: rgb(0.5, 0.5, 0.5),
+      });
+    }
+  }
+}
+
+// Funcție pentru fișiere nesuportate
+async function addUnsupportedFilePage(pdfDoc: PDFDocument, fileName: string, fileType: string): Promise<void> {
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
+  const font = await getUnicodeFont(pdfDoc);
+  const fontSize = 12; // Redus fontSize
+  
+  page.drawText('Fișier inclus în PDF', {
+    x: 50, // Redus marginea
+    y: 800,
+    size: fontSize + 4, // Header mai mare
+    font,
+    color: rgb(0, 0, 0.8),
+  });
+  
+  page.drawText(`Nume: ${fileName}`, {
+    x: 50,
+    y: 750, // Redus spațierea
+    size: fontSize,
+    font,
+    color: rgb(0, 0, 0),
+  });
+  
+  page.drawText(`Tip: ${fileType}`, {
+    x: 50,
+    y: 720, // Redus spațierea
+    size: fontSize,
+    font,
+    color: rgb(0, 0, 0),
+  });
+  
+  page.drawText('Acest tip de fișier nu poate fi convertit direct în PDF.', {
+    x: 50,
+    y: 670, // Redus spațierea
+    size: fontSize,
+    font,
+    color: rgb(0.6, 0, 0),
+  });
+  
+  page.drawText('Pentru a vizualiza conținutul, descărcați fișierul original.', {
+    x: 50,
+    y: 640, // Redus spațierea
+    size: fontSize,
+    font,
+    color: rgb(0.6, 0, 0),
+  });
+  
+  // Adăugăm o pictogramă simplă pentru fișier
+  page.drawRectangle({
+    x: 250,
+    y: 400,
+    width: 100,
+    height: 120,
+    borderColor: rgb(0.7, 0.7, 0.7),
+    borderWidth: 2,
+  });
+  
+  page.drawText('FILE', {
+    x: 275,
+    y: 450,
+    size: 16,
+    font,
+    color: rgb(0.5, 0.5, 0.5),
+  });
+}
+
+// Funcție pentru a adăuga o pagină de eroare
+async function addErrorPage(pdfDoc: PDFDocument, fileName: string, error: Error): Promise<void> {
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
+  const font = await getUnicodeFont(pdfDoc);
+  const fontSize = 12; // Redus fontSize
+  
+  page.drawText(`Eroare la procesarea fișierului: ${fileName}`, {
+    x: 50, // Redus marginea
+    y: 800,
+    size: fontSize + 2, // Redus header
+    font,
+    color: rgb(1, 0, 0),
+  });
+  
+  page.drawText(`Eroare: ${error.message}`, {
+    x: 50,
+    y: 770, // Redus spațierea
+    size: fontSize,
+    font,
+    color: rgb(0, 0, 0),
+  });
+  
+  page.drawText('Fișierul a fost inclus în PDF, dar conținutul nu poate fi afișat.', {
+    x: 50,
+    y: 740, // Redus spațierea
+    size: fontSize,
+    font,
+    color: rgb(0.6, 0, 0),
+  });
 }
