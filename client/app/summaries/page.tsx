@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { FileText, Download, Trash2, Search, Eye, ArrowLeft, FolderPlus } from 'react-feather';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 type Summary = {
   id: string;
@@ -30,6 +31,8 @@ type Course = {
 };
 
 export default function SummariesPage() {
+  const t = useTranslations('summaries');
+  const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -80,7 +83,7 @@ export default function SummariesPage() {
       const response = await fetch(`/api/summaries/${id}/download`);
       if (response.status === 403) {
         const errorData = await response.json();
-        alert(errorData.error || 'Utilizatorii gratuit nu pot descărca rezumate');
+        alert(errorData.error || t('downloadErrorFree'));
         return;
       }
       if (!response.ok) throw new Error('Failed to download summary');
@@ -95,12 +98,12 @@ export default function SummariesPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download error:', error);
-      alert('Nu s-a putut descărca rezumatul');
+      alert(t('downloadError'));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Sigur doriți să ștergeți acest rezumat?')) return;
+    if (!confirm(t('deleteConfirm'))) return;
     
     try {
       const response = await fetch(`/api/summaries/${id}`, {
@@ -134,19 +137,19 @@ export default function SummariesPage() {
         }
         
         setShowCourseModal(false);
-        alert('Rezumatul a fost asignat cursului cu succes!');
+        alert(t('assignmentSuccess'));
       } else {
         const errorData = await response.json();
         alert(`Eroare: ${errorData.error}`);
       }
     } catch (error) {
       console.error('Assignment error:', error);
-      alert('A apărut o eroare la asignare');
+      alert(t('assignmentError'));
     }
   };
 
   const createQuickCourse = async () => {
-    const title = prompt('Introduceți titlul cursului nou:');
+    const title = prompt(t('enterCourseTitle'));
     if (!title) return null;
     
     try {
@@ -163,7 +166,7 @@ export default function SummariesPage() {
       }
     } catch (error) {
       console.error('Error creating course:', error);
-      alert('A apărut o eroare la crearea cursului');
+      alert(t('assignmentError'));
     }
     return null;
   };
@@ -184,7 +187,7 @@ export default function SummariesPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă rezumatele...</p>
+          <p className="mt-4 text-gray-600">{t('loadingSummaries')}</p>
         </div>
       </div>
     );
@@ -199,13 +202,13 @@ export default function SummariesPage() {
             className="inline-flex items-center text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
-            Înapoi la Dashboard
+            {t('backToDashboard')}
           </Link>
         </div>
         
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Rezumatele Tale</h1>
-          <p className="mt-2 text-gray-600">Toate rezumatele generate din documentele tale PDF</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="mt-2 text-gray-600">{t('subtitle')}</p>
         </div>
 
         <div className="bg-white shadow rounded-lg mb-8">
@@ -216,14 +219,14 @@ export default function SummariesPage() {
               </div>
               <input
                 type="text"
-                placeholder="Caută după nume..."
+                placeholder={t('searchPlaceholder')}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <span className="text-sm text-gray-500">
-              {filteredSummaries.length} {filteredSummaries.length === 1 ? 'rezultat' : 'rezultate'}
+              {filteredSummaries.length} {filteredSummaries.length === 1 ? t('result') : t('results')}
             </span>
           </div>
         </div>
@@ -232,7 +235,7 @@ export default function SummariesPage() {
           <div className="lg:col-span-2">
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Toate Rezumatele</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t('allSummaries')}</h2>
               </div>
               
               <div className="overflow-x-auto">
@@ -240,16 +243,16 @@ export default function SummariesPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Titlu
+                        {t('titleColumn')}
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Dată Creare
+                        {t('createdDateColumn')}
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Cursuri
+                        {t('coursesColumn')}
                       </th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acțiuni
+                        {t('actionsColumn')}
                       </th>
                     </tr>
                   </thead>
@@ -272,7 +275,7 @@ export default function SummariesPage() {
                           {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {summary.coursesCount ? `${summary.coursesCount} cursuri` : 'Niciun curs'}
+                          {summary.coursesCount ? `${summary.coursesCount} ${tCommon('courses')}` : t('noCourses')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <Link
@@ -323,16 +326,16 @@ export default function SummariesPage() {
                 {filteredSummaries.length === 0 && (
                   <div className="text-center py-12">
                     <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">Nu ai niciun rezumat</h3>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noSummariesTitle')}</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      Încarcă un document PDF pentru a genera primul tău rezumat.
+                      {t('noSummariesDescription')}
                     </p>
                     <div className="mt-6">
                       <Link
                         href="/"
                         className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        Încarcă PDF
+                        {t('uploadPdf')}
                       </Link>
                     </div>
                   </div>
@@ -345,7 +348,7 @@ export default function SummariesPage() {
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {selectedSummary ? 'Rezumat Selectat' : 'Previzualizare Rezumat'}
+                  {selectedSummary ? t('selectedSummary') : t('summaryPreview')}
                 </h2>
               </div>
               
@@ -357,19 +360,19 @@ export default function SummariesPage() {
                         {selectedSummary.title || selectedSummary.name || 'Untitled'}
                       </h3>
                       <p className="text-sm text-gray-500 mt-1">
-                        Creat pe {new Date(selectedSummary.createdAt).toLocaleString('ro-RO')}
+                        {t('createdOn')} {new Date(selectedSummary.createdAt).toLocaleString('ro-RO')}
                       </p>
                       
                       {selectedSummary.coursesCount > 0 && (
                         <p className="text-sm text-gray-500">
-                          Asignat la {selectedSummary.coursesCount} cursuri: {' '}
+                          {t('assignedTo')} {selectedSummary.coursesCount} {tCommon('courses')}: {' '}
                           {selectedSummary.courses.map(course => course.title).join(', ')}
                         </p>
                       )}
                       
                       {selectedSummary.pages && selectedSummary.characters && (
                         <p className="text-sm text-gray-500">
-                          {selectedSummary.pages} pagini, {selectedSummary.characters.toLocaleString()} caractere
+                          {selectedSummary.pages} {t('pages')}, {selectedSummary.characters.toLocaleString()} {t('characters')}
                         </p>
                       )}
                     </div>
@@ -380,7 +383,7 @@ export default function SummariesPage() {
                         className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         <Eye className="mr-2 h-5 w-5" />
-                        Vezi întreg rezumatul
+                        {t('viewFullSummary')}
                       </Link>
                       
                       {!isFreeUser && (
@@ -392,7 +395,7 @@ export default function SummariesPage() {
                           className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
                           <Download className="mr-2 h-5 w-5" />
-                          Descarcă TXT
+                          {t('downloadTxt')}
                         </button>
                       )}
                       
@@ -401,7 +404,7 @@ export default function SummariesPage() {
                         className="inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
                         <FolderPlus className="mr-2 h-5 w-5" />
-                        Asignează la curs
+                        {t('assignToCourse')}
                       </button>
                       
                       <button
@@ -409,16 +412,16 @@ export default function SummariesPage() {
                         className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       >
                         <Trash2 className="mr-2 h-5 w-5" />
-                        Șterge rezumat
+                        {t('deleteSummary')}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center py-8">
                     <FileText className="mx-auto h-16 w-16 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">Selectează un rezumat</h3>
+                    <h3 className="mt-4 text-lg font-medium text-gray-900">{t('selectSummary')}</h3>
                     <p className="mt-2 text-sm text-gray-500">
-                      Selectează un rezumat din listă pentru a-l vizualiza sau descărca.
+                      {t('selectSummaryDescription')}
                     </p>
                   </div>
                 )}
@@ -432,16 +435,16 @@ export default function SummariesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-nunito">
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
             <h3 className="text-2xl font-semibold text-gray-800 mb-5">
-              Asignează rezumatul la curs
+              {t('assignSummaryToCourse')}
             </h3>
 
             <p className="text-base text-gray-700 mb-5">
-              <span className="font-semibold">Rezumat:</span> {selectedSummary.title || selectedSummary.name || 'Untitled'}
+              <span className="font-semibold">{t('summaryLabel')}</span> {selectedSummary.title || selectedSummary.name || 'Untitled'}
             </p>
 
             <div className="mb-6">
               <label className="block text-base font-medium text-gray-700 mb-2">
-                Selectează curs:
+                {t('selectCourse')}
               </label>
               <select
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-150"
@@ -457,13 +460,13 @@ export default function SummariesPage() {
                   }
                 }}
               >
-                <option value="">-- Fără curs --</option>
+                <option value="">{t('noCourseOption')}</option>
                 {courses.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.title}
                   </option>
                 ))}
-                <option value="new">➕ Creează curs nou</option>
+                <option value="new">{t('createNewCourse')}</option>
               </select>
             </div>
 
@@ -472,7 +475,7 @@ export default function SummariesPage() {
                 onClick={() => setShowCourseModal(false)}
                 className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors duration-150 text-base"
               >
-                Anulează
+                {tCommon('cancel')}
               </button>
             </div>
           </div>

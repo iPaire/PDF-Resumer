@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
 export default function ResetPasswordPage() {
@@ -15,6 +16,8 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const t = useTranslations('auth');
+  const tcommon = useTranslations('common');
 
   const handleSendToken = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +25,7 @@ export default function ResetPasswordPage() {
     setError('');
     
     if (!email) {
-      setError('Te rugăm să introduci adresa de email');
+      setError(t('enterEmail'));
       setLoading(false);
       return;
     }
@@ -39,13 +42,13 @@ export default function ResetPasswordPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Eroare la trimiterea codului');
+        throw new Error(data.error || t('sendCodeError'));
       }
 
-      setSuccess('Un cod de verificare a fost trimis pe email!');
+      setSuccess(t('verificationCodeSent'));
       setStep(2);
     } catch (err: any) {
-      setError(err.message || 'Eroare la trimiterea codului');
+      setError(err.message || t('sendCodeError'));
     } finally {
       setLoading(false);
     }
@@ -57,7 +60,7 @@ export default function ResetPasswordPage() {
     setError('');
     
     if (!token) {
-      setError('Te rugăm să introduci codul primit');
+      setError(t('enterReceivedCode'));
       setLoading(false);
       return;
     }
@@ -74,13 +77,13 @@ export default function ResetPasswordPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Cod invalid sau expirat');
+        throw new Error(data.error || t('invalidOrExpiredCode'));
       }
 
-      setSuccess('Cod verificat cu succes!');
+      setSuccess(t('codeVerifiedSuccessfully'));
       setStep(3);
     } catch (err: any) {
-      setError(err.message || 'Eroare la verificarea codului');
+      setError(err.message || t('codeVerificationError'));
     } finally {
       setLoading(false);
     }
@@ -92,13 +95,13 @@ export default function ResetPasswordPage() {
     setError('');
     
     if (password !== confirmPassword) {
-      setError('Parolele nu coincid');
+      setError(t('passwordsDoNotMatch'));
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError('Parola trebuie să aibă minim 6 caractere');
+      setError(t('passwordMinLength'));
       setLoading(false);
       return;
     }
@@ -115,15 +118,15 @@ export default function ResetPasswordPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Eroare la resetarea parolei');
+        throw new Error(data.error || t('passwordResetError'));
       }
 
-      setSuccess('Parola a fost resetată cu succes!');
+      setSuccess(t('passwordResetSuccessfully'));
       setTimeout(() => {
         router.push('/login');
       }, 2000);
     } catch (err: any) {
-      setError(err.message || 'Eroare la resetarea parolei');
+      setError(err.message || t('passwordResetError'));
     } finally {
       setLoading(false);
     }
@@ -133,9 +136,9 @@ export default function ResetPasswordPage() {
     <div className="flex items-center justify-center min-h-[80vh] bg-gray-50">
       <div className="w-full max-w-md bg-white shadow-md rounded-xl p-8">
         <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">
-          {step === 1 && 'Resetare parolă'}
-          {step === 2 && 'Verifică codul'}
-          {step === 3 && 'Setează parolă nouă'}
+          {step === 1 && t('resetPasswordTitle')}
+          {step === 2 && t('verifyCodeTitle')}
+          {step === 3 && t('setNewPasswordTitle')}
         </h1>
         
         {error && (
@@ -155,11 +158,11 @@ export default function ResetPasswordPage() {
           <form onSubmit={handleSendToken}>
             <div className="mb-6">
               <p className="text-gray-600 mb-4">
-                Introdu adresa de email asociată contului tău pentru a primi un cod de verificare.
+                {t('resetPasswordDescription')}
               </p>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('email')}</label>
                 <input
                   type="email"
                   value={email}
@@ -184,10 +187,10 @@ export default function ResetPasswordPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Se încarcă...
+                  {tcommon('loading')}
                 </>
               ) : (
-                'Trimite codul'
+                t('resendCode')
               )}
             </button>
           </form>
@@ -203,7 +206,7 @@ export default function ResetPasswordPage() {
               </p>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cod de verificare</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('verificationCodeLabel')}</label>
                 <input
                   type="text"
                   value={token}
@@ -221,7 +224,7 @@ export default function ResetPasswordPage() {
                   onClick={() => setStep(1)}
                   className="text-blue-600 hover:text-blue-800 text-sm"
                 >
-                  Schimbă adresa de email
+                  {t('changeEmailAddress')}
                 </button>
                 
                 <div className="mt-2">
@@ -230,7 +233,7 @@ export default function ResetPasswordPage() {
                     onClick={handleSendToken}
                     className="text-blue-600 hover:text-blue-800 text-sm"
                   >
-                    Retrimite codul
+                    {t('resendCode')}
                   </button>
                 </div>
               </div>
@@ -249,10 +252,10 @@ export default function ResetPasswordPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Se încarcă...
+                  {tcommon('loading')}
                 </>
               ) : (
-                'Verifică codul'
+                t('verifyCode')
               )}
             </button>
           </form>
@@ -262,7 +265,7 @@ export default function ResetPasswordPage() {
         {step === 3 && (
           <form onSubmit={handleResetPassword}>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Parolă nouă</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('newPassword')}</label>
               <input
                 type="password"
                 value={password}
@@ -272,11 +275,11 @@ export default function ResetPasswordPage() {
                 required
                 minLength={6}
               />
-              <p className="mt-1 text-xs text-gray-500">Minim 6 caractere</p>
+              <p className="mt-1 text-xs text-gray-500">{t('minimumCharacters')}</p>
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Confirmă parola</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('confirmPassword')}</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -300,10 +303,10 @@ export default function ResetPasswordPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Se încarcă...
+                  {tcommon('loading')}
                 </>
               ) : (
-                'Resetează parola'
+                t('resetPassword')
               )}
             </button>
           </form>
@@ -314,7 +317,7 @@ export default function ResetPasswordPage() {
             href="/login"
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
-            Înapoi la autentificare
+            {t('backToAuthentication')}
           </Link>
         </div>
       </div>

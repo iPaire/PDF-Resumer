@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, use } from 'react';
 import { FileText, ArrowLeft, CheckCircle, XCircle, RefreshCw, Shuffle } from 'react-feather';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 interface QuizQuestion {
   question: string;
@@ -29,6 +30,8 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 export default function QuizPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = useTranslations('quizDetail');
+  const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const router = useRouter();
   const resolvedParams = use(params);
@@ -38,6 +41,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
   const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [lang, setLang] = useState<'en' | 'ro'>('ro');
 
   useEffect(() => {
     if (session) {
@@ -55,6 +59,9 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
         const shuffledQuiz = shuffleArray<QuizQuestion>(data.quiz);
         setQuiz(shuffledQuiz);
         setFileName(data.fileName);
+        // Detect language based on content or default to Romanian
+        const detectedLang = data.language === 'en' ? 'en' : 'ro';
+        setLang(detectedLang);
       } else {
         console.error('Error fetching quiz:', data);
       }
@@ -107,7 +114,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă testul...</p>
+          <p className="mt-4 text-gray-600">{t('loadingQuiz')}</p>
         </div>
       </div>
     );
@@ -117,13 +124,13 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md p-6 bg-white rounded-lg shadow">
-          <div className="text-red-500 font-medium mb-4">Testul nu a fost găsit</div>
+          <div className="text-red-500 font-medium mb-4">{t('quizNotFound')}</div>
           <button
             onClick={() => router.push('/quizzes')}
             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Înapoi la teste
+            {t('backToQuizzes')}
           </button>
         </div>
       </div>
@@ -139,21 +146,21 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
             className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
-            Înapoi la teste
+            {t('backToQuizzes')}
           </Link>
           
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Test: {fileName}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t('quiz')} {fileName}</h1>
               <p className="mt-1 text-gray-600">
-                {quiz.length} întrebări • Completează testul pentru a-ți verifica cunoștințele
+                {quiz.length} {t('questionsCount')} • {t('completeQuizToVerify')}
               </p>
             </div>
             
             {submitted && (
               <div className="bg-blue-50 px-4 py-2 rounded-lg">
                 <span className="font-semibold text-blue-800">
-                  Scor: {score}/{quiz.length} ({Math.round((score / quiz.length) * 100)}%)
+                  {t('score')} {score}/{quiz.length} ({Math.round((score / quiz.length) * 100)}%)
                 </span>
               </div>
             )}
@@ -169,7 +176,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
               }`}
             >
               <Shuffle className="mr-2 h-4 w-4" />
-              Amestecă întrebările
+              {t('shuffleQuestionsButton')}
             </button>
             
             <button
@@ -177,7 +184,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
               className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Generează alt test
+              {t('generateAnotherQuiz')}
             </button>
           </div>
         </div>
@@ -262,32 +269,32 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
                 selectedOptions.length !== quiz.length ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
-              Verifică răspunsurile
+              {t('checkAnswersButton')}
             </button>
             <p className="mt-3 text-gray-500">
-              {selectedOptions.length} din {quiz.length} întrebări completate
+              {selectedOptions.length} {t('outOf')} {quiz.length} {t('questionsCompleted')}
             </p>
           </div>
         ) : (
           <div className="mt-8 bg-white rounded-xl shadow-md p-6 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Rezultatul tău: {score}/{quiz.length}
+              {t('yourResult')} {score}/{quiz.length}
             </h2>
             <p className="text-lg text-gray-600 mb-6">
-              Ai răspuns corect la {Math.round((score / quiz.length) * 100)}% din întrebări
+              {t('answeredCorrectlyPercent', { percent: Math.round((score / quiz.length) * 100) })}
             </p>
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => window.location.reload()}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
               >
-                Refă testul
+                {t('retakeQuiz')}
               </button>
               <Link
                 href="/quizzes"
                 className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300"
               >
-                Alte teste
+                {t('otherQuizzes')}
               </Link>
             </div>
           </div>

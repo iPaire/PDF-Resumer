@@ -10,7 +10,10 @@ import { analyticsEvents } from '@/lib/analytics';
 export default function ConvertToPDF() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
   const t = useTranslations('common');
+  const tConvert = useTranslations('convertToPdf');
+
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isConverting, setIsConverting] = useState(false);
   const [convertedFile, setConvertedFile] = useState<string | null>(null);
@@ -244,20 +247,20 @@ export default function ConvertToPDF() {
         )}
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden p-8">
-          <h2 className="text-xl text-black font-semibold mb-4">{t('howItWorks')}</h2>
+          <h2 className="text-xl text-black font-semibold mb-4">{tConvert('howItWorks')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                 <span className="text-2xl font-bold text-blue-600">1</span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-2">{t('uploadFiles')}</h3>
-              <p className="text-gray-600 text-sm">{t('uploadFilesDescription')}</p>
+              <h3 className="font-medium text-gray-900 mb-2">{tConvert('uploadFiles')}</h3>
+              <p className="text-gray-600 text-sm">{tConvert('uploadFilesDescription')}</p>
             </div>
             <div className="text-center">
               <div className="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                 <span className="text-2xl font-bold text-blue-600">2</span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-2">{t('convertToPdfStep')}</h3>
+              <h3 className="font-medium text-gray-900 mb-2">{tConvert('convertToPdfStep')}</h3>
               <p className="text-gray-600 text-sm">{t('convertToPdfDescription')}</p>
             </div>
             <div className="text-center">

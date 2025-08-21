@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { FileText, BarChart, ArrowRight, ArrowLeft } from 'react-feather';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 type QuizFile = {
   id: string;
@@ -13,6 +14,8 @@ type QuizFile = {
 };
 
 export default function QuizzesPage() {
+  const t = useTranslations('quizzes');
+  const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const [files, setFiles] = useState<QuizFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,7 +48,7 @@ export default function QuizzesPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă testele...</p>
+          <p className="mt-4 text-gray-600">{t('loadingQuizzes')}</p>
         </div>
       </div>
     );
@@ -60,13 +63,13 @@ export default function QuizzesPage() {
             className="inline-flex items-center text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
-            Înapoi la Dashboard
+            {t('backToDashboard')}
           </Link>
         </div>
         
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Teste Grilă</h1>
-          <p className="mt-2 text-gray-600">Testează-ți cunoștințele bazate pe documentele încărcate</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="mt-2 text-gray-600">{t('subtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -89,14 +92,14 @@ export default function QuizzesPage() {
                 <div className="flex items-center justify-between mt-4">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                     <BarChart className="mr-1 h-4 w-4" />
-                    {file.quizCount} întrebări
+                    {file.quizCount} {t('questions')}
                   </span>
                   
                   <Link 
                     href={`/quizzes/${file.id}`}
                     className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
                   >
-                    Începe testul
+                    {t('startTest')}
                     <ArrowRight className="ml-1 h-4 w-4" />
                   </Link>
                 </div>
@@ -110,25 +113,25 @@ export default function QuizzesPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-500 mb-4">
               <BarChart className="h-8 w-8" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Niciun test disponibil</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noQuizzesTitle')}</h3>
             <p className="text-gray-500 mb-6">
               {files.length > 0 
-                ? "Toate testele generate au 0 întrebări. Încarcă un alt document PDF pentru a genera teste." 
-                : "Încarcă un document PDF pentru a genera teste grilă."}
+                ? t('noValidQuizzes')
+                : t('noQuizzesDescription')}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-3">
               <Link
                 href="/"
                 className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
               >
-                Încarcă PDF
+                {t('uploadPdf')}
               </Link>
               <Link
                 href="/dashboard"
                 className="inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Înapoi la Dashboard
+                {t('backToDashboard')}
               </Link>
             </div>
           </div>
