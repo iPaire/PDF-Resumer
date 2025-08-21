@@ -291,7 +291,19 @@ Format așteptat (JSON):
         language: documentLanguage
       }
     });
-    const summaryTitle = `Rezumat ${filename.substring(0, 30)}`;
+    // Map language to title prefix
+    const titlePrefixes: Record<string, string> = {
+      en: 'Summary',
+      ro: 'Rezumat',
+      fr: 'Résumé',
+      de: 'Zusammenfassung',
+      es: 'Resumen',
+      it: 'Riassunto'
+    };
+    
+    const titlePrefix = titlePrefixes[documentLanguage] || 'Summary';
+    const summaryTitle = `${titlePrefix} ${filename.substring(0, 30)}`;
+    
     await prisma.summary.create({
       data: {
         title: summaryTitle,

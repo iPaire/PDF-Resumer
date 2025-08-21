@@ -92,7 +92,7 @@ export default function SummariesPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${name.replace('.pdf', '')}_rezumat.txt`;
+      a.download = `${name.replace('.pdf', '')}.txt`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
