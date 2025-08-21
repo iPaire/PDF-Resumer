@@ -9,7 +9,7 @@ export async function middleware(req: NextRequest) {
   });
   const { pathname } = req.nextUrl;
   
-  console.log('Middleware - pathname:', pathname, 'token exists:', !!token, 'token subscription:', token?.subscription);
+  console.log('Middleware - pathname:', pathname, 'token exists:', !!token, 'token subscription:', token?.subscription, 'token id:', token?.id);
   
   if (!token) {
     console.log('No token found, checking cookies:', req.cookies.getAll().map(c => c.name));
@@ -41,17 +41,34 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Redirect to login if accessing protected routes without session
-  if (!token && pathname.startsWith('/dashboard')) {
-    console.log('Redirecting to login because no token for dashboard access');
-    const url = new URL('/login', req.url);
-    url.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(url);
+  // Handle dashboard access
+  if (pathname.startsWith('/dashboard')) {
+    if (!token) {
+      console.log('Redirecting to login because no token for dashboard access');
+      const url = new URL('/login', req.url);
+      url.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(url);
+    }
+    
+    // Redirect free users to summaries page
+    if (token.subscription === 'free') {
+      console.log('Redirecting free user from dashboard to summaries');
+      return NextResponse.redirect(new URL('/summaries', req.url));
+    }
+    
+    console.log('Allowing access to dashboard for user with subscription:', token.subscription);
   }
 
-  // Redirect to dashboard if logged in and accessing login
+  // Redirect based on subscription when accessing login while logged in
   if (token && pathname.startsWith('/login')) {
-    console.log('Redirecting to dashboard because user is logged in');
+    console.log('User is logged in, redirecting based on subscription:', token.subscription);
+    
+    // Redirect free users to summaries instead of dashboard
+    if (token.subscription === 'free') {
+      return NextResponse.redirect(new URL('/summaries', req.url));
+    }
+    
+    // Redirect paid/trial users to dashboard
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 

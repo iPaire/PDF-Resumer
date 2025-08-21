@@ -145,11 +145,11 @@ export default function Navbar() {
                 )}
 
                 <Link
-                  href="/dashboard"
+                  href={session.user.subscription === 'free' ? "/summaries" : "/dashboard"}
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setOpen(false)}
                 >
-                  {t('dashboard')}
+                  {session.user.subscription === 'free' ? t('summaries') : t('dashboard')}
                 </Link>
                 <Link
                   href="/settings"
