@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import { useTranslations } from 'next-intl';
 
 type Summary = {
   id: string;
@@ -45,7 +46,7 @@ const formatMarkdownSpacing = (text: string) => {
 };
 
 // Funcție optimizată pentru parsarea conținutului premium
-const parsePremiumContent = (content: string) => {
+const parsePremiumContent = (content: string, lang: string = 'ro') => {
   const sectionTitles = [
     "1. Descriere pe subiecte principale",
     "2. Glosar de termeni",
@@ -87,7 +88,7 @@ const parsePremiumContent = (content: string) => {
   // Completează secțiunile lipsă
   sectionTitles.forEach(title => {
     if (!sections[title]) {
-      sections[title] = "Conținutul nu este disponibil momentan";
+      sections[title] = t('contentNotAvailable');
     }
   });
 
@@ -99,6 +100,8 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
   const resolvedParams = use(params);
   const { id } = resolvedParams;
   
+  const t = useTranslations('summaryDetail');
+  const tCommon = useTranslations('common');
   const { data: session, status } = useSession();
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -122,7 +125,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
     } else if (status === 'unauthenticated') {
       console.log('User not authenticated');
       setIsLoading(false);
-      setError('Trebuie să fii autentificat pentru a vizualiza acest rezumat.');
+      setError(t('authRequired'));
     }
   }, [session, status, id]);
 
@@ -145,11 +148,11 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
         console.log('Summary set successfully');
       } else {
         console.log('Error from API:', data.error);
-        setError(data.error || 'Eroare la încărcarea rezumatului');
+        setError(data.error || t('loadingSummary'));
       }
     } catch (error) {
       console.error('Fetch error:', error);
-      setError('Eroare de conexiune');
+      setError(t('connectionError'));
     } finally {
       setIsLoading(false);
     }
@@ -162,10 +165,10 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
       const response = await fetch(`/api/summaries/${id}/download`);
       if (response.status === 403) {
         const errorData = await response.json();
-        alert(errorData.error || 'Utilizatorii gratuit nu pot descărca rezumate');
+        alert(errorData.error || t('downloadErrorFree'));
         return;
       }
-      if (!response.ok) throw new Error('Descărcarea rezumatului a eșuat');
+      if (!response.ok) throw new Error(t('downloadError'));
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -178,14 +181,14 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Eroare descărcare:', error);
-      alert('Nu s-a putut descărca rezumatul');
+      alert(t('downloadError'));
     }
   };
 
   const handleDelete = async () => {
     if (!summary) return;
     
-    if (!confirm('Sigur doriți să ștergeți acest rezumat? Această acțiune este permanentă.')) {
+    if (!confirm(t('deleteConfirm'))) {
       return;
     }
 
@@ -195,15 +198,15 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
       });
 
       if (response.ok) {
-        alert('Rezumat șters cu succes!');
+        alert(t('deleteSuccess'));
         router.push('/summaries');
       } else {
         const errorData = await response.json();
-        alert(`Eroare ștergere: ${errorData.error}`);
+        alert(`${tCommon('error')}: ${errorData.error}`);
       }
     } catch (error) {
       console.error('Eroare ștergere:', error);
-      alert('A apărut o eroare la ștergerea rezumatului');
+      alert(t('deleteError'));
     }
   };
 
@@ -258,7 +261,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă rezumatul...</p>
+          <p className="mt-4 text-gray-600">{t('loadingSummary')}</p>
         </div>
       </div>
     );
@@ -274,7 +277,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Înapoi la rezumate
+            {t('backToSummaries')}
           </button>
         </div>
       </div>
@@ -285,22 +288,22 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md p-6 bg-white rounded-lg shadow">
-          <div className="text-gray-900 font-medium mb-4">Rezumatul nu a fost găsit.</div>
+          <div className="text-gray-900 font-medium mb-4">{t('summaryNotFound')}</div>
           <button
             onClick={() => router.push('/summaries')}
             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Înapoi la rezumate
+            {t('backToSummaries')}
           </button>
         </div>
       </div>
     );
   }
 
-  const lang = summary.language || 'ro';
-  const displayName = summary.title || summary.name || 'Untitled';
-  const displayContent = summary.content || summary.summary || 'Nu există conținut disponibil';
+  const lang = summary.language === 'en' ? 'en' : 'ro';
+  const displayName = summary.title || summary.name || t('untitled');
+  const displayContent = summary.content || summary.summary || t('noContentAvailable');
   
   // Detectare îmbunătățită a conținutului premium
   const hasPremiumStructure = 
@@ -309,7 +312,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
   
   const isPremium = summary.isPremium && hasPremiumStructure;
   
-  const sections = isPremium ? parsePremiumContent(displayContent) : null;
+  const sections = isPremium ? parsePremiumContent(displayContent, lang) : null;
   const assessmentQuestions = sections?.["8. Întrebări de autoevaluare"] 
     ? parseAssessmentQuestions(sections["8. Întrebări de autoevaluare"])
     : [];
@@ -323,27 +326,27 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
             className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
-            {lang === 'ro' ? 'Înapoi la rezumate' : 'Back to summaries'}
+            {t('backToSummaries')}
           </Link>
           
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{displayName}</h1>
               <p className="mt-2 text-gray-600">
-                {lang === 'ro' ? 'Creat pe' : 'Created on'} {new Date(summary.createdAt).toLocaleDateString(lang === 'ro' ? 'ro-RO' : 'en-US')}
+                {t('createdOn')} {new Date(summary.createdAt).toLocaleDateString(lang === 'ro' ? 'ro-RO' : 'en-US')}
                 {summary.pages && (
                   <>
-                    {' • '}{summary.pages} {lang === 'ro' ? 'pagini' : 'pages'}
+                    {' • '}{summary.pages} {t('pages')}
                   </>
                 )}
                 {summary.characters && (
                   <>
-                    {' • '}{summary.characters.toLocaleString()} {lang === 'ro' ? 'caractere' : 'characters'}
+                    {' • '}{summary.characters.toLocaleString()} {t('characters')}
                   </>
                 )}
                 {summary.coursesCount > 0 && (
                   <>
-                    {' • '}{summary.coursesCount} {lang === 'ro' ? 'cursuri' : 'courses'}
+                    {' • '}{summary.coursesCount} {t('courses')}
                   </>
                 )}
                 {isPremium && <span className="ml-2 bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">PREMIUM</span>}
@@ -354,7 +357,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
               <button
                 onClick={() => window.print()}
                 className="flex items-center px-3 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
-                title={lang === 'ro' ? 'Printează' : 'Print'}
+                title={t('print')}
               >
                 <Printer className="h-4 w-4" />
               </button>
@@ -362,7 +365,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
               <button
                 onClick={handleDelete}
                 className="flex items-center px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
-                title={lang === 'ro' ? 'Șterge' : 'Delete'}
+                title={t('delete')}
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -372,7 +375,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                 className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
               >
                 <Download className="mr-1 h-4 w-4" />
-                {lang === 'ro' ? 'Descarcă' : 'Download'}
+                {t('download')}
               </button>
             </div>
           </div>
@@ -439,7 +442,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                   {/* Secțiunea specială pentru întrebări */}
                   {assessmentQuestions.length > 0 && (
                     <div className="mt-10 pt-6 border-t border-gray-200">
-                      <h2 className="text-2xl font-bold mb-4">8. Întrebări de autoevaluare</h2>
+                      <h2 className="text-2xl font-bold mb-4">{t('assessmentQuestions')}</h2>
                       <div className="space-y-6">
                         {assessmentQuestions.map((q, index) => (
                           <div key={index} className="p-4 bg-white rounded-lg border border-gray-200">
@@ -447,13 +450,15 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                                  onClick={() => toggleAnswer(index)}>
                               <span className="text-blue-600">{q.number}</span> {q.question}
                               <span className="ml-2 text-blue-600 text-sm">
-                                ({revealedAnswers[index] ? 'Ascunde răspunsul' : 'Arată răspunsul'})
+                                ({revealedAnswers[index] 
+                                  ? t('hideAnswer')
+                                  : t('showAnswer')})
                               </span>
                             </div>
                             
                             {revealedAnswers[index] && q.answer && (
                               <div className="mt-4 p-4 bg-blue-50 rounded-md border border-blue-200">
-                                <strong className="text-blue-700 block mb-2">Răspuns:</strong>
+                                <strong className="text-blue-700 block mb-2">{t('answer')}</strong>
                                 <div className="text-gray-700">{q.answer}</div>
                               </div>
                             )}

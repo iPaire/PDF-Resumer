@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Folder, Plus, Trash2, ChevronRight } from 'react-feather';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 type Course = {
   id: string;
@@ -17,6 +18,8 @@ type Course = {
 };
 
 export default function CoursesPage() {
+  const t = useTranslations('courses');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +44,7 @@ export default function CoursesPage() {
 
   const deleteCourse = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Sigur doriți să ștergeți acest curs? Această acțiune este permanentă.')) return;
+    if (!confirm(t('deleteCourseConfirm'))) return;
     
     try {
       const res = await fetch(`/api/courses/${id}`, {
@@ -61,7 +64,7 @@ export default function CoursesPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă cursurile...</p>
+          <p className="mt-4 text-gray-600">{t('loadingCourses')}</p>
         </div>
       </div>
     );
@@ -89,11 +92,11 @@ export default function CoursesPage() {
     <line x1="19" y1="12" x2="5" y2="12"></line>
     <polyline points="12 19 5 12 12 5"></polyline>
   </svg>
-  Înapoi la Dashboard
+  {t('backToDashboard')}
 </a>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Cursurile Tale</h1>
-          <p className="mt-2 text-gray-600">Gestionează și organizează rezumatele tale în cursuri</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('yourCourses')}</h1>
+          <p className="mt-2 text-gray-600">{t('manageOrganizeCourses')}</p>
         </div>
 
         <div className="mb-6 flex justify-end">
@@ -102,7 +105,7 @@ export default function CoursesPage() {
             className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             <Plus className="-ml-1 mr-2 h-5 w-5" />
-            Creează Curs Nou
+            {t('createNewCourseButton')}
           </button>
         </div>
 
@@ -127,15 +130,15 @@ export default function CoursesPage() {
                 </div>
                 <h3 className="mt-4 text-xl font-semibold text-gray-900">{course.title}</h3>
                 <p className="mt-2 text-gray-500 text-sm">
-                  {course.description || 'Fără descriere'}
+                  {course.description || t('noDescription')}
                 </p>
                 <div className="mt-6 flex justify-between items-center">
                   <div className="flex space-x-4">
                     <span className="text-sm text-gray-500">
-                      {course._count.summaries} {course._count.summaries === 1 ? 'rezumat' : 'rezumate'}
+                      {course._count.summaries} {course._count.summaries === 1 ? t('summaryCount') : t('summariesCount')}
                     </span>
                     <span className="text-sm text-gray-500">
-                      {course._count.files} {course._count.files === 1 ? 'fișier' : 'fișiere'}
+                      {course._count.files} {course._count.files === 1 ? t('fileCount') : t('filesCount')}
                     </span>
                   </div>
                   <ChevronRight className="h-5 w-5 text-gray-400" />
@@ -148,9 +151,9 @@ export default function CoursesPage() {
         {courses.length === 0 && (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <Folder className="mx-auto h-16 w-16 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Nu ai niciun curs</h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">{t('noCourses')}</h3>
             <p className="mt-2 text-sm text-gray-500">
-              Începe prin a crea primul tău curs pentru a organiza rezumatele.
+              {t('createFirstCourse')}
             </p>
             <div className="mt-6">
               <button
@@ -158,7 +161,7 @@ export default function CoursesPage() {
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <Plus className="-ml-1 mr-2 h-5 w-5" />
-                Creează Curs
+                {tCommon('createCourse')}
               </button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import {
   Search, Trash2, Edit, ChevronDown, ChevronUp, Printer, RefreshCw, 
   Loader, Download, X, CheckCircle, XCircle
 } from 'react-feather';
+import { useTranslations, useLocale } from 'next-intl';
 
 type Summary = {
   id: string;
@@ -53,6 +54,9 @@ type Quiz = {
 };
 
 export default function CoursePage() {
+  const t = useTranslations('courseDetail');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
   const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
@@ -115,8 +119,8 @@ export default function CoursePage() {
     if (summary.file?.name) return summary.file.name;
     if (summary.title) return summary.title;
     
-    const date = new Date(summary.createdAt).toLocaleDateString('ro-RO');
-    return `Rezumat ${date}`;
+    const date = new Date(summary.createdAt).toLocaleDateString(locale);
+    return `${tCommon('summaries')} ${date}`;
   };
 
   // Toggle summary expansion
@@ -139,7 +143,7 @@ export default function CoursePage() {
       const response = await fetch(`/api/courses/${courseId}`);
       
       if (!response.ok) {
-        throw new Error('Eroare la încărcarea cursului');
+        throw new Error(t('errorLoadingCourse'));
       }
 
       const data = await response.json();
@@ -155,7 +159,7 @@ export default function CoursePage() {
       return courseData;
     } catch (error) {
       console.error('Error fetching course:', error);
-      setError(error instanceof Error ? error.message : 'Eroare necunoscută');
+      setError(error instanceof Error ? error.message : t('unknownError'));
       return null;
     }
   };
@@ -268,7 +272,7 @@ export default function CoursePage() {
   // Add selected summaries to course
   const addSelectedSummaryIds = async () => {
     if (selectedSummaryIds.length === 0) {
-      alert('Te rog selectează cel puțin un rezumat');
+      alert(t('selectAtLeastOneSummary'));
       return;
     }
 
@@ -281,7 +285,7 @@ export default function CoursePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Eroare la adăugarea rezumatelor');
+        throw new Error(errorData.error || t('errorAddingSummaries'));
       }
 
       // Refresh course data
@@ -293,18 +297,18 @@ export default function CoursePage() {
       setSelectedSummaryIds([]);
       
       // Show success message
-      setSuccessMessage('Rezumate adăugate cu succes!');
+      setSuccessMessage(t('summaryAddedSuccessfully'));
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error('Error adding summaries:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
-      alert(`Eroare: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t('unknownError');
+      alert(`${tCommon('error')}: ${errorMessage}`);
     }
   };
 
   // Remove summary from course
   const removeSummaryFromCourse = async (summaryId: string) => {
-    if (!confirm('Ești sigur că vrei să elimini acest rezumat din curs?')) {
+    if (!confirm(t('removeSummaryConfirm'))) {
       return;
     }
 
@@ -320,18 +324,18 @@ export default function CoursePage() {
         await fetchCourse();
         await fetchFinalSummary();
         // Show success message
-        setSuccessMessage('Rezumat eliminat cu succes!');
+        setSuccessMessage(t('summaryRemovedSuccessfully'));
         setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error removing summary:', error);
-      alert('Eroare la eliminarea rezumatului');
+      alert(t('errorRemovingSummary'));
     }
   };
 
   // Delete cheat sheet
   const deleteCheatSheet = async (cheatSheetId: string) => {
-    if (!confirm('Ești sigur că vrei să ștergi această copiuță?')) {
+    if (!confirm(t('deleteCheatSheetConfirm'))) {
       return;
     }
 
@@ -344,18 +348,18 @@ export default function CoursePage() {
 
       if (response.ok) {
         await fetchCheatSheets();
-        setSuccessMessage('Copiuță ștearsă cu succes!');
+        setSuccessMessage(t('cheatSheetDeletedSuccessfully'));
         setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error deleting cheat sheet:', error);
-      alert('Eroare la ștergerea copiuței');
+      alert(t('errorDeletingCheatSheet'));
     }
   };
 
   // Delete quiz
   const deleteQuiz = async (quizId: string) => {
-    if (!confirm('Ești sigur că vrei să ștergi acest test?')) {
+    if (!confirm(t('deleteQuizConfirm'))) {
       return;
     }
 
@@ -368,19 +372,19 @@ export default function CoursePage() {
 
       if (response.ok) {
         await fetchQuizzes();
-        setSuccessMessage('Test șters cu succes!');
+        setSuccessMessage(t('quizDeletedSuccessfully'));
         setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error deleting quiz:', error);
-      alert('Eroare la ștergerea testului');
+      alert(t('errorDeletingQuiz'));
     }
   };
 
   // Update course details
   const updateCourse = async () => {
     if (!editTitle.trim()) {
-      alert('Titlul este obligatoriu');
+      alert(t('titleRequired'));
       return;
     }
 
@@ -398,19 +402,19 @@ export default function CoursePage() {
         setShowEditCourse(false);
         await fetchCourse();
         // Show success message
-        setSuccessMessage('Curs actualizat cu succes!');
+        setSuccessMessage(t('courseUpdatedSuccessfully'));
         setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error updating course:', error);
-      alert('Eroare la actualizarea cursului');
+      alert(t('errorUpdatingCourse'));
     }
   };
 
   // Generate final summary
   const generateFinalSummary = async () => {
     if (!course?.summaries || course.summaries.length === 0) {
-      alert('Nu există rezumate în acest curs');
+      alert(t('noSummariesInCourse'));
       return;
     }
 
@@ -426,12 +430,12 @@ export default function CoursePage() {
         setFinalSummary(data.finalSummary);
         
         // Show success message
-        setSuccessMessage('Rezumat final generat cu succes!');
+        setSuccessMessage(t('finalSummaryGeneratedSuccessfully'));
         setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error generating summary:', error);
-      alert('Eroare la generarea rezumatului final. Te rog încearcă din nou.');
+      alert(t('errorGeneratingFinalSummary'));
     } finally {
       setGenerating(prev => ({...prev, summary: false}));
     }
@@ -439,7 +443,7 @@ export default function CoursePage() {
 
   const generateCheatSheet = async () => {
     if (!course?.summaries || course.summaries.length === 0) {
-      alert('Nu există rezumate în acest curs');
+      alert(t('noSummariesInCourse'));
       return;
     }
 
@@ -452,12 +456,12 @@ export default function CoursePage() {
       if (res.ok) {
         await fetchCheatSheets();
         // Show success message
-        setSuccessMessage('Copiuță generată cu succes!');
+        setSuccessMessage(t('cheatSheetGeneratedSuccessfully'));
         setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error generating cheat sheet:', error);
-      alert('Eroare la generarea copiuței. Te rog încearcă din nou.');
+      alert(t('errorGeneratingCheatSheet'));
     } finally {
       setGenerating(prev => ({...prev, cheatSheet: false}));
     }
@@ -465,7 +469,7 @@ export default function CoursePage() {
 
   const generateQuiz = async () => {
     if (!course?.summaries || course.summaries.length === 0) {
-      alert('Nu există rezumate în acest curs');
+      alert(t('noSummariesInCourse'));
       return;
     }
 
@@ -478,12 +482,12 @@ export default function CoursePage() {
       if (res.ok) {
         await fetchQuizzes();
         // Show success message
-        setSuccessMessage('Test generat cu succes!');
+        setSuccessMessage(t('quizGeneratedSuccessfully'));
         setTimeout(() => setSuccessMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error generating quiz:', error);
-      alert('Eroare la generarea testului. Te rog încearcă din nou.');
+      alert(t('errorGeneratingQuiz'));
     } finally {
       setGenerating(prev => ({...prev, quiz: false}));
     }
@@ -516,7 +520,7 @@ export default function CoursePage() {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Copiuță - ${course?.title || ''}</title>
+        <title>${t('cheatSheet')} - ${course?.title || ''}</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
@@ -564,7 +568,7 @@ export default function CoursePage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `copiuta-${course.title.toLowerCase().replace(/\s+/g, '-')}.html`;
+    a.download = `${t('cheatSheet').toLowerCase()}-${course.title.toLowerCase().replace(/\s+/g, '-')}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -605,11 +609,11 @@ export default function CoursePage() {
         const result = await response.json();
         setQuizResults(result);
       } else {
-        throw new Error('Eroare la trimiterea răspunsurilor');
+        throw new Error(t('errorSubmittingAnswers'));
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
-      alert('Eroare la trimiterea răspunsurilor');
+      alert(t('errorSubmittingAnswers'));
     } finally {
       setIsSubmittingQuiz(false);
     }
@@ -628,7 +632,7 @@ export default function CoursePage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă cursul...</p>
+          <p className="mt-4 text-gray-600">{t('loadingCourse')}</p>
         </div>
       </div>
     );
@@ -639,7 +643,7 @@ export default function CoursePage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <Folder className="mx-auto h-16 w-16 text-red-500" />
-          <h3 className="mt-4 text-xl font-bold text-gray-900">Eroare</h3>
+          <h3 className="mt-4 text-xl font-bold text-gray-900">{tCommon('error')}</h3>
           <p className="mt-2 text-gray-600">{error}</p>
           <button
             onClick={() => {
@@ -648,7 +652,7 @@ export default function CoursePage() {
             }}
             className="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            Încearcă din nou
+            {t('tryAgain')}
           </button>
         </div>
       </div>
@@ -660,15 +664,15 @@ export default function CoursePage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <Folder className="mx-auto h-16 w-16 text-gray-400" />
-          <h3 className="mt-4 text-xl font-bold text-gray-900">Cursul nu a fost găsit</h3>
+          <h3 className="mt-4 text-xl font-bold text-gray-900">{t('courseNotFound')}</h3>
           <p className="mt-2 text-gray-600">
-            Cursul solicitat nu există sau nu ai permisiunea de a-l accesa.
+            {t('authRequired')}
           </p>
           <button
             onClick={() => router.push('/courses')}
             className="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            Înapoi la cursuri
+            {t('backToCourses')}
           </button>
         </div>
       </div>
@@ -704,10 +708,10 @@ export default function CoursePage() {
                 <p className="mt-2 text-gray-600 max-w-3xl">{course.description}</p>
               )}
               <div className="mt-3 text-sm text-gray-500">
-                Creat: {new Date(course.createdAt).toLocaleDateString('ro-RO')}
+                {t('createdAt')}: {new Date(course.createdAt).toLocaleDateString(locale)}
                 {course.updatedAt !== course.createdAt && (
                   <span className="ml-3">
-                    • Actualizat: {new Date(course.updatedAt).toLocaleDateString('ro-RO')}
+                    • {t('updatedAt')}: {new Date(course.updatedAt).toLocaleDateString(locale)}
                   </span>
                 )}
               </div>
@@ -718,13 +722,13 @@ export default function CoursePage() {
                 className="px-4 py-2 flex items-center gap-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
                 <Edit className="h-4 w-4" />
-                Editează
+                {tCommon('edit')}
               </button>
               <button
                 onClick={() => router.push('/courses')}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
-                Înapoi
+                {t('back')}
               </button>
             </div>
           </div>
@@ -735,7 +739,7 @@ export default function CoursePage() {
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <BookOpen className="h-6 w-6 text-indigo-600" />
-              <h2 className="text-xl font-bold text-gray-900">Rezumatele cursului</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('courseSummaries')}</h2>
             </div>
             <div className="flex space-x-2">
               {course.summaries.length > 1 && (
@@ -751,12 +755,12 @@ export default function CoursePage() {
                   {generating.summary ? (
                     <>
                       <Loader  className="mr-2 h-4 w-4 animate-spin" />
-                      Se generează...
+                      {t('generating')}
                     </>
                   ) : (
                     <>
                       <BookOpen className="h-5 w-5" />
-                      Rezumat final
+                      {t('finalSummary')}
                     </>
                   )}
                 </button>
@@ -766,13 +770,13 @@ export default function CoursePage() {
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-2 shadow-md"
               >
                 <Plus className="h-5 w-5" />
-                Adaugă rezumate
+                {t('addSummaries')}
               </button>
             </div>
           </div>
           
           <div className="mb-6">
-            <h3 className="font-medium text-gray-700 mb-3">Rezumate adăugate ({course.summaries.length}):</h3>
+            <h3 className="font-medium text-gray-700 mb-3">{t('addedSummaries', { count: course.summaries.length })}</h3>
             {course.summaries.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {course.summaries.map(summary => {
@@ -792,10 +796,10 @@ export default function CoursePage() {
                               {getSummaryName(summary)}
                             </h3>
                             <p className="text-xs text-gray-500">
-                              Creat la: {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
+                              {t('createdAt')}: {new Date(summary.createdAt).toLocaleDateString(locale)}
                               {summary.addedAt && (
                                 <span className="ml-2">
-                                  • Adăugat: {new Date(summary.addedAt).toLocaleDateString('ro-RO')}
+                                  • {t('addedOn')}: {new Date(summary.addedAt).toLocaleDateString(locale)}
                                 </span>
                               )}
                             </p>
@@ -807,7 +811,7 @@ export default function CoursePage() {
                             className="text-gray-500 hover:text-indigo-600"
                           >
                             {copiedSummaryId === summary.id ? (
-                              <span className="text-sm text-indigo-600 font-medium">Copiat!</span>
+                              <span className="text-sm text-indigo-600 font-medium">{t('copied')}</span>
                             ) : (
                               <Clipboard className="h-5 w-5" />
                             )}
@@ -829,12 +833,9 @@ export default function CoursePage() {
                       
                       {isExpanded && (
                         <div className="mt-4">
-                          <div 
-                            className="cheat-sheet-container border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto"
-                            dangerouslySetInnerHTML={{ 
-                              __html: cheatSheets.find(cs => cs.id === activeCheatSheet)?.content || '' 
-                            }}
-                          />
+                          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto">
+                            <p className="whitespace-pre-line text-gray-700">{summary.content}</p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -843,12 +844,12 @@ export default function CoursePage() {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p>Nu ai rezumate în acest curs.</p>
+                <p>{t('noSummariesInCourse')}</p>
                 <button
                   onClick={() => setShowAddSummaries(true)}
                   className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                 >
-                  Adaugă primul rezumat
+                  {t('addFirstSummary')}
                 </button>
               </div>
             )}
@@ -859,7 +860,7 @@ export default function CoursePage() {
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-6">
             <Folder className="h-6 w-6 text-indigo-600" />
-            <h2 className="text-xl font-bold text-gray-900">Materiale Curs</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('courseMaterials')}</h2>
           </div>
 
           {/* Material Tabs */}
@@ -872,7 +873,7 @@ export default function CoursePage() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Rezumat Final
+              {t('finalSummary')}
             </button>
             <button
               onClick={() => setActiveMaterialTab('cheatsheet')}
@@ -882,7 +883,7 @@ export default function CoursePage() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Copiuță
+              {t('cheatSheet')}
             </button>
             <button
               onClick={() => setActiveMaterialTab('quiz')}
@@ -892,7 +893,7 @@ export default function CoursePage() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Test
+              {t('quiz')}
             </button>
           </div>
 
@@ -907,9 +908,9 @@ export default function CoursePage() {
                       <div className="flex items-center gap-3">
                         <BookOpen className="h-6 w-6 text-indigo-600" />
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900">Rezumat Final Generat</h3>
+                          <h3 className="text-lg font-bold text-gray-900">{t('finalSummaryGenerated')}</h3>
                           <p className="text-sm text-gray-500">
-                            Creat la: {new Date(finalSummary.createdAt).toLocaleDateString('ro-RO')}
+                            {t('createdAt')}: {new Date(finalSummary.createdAt).toLocaleDateString(locale)}
                           </p>
                         </div>
                       </div>
@@ -918,7 +919,7 @@ export default function CoursePage() {
                         className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg flex items-center gap-2"
                       >
                         <Copy className="h-4 w-4" />
-                        {copied.fullSummary ? 'Copiat!' : 'Copiază'}
+                        {copied.fullSummary ? t('copied') : t('copy')}
                       </button>
                     </div>
                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto">
@@ -928,9 +929,9 @@ export default function CoursePage() {
                 ) : (
                   <div className="text-center py-12">
                     <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-bold text-gray-900">Niciun rezumat final generat</h3>
+                    <h3 className="mt-4 text-lg font-bold text-gray-900">{t('noFinalSummaryGenerated')}</h3>
                     <p className="mt-2 text-gray-600">
-                      Generează un rezumat final combinând toate rezumatele cursului.
+                      {t('generateFinalSummaryDescription')}
                     </p>
                     <button
                       onClick={generateFinalSummary}
@@ -944,12 +945,12 @@ export default function CoursePage() {
                       {generating.summary ? (
                         <>
                           <Loader  className="h-5 w-5 animate-spin" />
-                          Se generează...
+                          {t('generating')}
                         </>
                       ) : (
                         <>
                           <BookOpen className="h-5 w-5" />
-                          Generează Rezumat Final
+                          {t('generateFinalSummary')}
                         </>
                       )}
                     </button>
@@ -977,7 +978,7 @@ export default function CoursePage() {
                           onClick={() => setActiveCheatSheet(cs.id)}
                           className="flex-1 text-left"
                         >
-                          {new Date(cs.createdAt).toLocaleDateString('ro-RO')}
+                          {new Date(cs.createdAt).toLocaleDateString(locale)}
                         </button>
                         <button 
                           onClick={(e) => {
@@ -997,11 +998,11 @@ export default function CoursePage() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                           <div className="flex items-center gap-3">
                             <File className="h-6 w-6 text-green-600" />
-                            <h3 className="text-lg font-bold text-gray-900">Fișă de Sinteză</h3>
+                            <h3 className="text-lg font-bold text-gray-900">{t('synthesisSheet')}</h3>
                             <span className="text-sm text-gray-500">
                               {new Date(
                                 cheatSheets.find(cs => cs.id === activeCheatSheet)?.createdAt || ''
-                              ).toLocaleDateString('ro-RO')}
+                              ).toLocaleDateString(locale)}
                             </span>
                           </div>
                           <div className="flex gap-2">
@@ -1015,21 +1016,21 @@ export default function CoursePage() {
                               ) : (
                                 <RefreshCw className="h-4 w-4" />
                               )}
-                              Regenerare
+                              {t('regenerate')}
                             </button>
                             <button
                               onClick={handlePrintCheatSheet}
                               className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg flex items-center gap-2"
                             >
                               <Printer className="h-4 w-4" />
-                              Printează
+                              {t('print')}
                             </button>
                             <button
                               onClick={downloadCheatSheetHTML}
                               className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg flex items-center gap-2"
                             >
                               <Download className="h-4 w-4" />
-                              Descarcă
+                              {tCommon('download')}
                             </button>
                           </div>
                         </div>
@@ -1037,7 +1038,7 @@ export default function CoursePage() {
                           <iframe
                             srcDoc={cheatSheets.find(cs => cs.id === activeCheatSheet)?.content || ''}
                             className="cheat-sheet-iframe"
-                            title="Cheat Sheet"
+                            title={t('cheatSheet')}
                           />
                         </div>
                       </div>
@@ -1046,9 +1047,9 @@ export default function CoursePage() {
                 ) : (
                   <div className="text-center py-12">
                     <File className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-bold text-gray-900">Nicio copiuță generată</h3>
+                    <h3 className="mt-4 text-lg font-bold text-gray-900">{t('noCheatSheetGenerated')}</h3>
                     <p className="mt-2 text-gray-600">
-                      Generează o copiuță cu formule și concepte cheie.
+                      {t('generateCheatSheetDescription')}
                     </p>
                     <button
                       onClick={generateCheatSheet}
@@ -1062,12 +1063,12 @@ export default function CoursePage() {
                       {generating.cheatSheet ? (
                         <>
                           <Loader  className="h-5 w-5 animate-spin" />
-                          Se generează...
+                          {t('generating')}
                         </>
                       ) : (
                         <>
                           <File className="h-5 w-5" />
-                          Generează Copiuță
+                          {t('generateCheatSheet')}
                         </>
                       )}
                     </button>
@@ -1095,7 +1096,7 @@ export default function CoursePage() {
                               : 'bg-gray-200 hover:bg-gray-300'
                           }`}
                         >
-                          {new Date(quiz.createdAt).toLocaleDateString('ro-RO')}
+                          {new Date(quiz.createdAt).toLocaleDateString(locale)}
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1122,12 +1123,12 @@ export default function CoursePage() {
                           {generating.quiz ? (
                             <>
                               <Loader className="h-4 w-4 animate-spin" />
-                              Se generează...
+                              {t('generating')}
                             </>
                           ) : (
                             <>
                               <RefreshCw className="h-4 w-4" />
-                              Generează alt test
+                              {t('generateOtherTest')}
                             </>
                           )}
                         </button>
@@ -1137,14 +1138,14 @@ export default function CoursePage() {
                       <div>
                         {quizResults ? (
                           <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6">
-                            <h3 className="text-2xl font-bold text-center mb-6">Rezultatele testului</h3>
+                            <h3 className="text-2xl font-bold text-center mb-6">{t('testResults')}</h3>
                             
                             <div className="text-center mb-8">
                               <div className="text-5xl font-bold text-purple-600 mb-2">
                                 {quizResults.summary.correctAnswers}/{quizResults.summary.totalQuestions}
                               </div>
                               <div className="text-xl mb-1">{quizResults.summary.percentage}%</div>
-                              <div className="text-lg font-medium mb-4">Notă: {quizResults.summary.grade}</div>
+                              <div className="text-lg font-medium mb-4">{t('grade')}: {quizResults.summary.grade}</div>
                               <p className="text-gray-700">{quizResults.summary.feedback}</p>
                             </div>
 
@@ -1167,7 +1168,7 @@ export default function CoursePage() {
                                   
                                   <div className="mt-3">
                                     <p className="text-sm">
-                                      <span className="font-medium">Răspunsul tău:</span> 
+                                      <span className="font-medium">{t('yourAnswer')}:</span> 
                                       <span className={result.isCorrect ? "text-green-600" : "text-red-600"}>
                                         {" "}{result.options[result.userAnswer]}
                                       </span>
@@ -1175,14 +1176,14 @@ export default function CoursePage() {
                                     
                                     {!result.isCorrect && (
                                       <p className="text-sm mt-1">
-                                        <span className="font-medium">Răspuns corect:</span> 
+                                        <span className="font-medium">{t('correctAnswer')}:</span> 
                                         <span className="text-green-600">{" "}{result.options[result.correctAnswer]}</span>
                                       </p>
                                     )}
                                     
                                     {result.explanation && (
                                       <div className="mt-3 p-3 bg-white rounded-md text-sm">
-                                        <span className="font-medium">Explicație:</span> {result.explanation}
+                                        <span className="font-medium">{t('explanation')}:</span> {result.explanation}
                                       </div>
                                     )}
                                   </div>
@@ -1195,7 +1196,7 @@ export default function CoursePage() {
                                 onClick={restartQuiz}
                                 className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                               >
-                                Refă testul
+                                {t('retakeTest')}
                               </button>
                             </div>
                           </div>
@@ -1203,11 +1204,11 @@ export default function CoursePage() {
                           <>
                             <div className="flex items-center gap-3 mb-5">
                               <CheckSquare className="h-6 w-6 text-purple-600" />
-                              <h3 className="text-lg font-bold text-gray-900">Test de Evaluare</h3>
+                              <h3 className="text-lg font-bold text-gray-900">{t('testEvaluation')}</h3>
                               <span className="text-sm text-black-500">
                                 {new Date(
                                   quizzes.find(q => q.id === activeQuiz)?.createdAt || ''
-                                ).toLocaleDateString('ro-RO')}
+                                ).toLocaleDateString(locale)}
                               </span>
                             </div>
                             <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6">
@@ -1252,10 +1253,10 @@ export default function CoursePage() {
                                 {isSubmittingQuiz ? (
                                   <>
                                     <Loader className="mr-2 h-4 w-4 animate-spin inline" />
-                                    Se trimit...
+                                    {t('submitting')}
                                   </>
                                 ) : (
-                                  'Trimite răspunsurile'
+                                  t('submitAnswers')
                                 )}
                               </button>
                             </div>
@@ -1267,9 +1268,9 @@ export default function CoursePage() {
                 ) : (
                   <div className="text-center py-12">
                     <CheckSquare className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-bold text-gray-900">Niciun test generat</h3>
+                    <h3 className="mt-4 text-lg font-bold text-gray-900">{t('noQuizGenerated')}</h3>
                     <p className="mt-2 text-gray-600">
-                      Generează un test pentru a-ți verifica cunoștințele.
+                      {t('generateQuizDescription')}
                     </p>
                     <button
                       onClick={generateQuiz}
@@ -1283,12 +1284,12 @@ export default function CoursePage() {
                       {generating.quiz ? (
                         <>
                           <Loader  className="h-5 w-5 animate-spin" />
-                          Se generează...
+                          {t('generating')}
                         </>
                       ) : (
                         <>
                           <CheckSquare className="h-5 w-5" />
-                          Generează Test
+                          {t('generateQuiz')}
                         </>
                       )}
                     </button>
@@ -1304,7 +1305,7 @@ export default function CoursePage() {
           <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
             <div className="flex items-center gap-3 mb-5">
               <FileText className="h-6 w-6 text-indigo-600" />
-              <h2 className="text-xl font-bold text-gray-900">Fișiere în curs</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('coursesFiles')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {course.files.map((file) => (
@@ -1314,7 +1315,7 @@ export default function CoursePage() {
                     <h3 className="font-medium truncate">{file.name}</h3>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Adăugat pe {new Date(file.createdAt).toLocaleDateString('ro-RO')}
+                    {t('addedOn')} {new Date(file.createdAt).toLocaleDateString(locale)}
                   </p>
                 </div>
               ))}
@@ -1327,9 +1328,9 @@ export default function CoursePage() {
           <div className="text-center py-12 bg-white rounded-2xl shadow-lg">
             <div className="max-w-md mx-auto">
               <Folder className="mx-auto h-16 w-16 text-gray-400" />
-              <h3 className="mt-4 text-xl font-bold text-gray-900">Curs gol</h3>
+              <h3 className="mt-4 text-xl font-bold text-gray-900">{t('emptyCourse')}</h3>
               <p className="mt-2 text-gray-600">
-                Începe prin a adăuga rezumate la acest curs.
+                {t('startByAddingSummaries')}
               </p>
             </div>
           </div>
@@ -1342,7 +1343,7 @@ export default function CoursePage() {
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Adaugă rezumate la curs</h3>
+                <h3 className="text-xl font-bold">{t('addSummariesToCourse')}</h3>
                 <button 
                   onClick={() => setShowAddSummaries(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -1354,11 +1355,11 @@ export default function CoursePage() {
               {isLoadingSummaries ? (
                 <div className="text-center py-8">
                   <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Se încarcă rezumatele...</p>
+                  <p className="mt-4 text-gray-600">{t('loadingSummaries')}</p>
                 </div>
               ) : availableSummaries.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  Nu ai rezumate disponibile. Creează mai întâi rezumate.
+                  {t('noAvailableSummaries')}
                 </div>
               ) : (
                 <>
@@ -1390,12 +1391,12 @@ export default function CoursePage() {
                               {getSummaryName(summary)}
                             </p>
                             <p className="text-xs text-gray-500 mt-1">
-                              Creat la: {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
+                              {t('createdAt')}: {new Date(summary.createdAt).toLocaleDateString(locale)}
                             </p>
                           </div>
                         </div>
                         <span className="text-xs text-gray-500">
-                          {summary.courses?.length || 0} cursuri
+                          {summary.courses?.length || 0} {tCommon('courses')}
                         </span>
                       </div>
                     ))}
@@ -1409,7 +1410,7 @@ export default function CoursePage() {
                       }}
                       className="px-5 py-2.5 rounded-xl font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
                     >
-                      Anulează
+                      {tCommon('cancel')}
                     </button>
                     <button
                       onClick={addSelectedSummaryIds}
@@ -1421,7 +1422,7 @@ export default function CoursePage() {
                       }`}
                     >
                       <Plus className="h-5 w-5" />
-                      Adaugă rezumate ({selectedSummaryIds.length})
+                      {t('addSummariesCount', { count: selectedSummaryIds.length })}
                     </button>
                   </div>
                 </>
@@ -1437,7 +1438,7 @@ export default function CoursePage() {
           <div className="bg-white rounded-2xl w-full max-w-md">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Editează cursul</h3>
+                <h3 className="text-xl font-bold">{t('editCourse')}</h3>
                 <button 
                   onClick={() => setShowEditCourse(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -1448,24 +1449,24 @@ export default function CoursePage() {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Titlu curs *</label>
+                  <label className="block text-sm font-medium mb-2">{t('courseTitle')}</label>
                   <input
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Titlul cursului"
+                    placeholder={t('courseTitlePlaceholder')}
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Descriere (opțional)</label>
+                  <label className="block text-sm font-medium mb-2">{t('courseDescription')}</label>
                   <textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     rows={3}
-                    placeholder="Descrierea cursului"
+                    placeholder={t('courseDescriptionPlaceholder')}
                   />
                 </div>
               </div>
@@ -1475,13 +1476,13 @@ export default function CoursePage() {
                   onClick={() => setShowEditCourse(false)}
                   className="px-5 py-2.5 rounded-xl font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
-                  Anulează
+                  {tCommon('cancel')}
                 </button>
                 <button
                   onClick={updateCourse}
                   className="px-5 py-2.5 rounded-xl font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"
                 >
-                  Salvează modificările
+                  {tCommon('saveChanges')}
                 </button>
               </div>
             </div>
@@ -1516,19 +1517,24 @@ export default function CoursePage() {
         .cheat-sheet-isolated-container {
           width: 100% !important;
           max-width: 100% !important;
+          height: 600px !important;
+          max-height: 600px !important;
           overflow: hidden !important;
           border: 1px solid #e5e7eb;
           border-radius: 0.75rem;
           background: white;
+          position: relative;
         }
         
         .cheat-sheet-iframe {
           width: 100% !important;
-          height: 500px !important;
+          height: 600px !important;
+          max-height: 600px !important;
           min-height: 400px !important;
           border: none !important;
           display: block !important;
           background: white !important;
+          overflow: hidden !important;
         }
         
         /* Forțează menținerea layout-ului original */

@@ -100,7 +100,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
-              placeholder="email@exemplu.com"
+              placeholder={t('emailPlaceholder')}
               required
               disabled={loading}
             />
@@ -136,7 +136,7 @@ function LoginForm() {
                 {tc('loading')}
               </>
             ) : (
-              t('login')
+              tc('login')
             )}
           </button>
         </form>

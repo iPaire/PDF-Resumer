@@ -15,7 +15,8 @@
       "Bash(do echo \"Testing $file:\")",
       "Bash(done)",
       "Bash(cd:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

@@ -5,8 +5,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, FolderPlus } from 'react-feather';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export default function NewCoursePage() {
+  const t = useTranslations('courses');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -30,10 +33,10 @@ export default function NewCoursePage() {
         router.push(`/courses/${newCourse.id}`);
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'A apărut o eroare');
+        setError(errorData.error || t('errorOccurred'));
       }
     } catch (err) {
-      setError('A apărut o eroare de rețea');
+      setError(t('networkError'));
       console.error('Error creating course:', err);
     } finally {
       setIsSubmitting(false);
@@ -49,21 +52,21 @@ export default function NewCoursePage() {
             className="inline-flex items-center text-blue-600 hover:text-blue-800"
           >
             <ArrowLeft className="mr-2 h-5 w-5" />
-            Înapoi la Cursuri
+            {t('backToCourses')}
           </Link>
         </div>
         
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Creează un curs nou</h1>
-            <p className="mt-1 text-gray-600">Completează detaliile cursului</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('newCourseTitle')}</h1>
+            <p className="mt-1 text-gray-600">{t('newCourseSubtitle')}</p>
           </div>
           
           <div className="p-6">
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                  Titlu curs*
+                  {t('courseTitleLabel')}
                 </label>
                 <input
                   id="title"
@@ -72,13 +75,13 @@ export default function NewCoursePage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Introdu titlul cursului"
+                  placeholder={t('courseTitlePlaceholder')}
                 />
               </div>
               
               <div className="mb-6">
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Descriere
+                  {t('courseDescriptionLabel')}
                 </label>
                 <textarea
                   id="description"
@@ -86,7 +89,7 @@ export default function NewCoursePage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="O scurtă descriere a cursului (opțional)"
+                  placeholder={t('courseDescriptionPlaceholder')}
                 />
               </div>
               
@@ -105,7 +108,7 @@ export default function NewCoursePage() {
                   } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                 >
                   <FolderPlus className="-ml-1 mr-2 h-5 w-5" />
-                  {isSubmitting ? 'Se creează...' : 'Creează Curs'}
+                  {isSubmitting ? t('creatingCourse') : t('createCourseButton')}
                 </button>
               </div>
             </form>
