@@ -152,6 +152,15 @@ export const authOptions: AuthOptions = {
         }
       }
       return session;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // Dacă URL-ul este relativ, fă-l absolut
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Dacă URL-ul este pe același domeniu, permite-l
+      if (new URL(url).origin === baseUrl) return url;
+      // Altfel, redirect la baseUrl
+      return baseUrl;
     }
   },
 
