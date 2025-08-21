@@ -4,10 +4,13 @@ import { useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { analyticsEvents } from '@/lib/analytics';
 
 export default function ConvertToPDF() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const t = useTranslations('common');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isConverting, setIsConverting] = useState(false);
   const [convertedFile, setConvertedFile] = useState<string | null>(null);
@@ -25,6 +28,9 @@ export default function ConvertToPDF() {
 
   const handleConvert = async () => {
     if (selectedFiles.length === 0) return;
+    
+    // Track file converter usage
+    analyticsEvents.fileConverterUsed();
     
     setIsConverting(true);
     setError('');
@@ -51,7 +57,7 @@ export default function ConvertToPDF() {
       
       setConvertedFile(url);
     } catch (err: any) {
-      setError(err.message || 'Conversia a eșuat. Vă rugăm încercați din nou.');
+      setError(err.message || t('conversionFailed'));
       console.error('Conversion error:', err);
     } finally {
       setIsConverting(false);
@@ -80,7 +86,7 @@ export default function ConvertToPDF() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-gray-100">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă...</p>
+          <p className="mt-4 text-gray-600">{t('loading')}</p>
         </div>
       </div>
     );
@@ -96,19 +102,19 @@ export default function ConvertToPDF() {
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Convertor în PDF
+            {t('pdfConverter')}
           </h1>
           <p className="mt-3 text-lg text-gray-600">
-            Transformă fișierele într-un singur PDF
+            {t('transformFilesToPdf')}
           </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden p-8 mb-8">
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl text-black font-semibold mb-4">Încarcă fișiere pentru conversie</h2>
+              <h2 className="text-xl text-black font-semibold mb-4">{t('uploadFilesForConversion')}</h2>
               <p className="text-gray-600 mb-4">
-                Convertește fișiere PDF, JPG, PNG și TXT într-un singur PDF
+                {t('convertFilesPdfDescription')}
               </p>
               
               <input 
@@ -130,8 +136,8 @@ export default function ConvertToPDF() {
                   </svg>
                   <span className="mt-2 block text-sm font-medium">
                     {selectedFiles.length > 0 
-                      ? `${selectedFiles.length} fișiere selectate` 
-                      : 'Click pentru a selecta fișiere'}
+                      ? `${selectedFiles.length} ${t('filesSelected')}` 
+                      : t('selectFiles')}
                   </span>
                 </div>
               </button>
@@ -139,7 +145,7 @@ export default function ConvertToPDF() {
             
             {selectedFiles.length > 0 && (
               <div className="space-y-3">
-                <h3 className="font-medium text-gray-900">Fișiere selectate:</h3>
+                <h3 className="font-medium text-gray-900">{t('selectedFiles')}</h3>
                 {selectedFiles.map((file, index) => (
                   <div key={index} className="bg-gray-50 p-3 rounded-lg flex items-center justify-between">
                     <div className="flex items-center">
@@ -181,10 +187,10 @@ export default function ConvertToPDF() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Se convertește...
+                    {t('converting')}
                   </>
                 ) : (
-                  'Convertește în PDF'
+                  t('convertToPdf')
                 )}
               </button>
               
@@ -192,7 +198,7 @@ export default function ConvertToPDF() {
                 href="/upload"
                 className="px-6 py-3 border border-gray-300 text-base font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-center"
               >
-                Înapoi la Upload
+                {t('backToUpload')}
               </Link>
             </div>
           </div>
@@ -204,15 +210,15 @@ export default function ConvertToPDF() {
               <svg className="h-6 w-6 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
               </svg>
-              <h2 className="text-xl font-semibold text-green-800">PDF generat cu succes!</h2>
+              <h2 className="text-xl font-semibold text-green-800">{t('pdfGeneratedSuccess')}</h2>
             </div>
             
             <div className="bg-white p-4 rounded-lg flex items-center justify-between mb-6">
               <div className="flex items-center">
                 <span className="text-3xl mr-3">📄</span>
                 <div>
-                  <p className="font-medium text-gray-900">documente-combinate.pdf</p>
-                  <p className="text-sm text-gray-500">PDF cu {selectedFiles.length} fișier{selectedFiles.length > 1 ? 'e' : ''}</p>
+                  <p className="font-medium text-gray-900">{t('combinedDocuments')}</p>
+                  <p className="text-sm text-gray-500">{t('pdfWithFiles', { count: selectedFiles.length, plural: selectedFiles.length > 1 ? 's' : '' })}</p>
                 </div>
               </div>
               
@@ -220,11 +226,11 @@ export default function ConvertToPDF() {
                 href={convertedFile}
                 download={selectedFiles.length === 1 ? 
                   `${selectedFiles[0].name.replace(/\.[^/.]+$/, '')}.pdf` : 
-                  "documente-combinate.pdf"
+                  t('combinedDocuments')
                 }
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
               >
-                Descarcă PDF
+                {t('downloadPdf')}
               </a>
             </div>
             
@@ -232,34 +238,34 @@ export default function ConvertToPDF() {
               onClick={handleUploadConverted}
               className="w-full px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
-              Încarcă pentru analiză
+              {t('uploadForAnalysis')}
             </button>
           </div>
         )}
 
         <div className="bg-white rounded-xl shadow-lg overflow-hidden p-8">
-          <h2 className="text-xl text-black font-semibold mb-4">Cum funcționează</h2>
+          <h2 className="text-xl text-black font-semibold mb-4">{t('howItWorks')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                 <span className="text-2xl font-bold text-blue-600">1</span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-2">Încarcă fișiere</h3>
-              <p className="text-gray-600 text-sm">Selectează unul sau mai multe fișiere PDF, JPG, PNG sau TXT</p>
+              <h3 className="font-medium text-gray-900 mb-2">{t('uploadFiles')}</h3>
+              <p className="text-gray-600 text-sm">{t('uploadFilesDescription')}</p>
             </div>
             <div className="text-center">
               <div className="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                 <span className="text-2xl font-bold text-blue-600">2</span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-2">Convertește în PDF</h3>
-              <p className="text-gray-600 text-sm">Sistemul va combina toate fișierele într-un singur PDF</p>
+              <h3 className="font-medium text-gray-900 mb-2">{t('convertToPdfStep')}</h3>
+              <p className="text-gray-600 text-sm">{t('convertToPdfDescription')}</p>
             </div>
             <div className="text-center">
               <div className="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                 <span className="text-2xl font-bold text-blue-600">3</span>
               </div>
-              <h3 className="font-medium text-gray-900 mb-2">Analizează conținutul</h3>
-              <p className="text-gray-600 text-sm">Folosește PDF-ul generat pentru a crea un rezumat cu AI</p>
+              <h3 className="font-medium text-gray-900 mb-2">{t('analyzeContent')}</h3>
+              <p className="text-gray-600 text-sm">{t('analyzeContentDescription')}</p>
             </div>
           </div>
         </div>

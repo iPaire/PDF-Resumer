@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(mkdir:*)",
+      "Bash(rmdir:*)",
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(echo:*)",
+      "Bash(node:*)",
+      "Bash(for file in messages/*.json)",
+      "Bash(do echo \"Testing $file:\")",
+      "Bash(done)",
+      "Bash(cd:*)",
+      "mcp__ide__getDiagnostics"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

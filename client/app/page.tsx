@@ -3,9 +3,12 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const t = useTranslations('homepage');
+  const tc = useTranslations('common');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100">
@@ -13,11 +16,11 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
         <div className="text-center">
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight">
-            Transformă documentele în <span className="text-blue-600">cunoștințe</span>
+            {t('heroTitle')} <span className="text-blue-600">{t('heroHighlight')}</span>
           </h1>
           
           <p className="mt-6 max-w-3xl mx-auto text-xl text-gray-600">
-            SmartPDF Notes extrage automat rezumate, teste și lecții personalizate din materialele tale educaționale
+            {t('heroSubtitle')}
           </p>
           
           <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
@@ -27,13 +30,13 @@ export default function Home() {
                   href="/dashboard"
                   className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
                 >
-                  Dashboard
+                  {t('dashboardBtn')}
                 </Link>
                 <Link
                   href="/upload"
                   className="px-8 py-3 bg-white text-blue-600 border border-blue-600 font-medium rounded-lg hover:bg-blue-50 transition"
                 >
-                  Rezumat PDF
+                  {t('uploadBtn')}
                 </Link>
               </>
             ) : (
@@ -42,13 +45,13 @@ export default function Home() {
                   href="/login"
                   className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
                 >
-                  Autentificare
+                  {t('loginBtn')}
                 </Link>
                 <Link
                   href="/register"
                   className="px-8 py-3 bg-white text-blue-600 border border-blue-600 font-medium rounded-lg hover:bg-blue-50 transition"
                 >
-                  Înregistrare
+                  {t('registerBtn')}
                 </Link>
               </>
             )}
@@ -61,10 +64,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-gray-900">
-              Cum funcționează
+              {t('howItWorks')}
             </h2>
             <p className="mt-4 max-w-3xl mx-auto text-xl text-gray-600">
-              Doar 3 pași simpli pentru a transforma documentele în materiale de învățare
+              {t('howItWorksSubtitle')}
             </p>
           </div>
 
@@ -77,9 +80,9 @@ export default function Home() {
                 </div>
               </div>
               <div className="mt-6">
-                <h3 className="text-lg font-medium text-gray-900">Încarcă PDF</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t('step1Title')}</h3>
                 <p className="mt-2 text-gray-600">
-                  Încarcă materialele didactice, cursurile sau prezentările
+                  {t('step1Description')}
                 </p>
               </div>
             </div>
@@ -92,9 +95,9 @@ export default function Home() {
                 </div>
               </div>
               <div className="mt-6">
-                <h3 className="text-lg font-medium text-gray-900">AI procesează</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t('step2Title')}</h3>
                 <p className="mt-2 text-gray-600">
-                  Sistemul nostru extrage conceptele cheie și le structurează
+                  {t('step2Description')}
                 </p>
               </div>
             </div>
@@ -107,9 +110,9 @@ export default function Home() {
                 </div>
               </div>
               <div className="mt-6">
-                <h3 className="text-lg font-medium text-gray-900">Obține rezultate</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t('step3Title')}</h3>
                 <p className="mt-2 text-gray-600">
-                  Primești rezumat, teste și materiale de studiu personalizate
+                  {t('step3Description')}
                 </p>
               </div>
             </div>

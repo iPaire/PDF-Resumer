@@ -8,6 +8,8 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import FeedbackPopup from './FeedbackPopup';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { analyticsEvents } from '@/lib/analytics';
 
 const parseJSON = async (response: Response) => {
   const text = await response.text();
@@ -89,6 +91,7 @@ const getSectionTitles = (lang: string) => {
 export default function PDFProcessor() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const t = useTranslations('pdfProcessor');
   const [summary, setSummary] = useState('');
   const [summaryLanguage, setSummaryLanguage] = useState('en');
   const [isLoading, setIsLoading] = useState(false);
@@ -146,8 +149,8 @@ export default function PDFProcessor() {
 
     if (usage.used >= usage.limit) {
       setError(usage.limit === 3 
-        ? `You've reached the monthly limit of ${usage.limit} summaries. Upgrade to continue.` 
-        : `You've reached the monthly limit of ${usage.limit} summaries. Please wait until the monthly reset.`);
+        ? t('limitReached', { limit: usage.limit })
+        : t('limitReachedWait', { limit: usage.limit }));
       return;
     }
 
@@ -155,6 +158,9 @@ export default function PDFProcessor() {
     if (!files || files.length === 0) return;
     
     const file = files[0];
+    
+    // Track PDF upload
+    analyticsEvents.pdfUpload(file.size);
     
     setError('');
     setSummary('');
@@ -164,18 +170,22 @@ export default function PDFProcessor() {
     
     if (file.size > usage.fileSizeLimit) {
       const maxSizeMB = usage.fileSizeLimit / (1024 * 1024);
-      setError(`File exceeds the ${maxSizeMB}MB limit for your plan`);
+      setError(t('fileTooBig', { maxSizeMB }));
       setIsLoading(false);
       return;
     }
     
     if (file.type !== 'application/pdf') {
-      setError('Please upload only PDF files');
+      setError(t('pdfOnly'));
       setIsLoading(false);
       return;
     }
     
     try {
+      // Track processing started
+      analyticsEvents.pdfProcessingStarted();
+      const processingStartTime = Date.now();
+      
       const formData = new FormData();
       formData.append('pdf', file);
       formData.append('filename', file.name);
@@ -205,18 +215,27 @@ export default function PDFProcessor() {
         setSummary(data.summary);
         setSummaryLanguage(data.meta?.language || 'en');
         fetchUsage();
+        
+        // Track successful processing
+        const processingTime = Date.now() - processingStartTime;
+        analyticsEvents.pdfProcessingCompleted(processingTime);
+        analyticsEvents.summaryGenerated();
       } else {
-        setError('Could not generate summary. Please try another file.');
+        setError(t('noSummary'));
+        analyticsEvents.pdfProcessingFailed('no_summary_generated');
       }
     } catch (err: any) {
       console.error('PDF processing error:', err);
       
+      // Track processing failure
+      analyticsEvents.pdfProcessingFailed(err.message || 'unknown_error');
+      
       let userMessage = err.message || 'Unknown processing error';
       
       if (err.message.includes('Failed to fetch')) {
-        userMessage = 'Connection to server failed. Please check your internet.';
+        userMessage = t('connectionFailed');
       } else if (err.message.includes('Internal server error')) {
-        userMessage = 'Internal server error. Please contact support.';
+        userMessage = t('serverError');
       } else if (err.message.includes('monthly limit')) {
         userMessage = err.message;
       }
@@ -242,8 +261,8 @@ export default function PDFProcessor() {
     
     if (usage.used >= usage.limit) {
       setError(usage.limit === 3 
-        ? `You've reached the monthly limit of ${usage.limit} summaries. Upgrade to continue.` 
-        : `You've reached the monthly limit of ${usage.limit} summaries. Please wait until the monthly reset.`);
+        ? t('limitReached', { limit: usage.limit })
+        : t('limitReachedWait', { limit: usage.limit }));
       return;
     }
     
@@ -286,7 +305,7 @@ export default function PDFProcessor() {
       }
     } catch (error) {
       console.error('Feedback submission error:', error);
-      setError('Failed to submit feedback. Please try again.');
+      setError(t('feedbackError'));
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -301,12 +320,12 @@ export default function PDFProcessor() {
         {status === 'authenticated' && (
           <div className="mb-6 bg-white rounded-lg shadow-sm p-4 flex flex-col sm:flex-row justify-between items-center">
             <div className="mb-2 sm:mb-0">
-              <span className="font-medium text-gray-700">Monthly usage: </span>
+              <span className="font-medium text-gray-700">{t('monthlyUsage')} </span>
               <span className="font-semibold">
-                {usage.used} / {usage.limit} summaries
+                {usage.used} / {usage.limit} {t('summaries')}
               </span>
               <span className="ml-4 font-medium text-gray-700">
-                File limit: {maxSizeMB}MB
+                {t('fileLimit')} {maxSizeMB}MB
               </span>
             </div>
             {usage.used >= usage.limit && (
@@ -314,7 +333,7 @@ export default function PDFProcessor() {
                 onClick={() => router.push('/pricing')}
                 className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full text-sm font-medium hover:from-blue-700 hover:to-indigo-800 transition"
               >
-                Upgrade Plan
+                {t('upgradePlan')}
               </button>
             )}
           </div>
@@ -322,10 +341,10 @@ export default function PDFProcessor() {
 
         <div className="text-center mb-10">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            PDF Summarizer
+            {t('title')}
           </h1>
           <p className="mt-3 text-lg text-gray-600">
-            Transform PDF documents into concise summaries with AI assistance
+            {t('subtitle')}
           </p>
         </div>
 
@@ -349,11 +368,11 @@ export default function PDFProcessor() {
               </div>
               
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Upload a PDF document
+                {t('uploadDocument')}
               </h3>
               
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Your file is processed securely and deleted immediately after summary generation
+                {t('secureProcessing')}
               </p>
               
               <div className="mt-6">
@@ -381,14 +400,14 @@ export default function PDFProcessor() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Processing...
+                      {t('processing')}
                     </>
                   ) : (
                     <>
                       <svg className="-ml-1 mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                       </svg>
-                      Select PDF
+                      {t('selectPdf')}
                     </>
                   )}
                 </button>
@@ -413,7 +432,7 @@ export default function PDFProcessor() {
             <div className="px-6 py-8 sm:p-10">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-xl font-bold text-gray-900">
-                  {summary ? 'Generated summary' : 'Processing error'}
+                  {summary ? t('generatedSummary') : t('processingError')}
                 </h2>
                 
                 <button
@@ -444,11 +463,11 @@ export default function PDFProcessor() {
                     <div className="ml-3">
                       <p className="text-sm font-medium text-red-800">{error}</p>
                       <div className="mt-2 text-sm text-red-700">
-                        <p>Recommendations:</p>
+                        <p>{t('recommendations')}</p>
                         <ul className="list-disc pl-5 space-y-1 mt-1">
-                          <li>Check your internet connection</li>
-                          <li>Try a smaller file</li>
-                          <li>Contact support if the problem persists</li>
+                          <li>{t('checkConnection')}</li>
+                          <li>{t('trySmaller')}</li>
+                          <li>{t('contactSupport')}</li>
                         </ul>
                       </div>
                     </div>
@@ -559,34 +578,14 @@ export default function PDFProcessor() {
                                   className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
                                 >
                                   <span>
-                                    {summaryLanguage === 'ro' 
-                                      ? '(click pentru a vedea răspunsul)' 
-                                      : summaryLanguage === 'fr' 
-                                        ? '(cliquez pour voir la réponse)' 
-                                        : summaryLanguage === 'es' 
-                                          ? '(haga clic para ver la respuesta)'
-                                          : summaryLanguage === 'de'
-                                            ? '(klicken Sie, um die Antwort zu sehen)'
-                                            : summaryLanguage === 'it'
-                                              ? '(clicca per vedere la risposta)'
-                                              : '(click to see answer)'}
+                                    {t('clickToSeeAnswer')}
                                   </span>
                                 </button>
                                 
                                 {revealedAnswers[index] && (
                                   <div className="mt-3 p-3 bg-white rounded-md border border-blue-200">
                                     <strong className="text-blue-700">
-                                      {summaryLanguage === 'ro' 
-                                        ? 'Răspuns: ' 
-                                        : summaryLanguage === 'fr' 
-                                          ? 'Réponse: ' 
-                                          : summaryLanguage === 'es' 
-                                            ? 'Respuesta: '
-                                            : summaryLanguage === 'de'
-                                              ? 'Antwort: '
-                                              : summaryLanguage === 'it'
-                                                ? 'Risposta: '
-                                                : 'Answer: '}
+                                      {t('answer')}
                                     </strong>
                                     {answer}
                                   </div>
@@ -605,7 +604,7 @@ export default function PDFProcessor() {
                     <svg className="h-4 w-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span>Summary generated successfully</span>
+                    <span>{t('summarySuccess')}</span>
                   </div>
                 </div>
               )}
@@ -619,31 +618,31 @@ export default function PDFProcessor() {
               <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
               </svg>
-              Secure data
+              {t('secureData')}
             </span>
             <span className="flex items-center">
               <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
               </svg>
-              {maxSizeMB}MB limit
+              {maxSizeMB}{t('limitMB')}
             </span>
             <span className="flex items-center">
               <svg className="h-4 w-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
               </svg>
-              Fast processing
+              {t('fastProcessing')}
             </span>
           </div>
           
           <p className="mt-4 text-xs text-gray-500">
-            We use advanced AI models to extract the essence of your documents
+            {t('aiModels')}
           </p>
         <div className="mt-4">
             <Link 
               href="/convert-to-pdf" 
               className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center"
             >
-              Nu ai PDF? Transformă acum
+              {t('noPdf')}
               <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
               </svg>

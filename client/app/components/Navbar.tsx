@@ -4,12 +4,15 @@ import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import { analyticsEvents } from '@/lib/analytics';
 
 export default function Navbar() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const t = useTranslations('common');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -51,7 +54,7 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center space-x-2 md:space-x-4">
-        <Link href="/" className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block">Acasă</Link>
+        <Link href="/" className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block">{t('home')}</Link>
         
         {/* Buton de Upload între Acasă și Prețuri */}
         {session && (
@@ -62,11 +65,11 @@ export default function Navbar() {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
-            <span className="hidden sm:inline">Upload</span>
+            <span className="hidden sm:inline">{t('upload')}</span>
           </Link>
         )}
 
-        <Link href="/pricing" className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block">Prețuri</Link>
+        <Link href="/pricing" className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block">{t('pricing')}</Link>
 
         {session ? (
           <div ref={menuRef} className="relative">
@@ -99,7 +102,7 @@ export default function Navbar() {
                   
                   {/* Afișează abonamentul curent */}
                   <div className="mt-2 flex items-center">
-                    <span className="font-medium mr-2">Abonament:</span>
+                    <span className="font-medium mr-2">Plan:</span>
                     <span className={`text-xs px-2 py-1 rounded ${
                       session.user.subscription === 'free' 
                         ? 'bg-gray-200 text-gray-800' 
@@ -108,12 +111,12 @@ export default function Navbar() {
                           : 'bg-purple-100 text-purple-800'
                     }`}>
                       {session.user.subscription === 'free' 
-                        ? 'Free' 
+                        ? t('free')
                         : session.user.subscription === 'standard' 
-                          ? 'Standard'
+                          ? t('standard')
                           : session.user.subscription === 'trial'
-                          ? 'Premium Trial'
-                          : 'Premium'}
+                          ? `${t('premium')} Trial`
+                          : t('premium')}
                     </span>
                   </div>
                   
@@ -121,8 +124,8 @@ export default function Navbar() {
                   {session.user.subscription === 'trial' && daysLeft !== null && (
                     <div className="mt-1 text-xs text-purple-600">
                       {daysLeft > 0 
-                        ? `Expiră în ${daysLeft} ${daysLeft === 1 ? 'zi' : 'zile'}`
-                        : 'Trial expirat'}
+                        ? `Expires in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`
+                        : 'Trial expired'}
                     </div>
                   )}
                 </div>
@@ -132,7 +135,10 @@ export default function Navbar() {
                   <Link
                     href="/pricing"
                     className="block text-center mx-2 my-2 px-3 py-2 text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 rounded transition"
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      setOpen(false);
+                      analyticsEvents.buttonClick('upgrade_plan', 'navbar');
+                    }}
                   >
                     Upgrade Plan Now
                   </Link>
@@ -143,20 +149,23 @@ export default function Navbar() {
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setOpen(false)}
                 >
-                  Dashboard
+                  {t('dashboard')}
                 </Link>
                 <Link
                   href="/settings"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setOpen(false)}
                 >
-                  Setări cont
+                  {t('settings')}
                 </Link>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
+                  onClick={() => {
+                    analyticsEvents.userLogout();
+                    signOut({ callbackUrl: '/' });
+                  }}
                   className="cursor-pointer w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                 >
-                  Deconectare
+                  {t('logout')}
                 </button>
               </div>
             )}
@@ -166,7 +175,7 @@ export default function Navbar() {
             href="/login"
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition text-sm md:text-base"
           >
-            Autentificare
+            {t('login')}
           </Link>
         )}
       </div>

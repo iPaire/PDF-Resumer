@@ -1,29 +1,33 @@
-import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
-import prisma from '@/lib/prisma';
+import { getToken } from "next-auth/jwt";
+import prisma from './app/lib/prisma';
 
 export async function middleware(req: NextRequest) {
   const token = await getToken({ req });
   const { pathname } = req.nextUrl;
-
-  // Verificăm dacă trial-ul a expirat
+  
+  // Check if trial has expired
   if (token && token.subscription === 'trial' && token.trialExpires) {
     const now = new Date();
     const trialExpires = new Date(token.trialExpires);
     
     if (now > trialExpires) {
-      // Actualizăm utilizatorul la abonament free
-      await prisma.user.update({
-        where: { id: token.id as string },
-        data: { 
-          subscription: 'free',
-          trialExpires: null
+      try {
+        // Update user to free subscription
+        await prisma.user.update({
+          where: { id: token.id as string },
+          data: { 
+            subscription: 'free',
+            trialExpires: null
+          }
+        });
+        
+        // Redirect to trial expired page if not already there
+        if (!pathname.startsWith('/trial-expired')) {
+          return NextResponse.redirect(new URL('/trial-expired', req.url));
         }
-      });
-      
-      // Redirecționăm către o pagină de notificare
-      if (pathname !== '/trial-expired') {
-        return NextResponse.redirect(new URL('/trial-expired', req.url));
+      } catch (error) {
+        console.error('Error updating trial status:', error);
       }
     }
   }
@@ -43,9 +47,8 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-// Specify the paths the middleware should run on
 export const config = {
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  ]
 };
