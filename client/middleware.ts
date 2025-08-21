@@ -3,8 +3,17 @@ import { getToken } from "next-auth/jwt";
 import prisma from './app/lib/prisma';
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({ req });
+  const token = await getToken({ 
+    req, 
+    secret: process.env.NEXTAUTH_SECRET 
+  });
   const { pathname } = req.nextUrl;
+  
+  console.log('Middleware - pathname:', pathname, 'token exists:', !!token, 'token subscription:', token?.subscription);
+  
+  if (!token) {
+    console.log('No token found, checking cookies:', req.cookies.getAll().map(c => c.name));
+  }
   
   // Check if trial has expired
   if (token && token.subscription === 'trial' && token.trialExpires) {
@@ -34,6 +43,7 @@ export async function middleware(req: NextRequest) {
 
   // Redirect to login if accessing protected routes without session
   if (!token && pathname.startsWith('/dashboard')) {
+    console.log('Redirecting to login because no token for dashboard access');
     const url = new URL('/login', req.url);
     url.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(url);
@@ -41,6 +51,7 @@ export async function middleware(req: NextRequest) {
 
   // Redirect to dashboard if logged in and accessing login
   if (token && pathname.startsWith('/login')) {
+    console.log('Redirecting to dashboard because user is logged in');
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
