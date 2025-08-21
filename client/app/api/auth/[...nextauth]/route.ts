@@ -154,6 +154,7 @@ export const authOptions: AuthOptions = {
       return session;
     },
 
+    // CALLBACK-UL LIPSĂ - ADAUGĂ ACEST CALLBACK!
     async redirect({ url, baseUrl }) {
       // Dacă URL-ul este relativ, fă-l absolut
       if (url.startsWith("/")) return `${baseUrl}${url}`;
