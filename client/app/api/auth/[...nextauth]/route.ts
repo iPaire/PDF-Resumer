@@ -154,7 +154,6 @@ export const authOptions: AuthOptions = {
       return session;
     },
 
-    // CALLBACK-UL LIPSĂ - ADAUGĂ ACEST CALLBACK!
     async redirect({ url, baseUrl }) {
       // Dacă URL-ul este relativ, fă-l absolut
       if (url.startsWith("/")) return `${baseUrl}${url}`;
@@ -172,6 +171,19 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET!,
   session: {
     strategy: "jwt" as SessionStrategy,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined
+      }
+    }
   }
 };
 
