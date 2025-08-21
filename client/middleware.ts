@@ -5,7 +5,8 @@ import prisma from './app/lib/prisma';
 export async function middleware(req: NextRequest) {
   const token = await getToken({ 
     req, 
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET,
+    cookieName: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token'
   });
   const { pathname } = req.nextUrl;
   
@@ -77,6 +78,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/auth|api|_next/static|_next/image|favicon.ico).*)',
   ]
 };
