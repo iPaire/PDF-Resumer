@@ -3,8 +3,12 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { PRICE_IDS, getClientStripe } from '@/lib/stripe';
+import { useTranslations } from 'next-intl';
+import { analyticsEvents } from '@/lib/analytics';
 
 export default function PricingPage() {
+  const t = useTranslations('pricing');
+  const tCommon = useTranslations('common');
   const [isMobile, setIsMobile] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const { data: session } = useSession();
@@ -35,6 +39,10 @@ export default function PricingPage() {
       router.push('/login');
       return;
     }
+
+    // Track subscription upgrade attempt
+    const planType = priceId === PRICE_IDS.premium_monthly ? 'premium_monthly' : 'premium_annual';
+    analyticsEvents.subscriptionUpgrade(planType);
 
     setSelectedPlan(priceId);
     
@@ -78,26 +86,26 @@ export default function PricingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-100 py-8 px-4 sm:py-16">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-blue-600">
-          Planuri de abonament
+          {t('subscriptionPlans')}
         </h1>
 
         {isMobile ? (
           <div className="space-y-6">
             {/* Plan gratuit */}
             <div className="bg-white shadow-lg rounded-xl p-5 border border-gray-300">
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">Gratuit</h2>
-              <p className="text-gray-600 mb-3 text-sm">Ideal pentru testare rapidă.</p>
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">{t('free')}</h2>
+              <p className="text-gray-600 mb-3 text-sm">{t('freeDescription')}</p>
               <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-1">
-                <li>3 PDF-uri/lună</li>
-                <li>Rezumat AI</li>
-                <li>Teste grilă</li>
+                <li>3 {t('pdfLimitMonth')}</li>
+                <li>{t('aiSummary')}</li>
+                <li>{t('quizTests')}</li>
               </ul>
-              <p className="font-bold text-gray-800 text-lg mb-4">€0 / lună</p>
+              <p className="font-bold text-gray-800 text-lg mb-4">{t('euro')}0 / {t('month')}</p>
               <button 
                 onClick={handleFreePlan}
                 className="w-full py-2 px-4 rounded-lg border border-gray-300 text-gray-800 font-medium hover:bg-gray-300 hover:text-white"
               >
-                Începe acum
+                {t('startNow')}
               </button>
             </div>
 
@@ -105,28 +113,28 @@ export default function PricingPage() {
             <div className="relative">
               {hasDiscount() && (
                 <div className="absolute -top-3 right-4 bg-purple-500 text-white px-3 py-1 rounded-lg font-bold z-10 transform rotate-3 shadow-md text-xs">
-                  REDUS
+                  {t('reduced')}
                 </div>
               )}
               <div className={`bg-white shadow-xl rounded-xl p-5 border-2 ${hasDiscount() ? 'border-purple-500' : 'border-yellow-500'}`}>
-                <h2 className="text-xl font-semibold text-gray-800 mb-3">Premium Lunar</h2>
-                <p className="text-gray-600 mb-3 text-sm">Pentru studenți activi.</p>
+                <h2 className="text-xl font-semibold text-gray-800 mb-3">{t('premiumMonthly')}</h2>
+                <p className="text-gray-600 mb-3 text-sm">{t('premiumMonthlyDescription')}</p>
                 <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-1">
-                  <li>50 PDF-uri/lună</li>
-                  <li>Rezumat AI + Teste grilă</li>
+                  <li>50 {t('pdfLimitMonth')}</li>
+                  <li>{t('aiSummary')} + {t('quizTests')}</li>
                   <li>Generare quiz-uri personalizate</li>
                 </ul>
                 
                 {hasDiscount() ? (
                   <div>
                     <div className="mb-2">
-                      <span className="font-bold text-gray-800 text-lg">€7 / lună</span>
-                      <span className="ml-2 text-xs text-gray-500 line-through">€10</span>
+                      <span className="font-bold text-gray-800 text-lg">{t('euro')}7 / {t('month')}</span>
+                      <span className="ml-2 text-xs text-gray-500 line-through">{t('euro')}10</span>
                     </div>
-                    <p className="text-xs text-gray-600 mb-4">Primele 2 luni, apoi €10/lună</p>
+                    <p className="text-xs text-gray-600 mb-4">{t('firstTwoMonths')} {t('euro')}10/{t('month')}</p>
                   </div>
                 ) : (
-                  <p className="font-bold text-gray-800 text-lg mb-4">€10 / lună</p>
+                  <p className="font-bold text-gray-800 text-lg mb-4">{t('euro')}10 / {t('month')}</p>
                 )}
                 
                 <button 
@@ -137,7 +145,7 @@ export default function PricingPage() {
                       ? 'bg-purple-300 cursor-not-allowed text-white'
                       : `text-${hasDiscount() ? 'purple' : 'yellow'}-500 border-${hasDiscount() ? 'purple' : 'yellow'}-500 hover:bg-${hasDiscount() ? 'purple' : 'yellow'}-500 hover:text-white`}`}
                 >
-                  {isLoading(PRICE_IDS.PREMIUM) ? 'Procesare...' : 'Alege Premium'}
+                  {isLoading(PRICE_IDS.PREMIUM) ? t('processing') : t('choosePremium')}
                 </button>
               </div>
             </div>
@@ -145,18 +153,18 @@ export default function PricingPage() {
             {/* Plan Premium Anual */}
             <div className="relative">
               <div className="absolute -top-3 right-4 bg-yellow-500 text-white px-3 py-1 rounded-lg font-bold z-10 transform rotate-3 shadow-md text-xs">
-                RECOMANDAT
+                {t('recommended')}
               </div>
               <div className="bg-white shadow-xl rounded-xl p-5 border-2 border-yellow-500">
-                <h2 className="text-xl font-semibold text-gray-800 mb-3">Premium Anual</h2>
-                <p className="text-gray-600 mb-3 text-sm">Maximizează învățarea.</p>
+                <h2 className="text-xl font-semibold text-gray-800 mb-3">{t('premiumAnnual')}</h2>
+                <p className="text-gray-600 mb-3 text-sm">{t('premiumAnnualDescription')}</p>
                 <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-1">
-                  <li>200 PDF-uri/lună</li>
-                  <li>Tot ce este în Premium Lunar</li>
+                  <li>200 {t('pdfLimitMonth')}</li>
+                  <li>Tot ce este în {t('premiumMonthly')}</li>
                   <li>Profesor AI (video lecții personalizate)</li>
-                  <li>Economie 17%</li>
+                  <li>{t('save17Percent')}</li>
                 </ul>
-                <p className="font-bold text-gray-800 text-lg mb-4">€100 / an</p>
+                <p className="font-bold text-gray-800 text-lg mb-4">{t('euro')}100 / {t('year')}</p>
                 <button 
                   onClick={() => handleCheckout(PRICE_IDS.PREMIUM_ANNUAL)}
                   disabled={isLoading(PRICE_IDS.PREMIUM_ANNUAL)}
@@ -165,7 +173,7 @@ export default function PricingPage() {
                       ? 'bg-yellow-300 cursor-not-allowed text-white'
                       : 'text-yellow-500 border-yellow-500 hover:bg-yellow-500 hover:text-white'}`}
                 >
-                  {isLoading(PRICE_IDS.PREMIUM_ANNUAL) ? 'Procesare...' : 'Alege Premium Anual'}
+                  {isLoading(PRICE_IDS.PREMIUM_ANNUAL) ? t('processing') : t('choosePremiumAnnual')}
                 </button>
               </div>
             </div>
@@ -174,19 +182,19 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Plan gratuit */}
             <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-300 transition-all hover:shadow-xl">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Gratuit</h2>
-              <p className="text-gray-600 mb-4">Ideal pentru testare rapidă.</p>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('free')}</h2>
+              <p className="text-gray-600 mb-4">{t('freeDescription')}</p>
               <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-2">
-                <li>3 PDF-uri/lună</li>
-                <li>Limitare 10MB</li>
-                <li>Intrebări de autoevaluare</li>
+                <li>3 {t('pdfLimitMonth')}</li>
+                <li>{t('maxFileSize')} 10MB</li>
+                <li>{t('selfAssessmentQuestions')}</li>
               </ul>
-              <p className="font-bold text-gray-800 text-lg mb-6">€0 / lună</p>
+              <p className="font-bold text-gray-800 text-lg mb-6">{t('euro')}0 / {t('month')}</p>
               <button 
                 onClick={handleFreePlan}
                 className="w-full py-3 px-4 rounded-lg border border-gray-300 text-gray-800 font-medium hover:bg-gray-300 hover:text-white"
               >
-                Începe acum
+                {t('startNow')}
               </button>
             </div>
 
@@ -194,28 +202,28 @@ export default function PricingPage() {
             <div className="relative">
               {hasDiscount() && (
                 <div className="absolute -top-3 right-4 bg-purple-500 text-white px-4 py-2 rounded-lg font-bold z-10 transform rotate-3 shadow-md">
-                  REDUS
+                  {t('reduced')}
                 </div>
               )}
               <div className={`bg-white shadow-xl rounded-xl p-6 border-2 transition-all hover:shadow-2xl ${hasDiscount() ? 'border-purple-500' : 'border-yellow-500'}`}>
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Premium Lunar</h2>
-                <p className="text-gray-600 mb-4">Pentru studenți activi.</p>
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('premiumMonthly')}</h2>
+                <p className="text-gray-600 mb-4">{t('premiumMonthlyDescription')}</p>
                 <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-2">
-                  <li>50 PDF-uri/lună</li>
-                  <li>Limitare 50MB</li>
-                  <li>Quiz 5 intrebări</li>
+                  <li>50 {t('pdfLimitMonth')}</li>
+                  <li>{t('maxFileSize')} 50MB</li>
+                  <li>Quiz 5 {t('questions')}</li>
                 </ul>
                 
                 {hasDiscount() ? (
                   <div>
                     <div className="mb-2">
-                      <span className="font-bold text-gray-800 text-lg">€7 / lună</span>
-                      <span className="ml-2 text-sm text-gray-500 line-through">€10</span>
+                      <span className="font-bold text-gray-800 text-lg">{t('euro')}7 / {t('month')}</span>
+                      <span className="ml-2 text-sm text-gray-500 line-through">{t('euro')}10</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-6">Primele 2 luni, apoi €10/lună</p>
+                    <p className="text-sm text-gray-600 mb-6">{t('firstTwoMonths')} {t('euro')}10/{t('month')}</p>
                   </div>
                 ) : (
-                  <p className="font-bold text-gray-800 text-lg mb-6">€10 / lună</p>
+                  <p className="font-bold text-gray-800 text-lg mb-6">{t('euro')}10 / {t('month')}</p>
                 )}
                 
                 <button 
@@ -226,7 +234,7 @@ export default function PricingPage() {
                       ? 'bg-purple-300 cursor-not-allowed text-white'
                       : `text-${hasDiscount() ? 'purple' : 'yellow'}-500 border-${hasDiscount() ? 'purple' : 'yellow'}-500 hover:bg-${hasDiscount() ? 'purple' : 'yellow'}-500 hover:text-white`}`}
                 >
-                  {isLoading(PRICE_IDS.PREMIUM) ? 'Procesare...' : 'Alege Premium'}
+                  {isLoading(PRICE_IDS.PREMIUM) ? t('processing') : t('choosePremium')}
                 </button>
               </div>
             </div>
@@ -234,19 +242,19 @@ export default function PricingPage() {
             {/* Plan Premium Anual */}
             <div className="relative md:col-span-2">
               <div className="absolute -top-3 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg font-bold z-10 transform rotate-3 shadow-md">
-                RECOMANDAT
+                {t('recommended')}
               </div>
               <div className="bg-white shadow-xl rounded-xl p-6 border-2 border-yellow-500 transition-all hover:shadow-2xl">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Premium Anual</h2>
-                <p className="text-gray-600 mb-4">Maximizează învățarea pentru un an întreg.</p>
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('premiumAnnual')}</h2>
+                <p className="text-gray-600 mb-4">{t('premiumAnnualDescription')}</p>
                 <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-2">
-                  <li>200 PDF-uri/lună</li>
-                  <li>Limitare 250MB</li>
-                  <li>Quiz 20 intrebări</li>
-                  <li>Răspunsuri și rezumate cu AI avansat</li>
-                  <li>Economie 17% față de planul lunar</li>
+                  <li>200 {t('pdfLimitMonth')}</li>
+                  <li>{t('maxFileSize')} 250MB</li>
+                  <li>Quiz 20 {t('questions')}</li>
+                  <li>{t('aiAdvancedAnswers')}</li>
+                  <li>{t('save17Percent')}</li>
                 </ul>
-                <p className="font-bold text-gray-800 text-lg mb-6">€100 / an</p>
+                <p className="font-bold text-gray-800 text-lg mb-6">{t('euro')}100 / {t('year')}</p>
                 <button 
                   onClick={() => handleCheckout(PRICE_IDS.PREMIUM_ANNUAL)}
                   disabled={isLoading(PRICE_IDS.PREMIUM_ANNUAL)}
@@ -255,7 +263,7 @@ export default function PricingPage() {
                       ? 'bg-yellow-300 cursor-not-allowed text-white'
                       : 'text-yellow-500 border-yellow-500 hover:bg-yellow-500 hover:text-white'}`}
                 >
-                  {isLoading(PRICE_IDS.PREMIUM_ANNUAL) ? 'Procesare...' : 'Alege Premium Anual'}
+                  {isLoading(PRICE_IDS.PREMIUM_ANNUAL) ? t('processing') : t('choosePremiumAnnual')}
                 </button>
               </div>
             </div>
@@ -263,14 +271,14 @@ export default function PricingPage() {
         )}
         
         <div className="mt-10 sm:mt-12 text-center text-gray-600">
-          <p className="mb-3 sm:mb-4 text-sm sm:text-base">✅ Toate planurile includ:</p>
+          <p className="mb-3 sm:mb-4 text-sm sm:text-base">✅ {t('allPlansInclude')}</p>
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
-            <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">Rezumat Ai</span>
-            <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">Export PDF/Word</span>
-            <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">Suport tehnic</span>
-            <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">Actualizări gratuite</span>
+            <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('aiSummary')}</span>
+            <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('exportPdfWord')}</span>
+            <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('technicalSupport')}</span>
+            <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('freeUpdates')}</span>
           </div>
-          <p className="mt-4 text-xs text-gray-500">Prețurile sunt exprimate în euro și pot include TVA</p>
+          <p className="mt-4 text-xs text-gray-500">{t('pricesInEuro')}</p>
         </div>
       </div>
     </div>

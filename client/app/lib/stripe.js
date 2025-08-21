@@ -3,9 +3,11 @@ import Stripe from 'stripe';
 
 // Inițializare instanță Stripe cu verificare robustă
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) {
-  console.error('STRIPE_SECRET_KEY lipsește din variabilele de mediu!');
-  // Nu aruncăm eroare aici pentru a permite rularea aplicației în modul de dezvoltare
+if (!stripeSecretKey && typeof window === 'undefined') {
+  // Doar log în modul server-side și development
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('STRIPE_SECRET_KEY lipsește din variabilele de mediu!');
+  }
 }
 
 export const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
@@ -32,7 +34,9 @@ export const getClientStripe = async () => {
     
     const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
     if (!publishableKey) {
-      console.error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY lipsește din variabilele de mediu!');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY lipsește din variabilele de mediu!');
+      }
       return null;
     }
     

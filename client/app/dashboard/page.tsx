@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { FileText, BarChart2, User, Book, Plus, Download, Trash2, Lock, ChevronRight, Folder } from 'react-feather';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 type FileType = {
   id: string;
@@ -42,6 +43,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<StatsType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+  const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -98,7 +101,7 @@ export default function DashboardPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download error:', error);
-      alert('Nu s-a putut descărca fișierul');
+      alert(t('downloadError'));
     }
   };
 
@@ -110,22 +113,28 @@ export default function DashboardPage() {
 
       if (response.ok) {
         setFiles(files.filter(file => file.id !== id));
-        alert('Rezumatul a fost șters cu succes!');
+        alert(t('deleteSuccess'));
       } else {
         const errorData = await response.json();
-        alert(`Eroare la ștergere: ${errorData.error}`);
+        alert(t('deleteError', {error: errorData.error}));
       }
     } catch (error) {
       console.error('Error deleting summary:', error);
-      alert('A apărut o eroare la ștergerea rezumatului');
+      alert(t('deleteErrorGeneral'));
     }
   };
 
   const statusColor = (status: string) => {
     switch (status) {
-      case 'Procesat': return 'bg-green-100 text-green-800';
-      case 'În așteptare': return 'bg-yellow-100 text-yellow-800';
-      case 'Eroare': return 'bg-red-100 text-red-800';
+      case 'Procesat': 
+      case 'Processed':
+      case t('processed'): return 'bg-green-100 text-green-800';
+      case 'În așteptare': 
+      case 'Pending':
+      case t('pending'): return 'bg-yellow-100 text-yellow-800';
+      case 'Eroare': 
+      case 'Error':
+      case t('error'): return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -142,7 +151,7 @@ export default function DashboardPage() {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-600">
-            {redirecting ? 'Se redirecționează...' : 'Se încarcă dashboard-ul...'}
+            {redirecting ? t('redirecting') : t('loadingDashboard')}
           </p>
         </div>
       </div>
@@ -161,8 +170,8 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Dashboard Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Bun venit, {session?.user?.name || 'Utilizator'}!</h1>
-          <p className="mt-2 text-gray-600">Aici poți gestiona istoricul tău de activități.</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('welcomeUser', {name: session?.user?.name || 'Utilizator'})}</h1>
+          <p className="mt-2 text-gray-600">{t('activityDescription')}</p>
         </div>
 
         {/* Stats Cards */}
@@ -170,28 +179,28 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
             <StatCard 
               icon={<FileText className="w-6 h-6" />}
-              title="Fișiere Procesate"
+              title={t('filesProcessed')}
               value={stats.filesProcessed}
               color="bg-blue-100 text-blue-800"
             />
             
             <StatCard 
               icon={<Book className="w-6 h-6" />}
-              title="Rezumate Create"
+              title={t('summariesCreated')}
               value={stats.summariesCreated}
               color="bg-green-100 text-green-800"
             />
             
             <StatCard 
               icon={<BarChart2 className="w-6 h-6" />}
-              title="Teste Generate"
+              title={t('quizzesGenerated')}
               value={stats.quizzesGenerated}
               color="bg-purple-100 text-purple-800"
             />
             
             <StatCard 
               icon={<Folder className="w-6 h-6" />}
-              title="Cursuri Create"
+              title={t('coursesCreated')}
               value={stats.coursesCreated}
               color="bg-indigo-100 text-indigo-800"
             />
@@ -206,7 +215,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Spațiu Utilizat</h3>
+                    <h3 className="text-sm font-medium text-gray-500">{t('storageUsed')}</h3>
                     <p className="text-2xl font-semibold text-gray-900">
                       {stats.storagePercentage}%
                     </p>
@@ -229,37 +238,37 @@ export default function DashboardPage() {
         {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <ActionCard 
-            title="Încarcă un PDF Nou"
-            description="Începe procesarea unui nou document"
+            title={t('uploadNewPdf')}
+            description={t('uploadNewPdfDescription')}
             icon={<Plus className="w-8 h-8" />}
-            buttonText="Încarcă Fișier"
+            buttonText={t('uploadFile')}
             buttonLink="/"
             color="bg-blue-500"
           />
           
           <ActionCard 
-            title="Vezi Rezumatele Tale"
-            description="Accesează toate rezumatele create"
+            title={t('viewSummaries')}
+            description={t('viewSummariesDescription')}
             icon={<Book className="w-8 h-8" />}
-            buttonText="Vizualizează Rezumate"
+            buttonText={t('viewSummariesButton')}
             buttonLink="/summaries"
             color="bg-green-500"
           />
           
           <ActionCard 
-            title="Teste Grilă"
-            description="Exersează cu testele generate"
+            title={t('quizTests')}
+            description={t('quizTestsDescription')}
             icon={<BarChart2 className="w-8 h-8" />}
-            buttonText="Accesează Teste"
+            buttonText={t('accessQuizzes')}
             buttonLink="/quizzes"
             color="bg-purple-500"
           />
           
           <ActionCard 
-            title="Gestionează Cursuri"
-            description="Creează și administrează cursurile tale"
+            title={t('manageCourses')}
+            description={t('manageCoursesDescription')}
             icon={<Folder className="w-8 h-8" />}
-            buttonText="Accesează Cursuri"
+            buttonText={t('accessCourses')}
             buttonLink="/courses"
             color="bg-indigo-500"
           />
@@ -269,12 +278,12 @@ export default function DashboardPage() {
         <div className="bg-white shadow rounded-lg overflow-hidden mb-8">
           <div className="px-6 py-5 border-b border-gray-200">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Cursuri Recente</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('recentCourses')}</h2>
               <Link 
                 href="/courses" 
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Vezi toate cursurile
+                {t('viewAllCourses')}
               </Link>
             </div>
           </div>
@@ -284,19 +293,19 @@ export default function DashboardPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Titlu
+                    {t('title')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Descriere
+                    {t('description')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fișiere
+                    {t('files')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Dată
+                    {t('date')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acțiuni
+                    {t('actions')}
                   </th>
                 </tr>
               </thead>
@@ -307,7 +316,7 @@ export default function DashboardPage() {
                       <div className="text-sm font-medium text-gray-900">{course.title}</div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {course.description || 'Fără descriere'}
+                      {course.description || t('noDescription')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {course.fileCount}
@@ -320,7 +329,7 @@ export default function DashboardPage() {
                         href={`/courses/${course.id}`}
                         className="text-blue-600 hover:text-blue-900 mr-3"
                       >
-                        Deschide
+                        {t('open')}
                       </Link>
                     </td>
                   </tr>
@@ -331,9 +340,9 @@ export default function DashboardPage() {
             {courses.length === 0 && (
               <div className="text-center py-12">
                 <Folder className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Niciun curs creat</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noCourses')}</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Începe prin a crea primul tău curs.
+                  {t('createFirstCourse')}
                 </p>
                 <div className="mt-6">
                   <Link
@@ -341,7 +350,7 @@ export default function DashboardPage() {
                     className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                    Creează Curs
+                    {t('createCourse')}
                   </Link>
                 </div>
               </div>
@@ -353,12 +362,12 @@ export default function DashboardPage() {
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Activitate Recentă</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('recentActivity')}</h2>
               <Link 
                 href="/history" 
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Vezi tot istoricul
+                {t('viewAllHistory')}
               </Link>
             </div>
           </div>
@@ -368,19 +377,19 @@ export default function DashboardPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Activitate
+                    {t('activity')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Detalii
+                    {t('details')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Dată
+                    {t('date')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    {t('status')}
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acțiuni
+                    {t('actions')}
                   </th>
                 </tr>
               </thead>
@@ -390,7 +399,7 @@ export default function DashboardPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <FileText className="flex-shrink-0 h-5 w-5 text-gray-400 mr-2" />
-                        <div className="text-sm font-medium text-gray-900">Procesare fișier</div>
+                        <div className="text-sm font-medium text-gray-900">{t('fileProcessing')}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -426,9 +435,9 @@ export default function DashboardPage() {
             {files.length === 0 && (
               <div className="text-center py-12">
                 <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Nicio activitate recentă</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noRecentActivity')}</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Începe prin a încărca primul tău document PDF.
+                  {t('uploadFirstDocument')}
                 </p>
                 <div className="mt-6">
                   <Link
@@ -436,7 +445,7 @@ export default function DashboardPage() {
                     className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                    Încarcă PDF
+                    {t('uploadPdf')}
                   </Link>
                 </div>
               </div>
@@ -447,13 +456,13 @@ export default function DashboardPage() {
         {/* Activity Feed */}
         <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Istoric Activitate</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('activityHistory')}</h2>
           </div>
           <div className="divide-y divide-gray-200">
             {files.slice(0, 4).map((file, index) => (
               <ActivityItem 
                 key={file.id}
-                action={index === 0 ? "Ai generat un rezumat" : "Ai încărcat un fișier"}
+                action={index === 0 ? t('generatedSummary') : t('uploadedFile')}
                 file={file.name}
                 time={file.date}
                 icon={index === 0 ? 

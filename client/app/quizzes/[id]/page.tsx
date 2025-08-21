@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { FileText, ArrowLeft, CheckCircle, XCircle, RefreshCw, Shuffle } from 'react-feather';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -28,9 +28,10 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   return shuffled;
 };
 
-export default function QuizPage({ params }: { params: { id: string } }) {
+export default function QuizPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session } = useSession();
   const router = useRouter();
+  const resolvedParams = use(params);
   const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
   const [fileName, setFileName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -42,11 +43,11 @@ export default function QuizPage({ params }: { params: { id: string } }) {
     if (session) {
       fetchQuiz();
     }
-  }, [session, params.id]);
+  }, [session, resolvedParams.id]);
 
   const fetchQuiz = async () => {
     try {
-      const response = await fetch(`/api/quizzes/${params.id}`);
+      const response = await fetch(`/api/quizzes/${resolvedParams.id}`);
       const data: QuizResponse = await response.json();
       
       if (response.ok) {

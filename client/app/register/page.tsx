@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { analyticsEvents } from '@/lib/analytics';
 
 export default function RegisterPage() {
+  const t = useTranslations('auth');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,19 +31,19 @@ export default function RegisterPage() {
 
     // Validări de bază
     if (password !== confirmPassword) {
-      setError('Parolele nu coincid');
+      setError(t('passwordsDontMatch'));
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError('Parola trebuie să aibă minim 6 caractere');
+      setError(t('passwordTooShort'));
       setLoading(false);
       return;
     }
 
     if (!validateEmail(email)) {
-      setError('Adresa de email nu este validă');
+      setError(t('invalidEmail'));
       setLoading(false);
       return;
     }
@@ -66,6 +69,9 @@ export default function RegisterPage() {
       setSuccess(true);
       setError(null);
       
+      // Track successful registration
+      analyticsEvents.userRegister('email');
+      
       // Resetează formularul
       setName('');
       setEmail('');
@@ -86,7 +92,7 @@ export default function RegisterPage() {
   return (
     <div className="flex items-center justify-center min-h-[80vh] bg-gray-50">
       <div className="w-full max-w-md bg-white shadow-md rounded-xl p-8">
-        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">Crează un cont nou</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">{t('createNewAccount')}</h1>
         
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-center">
@@ -96,60 +102,60 @@ export default function RegisterPage() {
         
         {success && (
           <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-center">
-            Cont creat cu succes! Vei fi redirecționat către pagina de autentificare...
+            {t('accountCreatedSuccess')}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nume complet</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('fullName')}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
-              placeholder="Prenume Nume"
+              placeholder={t('fullNamePlaceholder')}
               required
               disabled={loading || success}
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('email')}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
-              placeholder="email@exemplu.com"
+              placeholder={t('emailPlaceholder')}
               required
               disabled={loading || success}
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Parolă</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('password')}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
-              placeholder="••••••••"
+              placeholder={t('passwordPlaceholder')}
               required
               minLength={6}
               disabled={loading || success}
             />
-            <p className="mt-1 text-xs text-gray-500">Minim 6 caractere</p>
+            <p className="mt-1 text-xs text-gray-500">{t('minimum6Characters')}</p>
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirmă parola</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('confirmPassword')}</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring focus:border-blue-400"
-              placeholder="••••••••"
+              placeholder={t('confirmPasswordPlaceholder')}
               required
               disabled={loading || success}
             />
@@ -164,7 +170,7 @@ export default function RegisterPage() {
               disabled={loading || success}
             />
             <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-              Sunt de acord cu <Link href="/termeni" className="text-blue-600 hover:underline">Termenii și Condițiile</Link>
+              {t('agreeTerms')} <Link href="/termeni" className="text-blue-600 hover:underline">{t('termsAndConditions')}</Link>
             </label>
           </div>
 
@@ -181,22 +187,22 @@ export default function RegisterPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Se încarcă...
+                {t('loading')}
               </>
             ) : (
-              success ? 'Cont creat!' : 'Înregistrează-te'
+              success ? t('accountCreated') : t('register')
             )}
           </button>
         </form>
 
         <div className="mt-6 text-center border-t pt-6">
           <p className="text-gray-600 text-sm">
-            Ai deja cont? {' '}
+            {t('alreadyHaveAccountLogin')} {' '}
             <Link 
               href="/login"
               className="text-blue-600 hover:text-blue-800 font-medium"
             >
-              Autentifică-te
+              {t('authenticate')}
             </Link>
           </p>
         </div>

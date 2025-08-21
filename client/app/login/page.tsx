@@ -4,6 +4,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
+import { analyticsEvents } from '@/lib/analytics';
 
 // Componenta care folosește useSearchParams
 function LoginForm() {
@@ -14,6 +16,8 @@ function LoginForm() {
   const [registered, setRegistered] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations('auth');
+  const tc = useTranslations('common');
 
   useEffect(() => {
     // Verifică dacă există parametrul 'registered' în URL
@@ -45,21 +49,24 @@ function LoginForm() {
       if (result?.error) {
         // Mesaje de eroare mai specifice
         if (result.error === 'CredentialsSignin') {
-          setError('Email sau parolă incorectă');
+          setError(t('invalidCredentials'));
         } else {
           setError(result.error);
         }
       } else {
+        // Track successful login
+        analyticsEvents.userLogin('email');
         router.push('/dashboard');
       }
     } catch (err) {
-      setError('Eroare la conexiunea cu serverul');
+      setError(t('serverError'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = () => {
+    analyticsEvents.userLogin('google');
     signIn('google', { callbackUrl: '/dashboard' });
   };
 
@@ -70,11 +77,12 @@ function LoginForm() {
   return (
     <div className="flex items-center justify-center min-h-[80vh] bg-gray-50">
       <div className="w-full max-w-md bg-white shadow-md rounded-xl p-8">
-        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">Autentificare</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">{t('loginTitle')}</h1>
+        <p className="text-gray-600 text-center mb-6">{t('loginSubtitle')}</p>
         
         {registered && (
           <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-center">
-            Cont creat cu succes! Te poți autentifica.
+            {t('accountRegistered')}
           </div>
         )}
 
@@ -86,7 +94,7 @@ function LoginForm() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('email')}</label>
             <input
               type="email"
               value={email}
@@ -99,7 +107,7 @@ function LoginForm() {
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Parolă</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('password')}</label>
             <input
               type="password"
               value={password}
@@ -125,10 +133,10 @@ function LoginForm() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Se încarcă...
+                {tc('loading')}
               </>
             ) : (
-              'Intră în cont'
+              t('login')
             )}
           </button>
         </form>
@@ -138,7 +146,7 @@ function LoginForm() {
             <div className="w-full border-t border-gray-300"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-4 text-gray-500">sau continuă cu</span>
+            <span className="bg-white px-4 text-gray-500">{t('orContinueWith')}</span>
           </div>
         </div>
 
@@ -156,7 +164,7 @@ function LoginForm() {
                 <path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z"/>
               </g>
             </svg>
-            Google
+{t('signInWithGoogle')}
           </button>
 
           <button
@@ -177,18 +185,18 @@ function LoginForm() {
             className="text-blue-600 hover:text-blue-800 text-sm cursor-pointer"
             disabled={loading}
           >
-            Ai uitat parola?
+{t('forgotPassword')}
           </button>
           
           <div className="mt-4 border-t pt-4">
             <p className="text-gray-600 text-sm">
-              Nu ai cont? {' '}
+              {t('dontHaveAccount')} {' '}
               <button 
                 onClick={() => router.push('/register')}
                 className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
                 disabled={loading}
               >
-                Înregistrează-te
+{t('register')}
               </button>
             </p>
           </div>

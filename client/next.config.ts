@@ -1,3 +1,7 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./i18n.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -10,9 +14,9 @@ const nextConfig = {
     largePageDataBytes: 128 * 100000, // 128KB
   },
   images: {
-    domains: ['lh3.googleusercontent.com'], // adaugă aici hostname-ul
+    domains: ['lh3.googleusercontent.com'],
   },
-  serverExternalPackages: ['pdf-parse'], // Mutat la nivel superior
+  serverExternalPackages: ['pdf-parse'],
 };
 
-module.exports = nextConfig;
+export default withNextIntl(nextConfig);

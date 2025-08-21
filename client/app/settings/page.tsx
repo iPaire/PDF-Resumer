@@ -7,6 +7,7 @@ import { updateProfile, changePassword } from '@/lib/actions';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
+import { useTranslations } from 'next-intl';
 
 // Definim tipurile pentru datele Stripe
 type StripeInvoice = {
@@ -31,6 +32,7 @@ type StripeSubscription = {
 };
 
 export default function SettingsPage() {
+  const t = useTranslations('settings');
   const { data: session, update } = useSession();
   const router = useRouter();
   
@@ -152,7 +154,7 @@ export default function SettingsPage() {
             email: formData.email,
           }
         });
-        setProfileSuccess('Profil actualizat cu succes!');
+        setProfileSuccess(t('profileUpdated'));
       }
     } catch {
       setProfileError('Eroare la actualizarea profilului');
@@ -168,7 +170,7 @@ export default function SettingsPage() {
     setPasswordSuccess('');
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setPasswordError('Parolele nu se potrivesc');
+      setPasswordError(t('passwordsDoNotMatch'));
       setIsLoading(false);
       return;
     }
@@ -182,7 +184,7 @@ export default function SettingsPage() {
       if (result?.error) {
         setPasswordError(result.error);
       } else {
-        setPasswordSuccess('Parolă schimbată cu succes!');
+        setPasswordSuccess(t('passwordChanged'));
         setPasswordData({
           currentPassword: '',
           newPassword: '',
@@ -230,9 +232,9 @@ export default function SettingsPage() {
 
   const getPlanName = (plan: string) => {
     switch (plan) {
-      case 'free': return 'Gratuit';
-      case 'standard': return 'Standard';
-      case 'premium': return 'Premium';
+      case 'free': return t('common.free');
+      case 'standard': return t('common.standard');
+      case 'premium': return t('common.premium');
       default: return plan;
     }
   };
@@ -241,24 +243,24 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900">Setări cont</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
           <p className="mt-2 text-gray-600">
-            Gestionează informațiile contului tău și setările de facturare
+            {t('subtitle')}
           </p>
         </div>
 
         <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
           {/* Profile Section */}
           <div className="px-6 py-5">
-            <h2 className="text-xl font-semibold text-gray-900">Profil</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('profile')}</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Actualizează informațiile personale
+              {t('profileSubtitle')}
             </p>
             
             <form onSubmit={handleProfileSubmit} className="mt-6 space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Nume
+                  {t('name')}
                 </label>
                 <input
                   type="text"
@@ -272,7 +274,7 @@ export default function SettingsPage() {
               
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Adresă email
+                  {t('email')}
                 </label>
                 <input
                   type="email"
@@ -298,7 +300,7 @@ export default function SettingsPage() {
                   disabled={isLoading}
                   className="cursor-pointer ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
                 >
-                  {isLoading ? 'Se salvează...' : 'Salvează modificări'}
+                  {isLoading ? t('saving') : t('saveChanges')}
                 </button>
               </div>
             </form>
@@ -306,15 +308,15 @@ export default function SettingsPage() {
           
           {/* Password Section */}
           <div className="px-6 py-5">
-            <h2 className="text-xl font-semibold text-gray-900">Schimbă parola</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('changePassword')}</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Pentru securitate, folosește o parolă lungă și unică
+              {t('passwordSubtitle')}
             </p>
             
             <form onSubmit={handlePasswordSubmit} className="mt-6 space-y-6">
               <div>
                 <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
-                  Parola actuală
+                  {t('currentPassword')}
                 </label>
                 <input
                   type="password"
@@ -329,7 +331,7 @@ export default function SettingsPage() {
               
               <div>
                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                  Parolă nouă
+                  {t('newPassword')}
                 </label>
                 <input
                   type="password"
@@ -344,7 +346,7 @@ export default function SettingsPage() {
               
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirmă parola nouă
+                  {t('confirmNewPassword')}
                 </label>
                 <input
                   type="password"
@@ -371,7 +373,7 @@ export default function SettingsPage() {
                   disabled={isLoading}
                   className="cursor-pointer ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
                 >
-                  {isLoading ? 'Se actualizează...' : 'Schimbă parola'}
+                  {isLoading ? t('updating') : t('changePassword')}
                 </button>
               </div>
             </form>
@@ -379,14 +381,14 @@ export default function SettingsPage() {
           
           {/* Billing Section */}
           <div className="px-6 py-5">
-            <h2 className="text-xl font-semibold text-gray-900">Abonament și facturare</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('subscription')}</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Gestionează-ți abonamentul și metoda de plată
+              {t('subscriptionSubtitle')}
             </p>
             
             <div className="mt-6 space-y-6">
               <div className="border-b border-gray-200 pb-4">
-                <h3 className="text-lg font-medium text-gray-900">Plan curent</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t('currentPlan')}</h3>
                 <p className="mt-1 text-sm text-gray-600">
                   {getPlanName(currentPlan)}
                 </p>
@@ -394,7 +396,7 @@ export default function SettingsPage() {
               
               {subscriptionDetails && (
                 <div className="border-b border-gray-200 pb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Data reînnoirii</h3>
+                  <h3 className="text-lg font-medium text-gray-900">{t('renewalDate')}</h3>
                   <p className="mt-1 text-sm text-gray-600">
                     {subscriptionDetails.current_period_end 
                       ? format(new Date(subscriptionDetails.current_period_end * 1000), 'dd MMMM yyyy', { locale: ro })
@@ -404,7 +406,7 @@ export default function SettingsPage() {
               )}
               
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Istoric facturi</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t('invoiceHistory')}</h3>
                 {invoices.length > 0 ? (
                   <ul className="mt-2 space-y-2">
                     {invoices.map((invoice) => (
@@ -419,13 +421,13 @@ export default function SettingsPage() {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800"
                         >
-                          Descarcă factura
+                          {t('downloadInvoice')}
                         </a>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-1 text-sm text-gray-600">Nu ai nicio factură</p>
+                  <p className="mt-1 text-sm text-gray-600">{t('noInvoices')}</p>
                 )}
               </div>
               
@@ -435,14 +437,14 @@ export default function SettingsPage() {
                   disabled={billingLoading || !session?.user?.stripeCustomerId}
                   className="cursor-pointer px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
                 >
-                  {billingLoading ? 'Se încarcă...' : 'Gestionează facturarea'}
+                  {billingLoading ? t('common.loading') : t('manageBilling')}
                 </button>
                 
                 <button
                   onClick={handleChangePlan}
                   className="cursor-pointer px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Schimbă planul
+                  {t('changePlan')}
                 </button>
               </div>
             </div>
