@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       where: { id: courseId, userId },
       include: {
         summaries: {
-          include: { summary: { select: { id: true, title: true, content: true } } },
+          include: { summary: { select: { id: true, title: true, content: true, language: true } } },
           orderBy: { addedAt: 'asc' }
         }
       }
@@ -29,7 +29,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!course) return NextResponse.json({ error: 'Cursul nu a fost găsit' }, { status: 404 });
     if (course.summaries.length === 0) return NextResponse.json({ error: 'Cursul nu conține rezumate' }, { status: 400 });
 
-    // 2. Creează text combinat pentru procesare
+    // 2. Detectează limba predominantă din rezumate
+    const languages = course.summaries.map(cs => cs.summary.language || 'en');
+    const languageCount: Record<string, number> = {};
+    languages.forEach(lang => languageCount[lang] = (languageCount[lang] || 0) + 1);
+    const predominantLanguage = Object.keys(languageCount).reduce((a, b) => languageCount[a] > languageCount[b] ? a : b);
+
+    // 3. Creează text combinat pentru procesare
     const allSummaries = course.summaries.map(cs => ({ title: cs.summary.title, content: cs.summary.content }));
     const combinedText = allSummaries.map((summary, index) => 
       `## Modul ${index + 1}: ${summary.title}\n\n${summary.content}`
@@ -48,7 +54,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       course.title, 
       course.description || '', 
       allSummaries.length,
-      keyConcepts, formulas, definitions, keyPoints, applications, conclusions
+      keyConcepts, formulas, definitions, keyPoints, applications, conclusions,
+      predominantLanguage
     );
 
     // 5. Șterge vechiul rezumat final
@@ -136,38 +143,39 @@ async function generateCourseFinalSummary(
   definitions: string,
   keyPoints: string,
   applications: string,
-  conclusions: string
+  conclusions: string,
+  language: string = 'ro'
 ): Promise<string> {
 
+  // Language-specific prompts and titles
+  const languageConfig = getLanguageConfig(language);
+  
   const prompt = `
 Creează un rezumat final bine scris pentru cursul "${courseTitle}" folosind următoarele secțiuni extrase automat:
 
-## Prezentare Generală
+## ${languageConfig.sections.overview}
 Descriere: ${courseDescription}
 Module studiate: ${moduleCount}
 
-## Structura Cursului
+## ${languageConfig.sections.structure}
 ${keyConcepts}
 
-## Concepte Fundamentale
+## ${languageConfig.sections.concepts}
 ${definitions}
 
-## Formule și Relații Cheie
+## ${languageConfig.sections.formulas}
 ${formulas}
 
-## Puncte Esențiale
+## ${languageConfig.sections.keyPoints}
 ${keyPoints}
 
-## Aplicații Practice
+## ${languageConfig.sections.applications}
 ${applications}
 
-## Concluzie
+## ${languageConfig.sections.conclusion}
 ${conclusions}
 
-Cerințe:
-- Formulează frumos, coerent și fluent în limba română.
-- Păstrează toate informațiile importante.
-- Structura finală trebuie să aibă aceleași titluri și ordine.
+${languageConfig.requirements}
 `;
 
   const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -270,4 +278,87 @@ function extractConclusions(text: string): string {
     }
   });
   return conclusions.length > 0 ? conclusions.slice(-2).join(' ') : '';
+}
+
+// Language-specific configuration
+function getLanguageConfig(language: string) {
+  const configs = {
+    'ro': {
+      sections: {
+        overview: 'Prezentare Generală',
+        structure: 'Structura Cursului', 
+        concepts: 'Concepte Fundamentale',
+        formulas: 'Formule și Relații Cheie',
+        keyPoints: 'Puncte Esențiale',
+        applications: 'Aplicații Practice',
+        conclusion: 'Concluzie'
+      },
+      requirements: `Cerințe:
+- Formulează frumos, coerent și fluent în limba română.
+- Păstrează toate informațiile importante.
+- Structura finală trebuie să aibă aceleași titluri și ordine.`
+    },
+    'en': {
+      sections: {
+        overview: 'General Overview',
+        structure: 'Course Structure',
+        concepts: 'Fundamental Concepts', 
+        formulas: 'Key Formulas and Relations',
+        keyPoints: 'Essential Points',
+        applications: 'Practical Applications',
+        conclusion: 'Conclusion'
+      },
+      requirements: `Requirements:
+- Write beautifully, coherently and fluently in English.
+- Keep all important information.
+- The final structure must have the same titles and order.`
+    },
+    'fr': {
+      sections: {
+        overview: 'Présentation Générale',
+        structure: 'Structure du Cours',
+        concepts: 'Concepts Fondamentaux',
+        formulas: 'Formules et Relations Clés', 
+        keyPoints: 'Points Essentiels',
+        applications: 'Applications Pratiques',
+        conclusion: 'Conclusion'
+      },
+      requirements: `Exigences:
+- Formulez de manière belle, cohérente et fluide en français.
+- Conservez toutes les informations importantes.
+- La structure finale doit avoir les mêmes titres et ordre.`
+    },
+    'de': {
+      sections: {
+        overview: 'Allgemeine Übersicht',
+        structure: 'Kursstruktur',
+        concepts: 'Grundlegende Konzepte',
+        formulas: 'Wichtige Formeln und Beziehungen',
+        keyPoints: 'Wesentliche Punkte', 
+        applications: 'Praktische Anwendungen',
+        conclusion: 'Fazit'
+      },
+      requirements: `Anforderungen:
+- Formulieren Sie schön, kohärent und fließend auf Deutsch.
+- Behalten Sie alle wichtigen Informationen bei.
+- Die endgültige Struktur muss dieselben Titel und Reihenfolge haben.`
+    },
+    'es': {
+      sections: {
+        overview: 'Visión General',
+        structure: 'Estructura del Curso',
+        concepts: 'Conceptos Fundamentales',
+        formulas: 'Fórmulas y Relaciones Clave',
+        keyPoints: 'Puntos Esenciales',
+        applications: 'Aplicaciones Prácticas', 
+        conclusion: 'Conclusión'
+      },
+      requirements: `Requisitos:
+- Formule de manera hermosa, coherente y fluida en español.
+- Conserve toda la información importante.
+- La estructura final debe tener los mismos títulos y orden.`
+    }
+  };
+  
+  return configs[language as keyof typeof configs] || configs['en'];
 }

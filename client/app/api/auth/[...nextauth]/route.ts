@@ -108,19 +108,21 @@ export const authOptions: AuthOptions = {
         token.trialExpires = (user as CustomUser).trialExpires;
       }
 
-      if (token.subscription === 'trial' && token.trialExpires) {
+      if ((token.subscription === 'trial' || token.subscription === 'premium') && token.trialExpires) {
         const now = new Date();
         const trialExpires = new Date(token.trialExpires);
 
         if (now > trialExpires) {
+          // Premium users keep their subscription after trial, trial users become free
+          const newSubscription = token.subscription === 'premium' ? 'premium' : 'free';
           await prisma.user.update({
             where: { id: token.id as string },
             data: {
-              subscription: 'free',
+              subscription: newSubscription,
               trialExpires: null
             }
           });
-          token.subscription = 'free';
+          token.subscription = newSubscription;
           token.trialExpires = null;
         }
       }

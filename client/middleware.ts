@@ -10,30 +10,31 @@ export async function middleware(req: NextRequest) {
   });
   const { pathname } = req.nextUrl;
   
-  console.log('Middleware - pathname:', pathname, 'token exists:', !!token, 'token subscription:', token?.subscription, 'token id:', token?.id);
+  console.log('Middleware - pathname:', pathname, 'token exists:', !!token, 'token subscription:', token?.subscription, 'token id:', token?.id, 'trial expires:', token?.trialExpires);
   
   if (!token) {
     console.log('No token found, checking cookies:', req.cookies.getAll().map(c => c.name));
   }
   
-  // Check if trial has expired
-  if (token && token.subscription === 'trial' && token.trialExpires) {
+  // Check if trial has expired (for both 'trial' and 'premium' subscriptions with trial period)
+  if (token && (token.subscription === 'trial' || token.subscription === 'premium') && token.trialExpires) {
     const now = new Date();
     const trialExpires = new Date(token.trialExpires);
     
     if (now > trialExpires) {
       try {
-        // Update user to free subscription
+        // Update user to free subscription if trial subscription, keep premium if premium subscription
+        const newSubscription = token.subscription === 'premium' ? 'premium' : 'free';
         await prisma.user.update({
           where: { id: token.id as string },
           data: { 
-            subscription: 'free',
+            subscription: newSubscription,
             trialExpires: null
           }
         });
         
-        // Redirect to trial expired page if not already there
-        if (!pathname.startsWith('/trial-expired')) {
+        // Only redirect to trial expired page if this was a trial subscription
+        if (token.subscription === 'trial' && !pathname.startsWith('/trial-expired')) {
           return NextResponse.redirect(new URL('/trial-expired', req.url));
         }
       } catch (error) {
@@ -51,7 +52,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(url);
     }
     
-    // Redirect free users to summaries page
+    // Redirect only free users to summaries page (trial, premium, and standard users can access dashboard)
     if (token.subscription === 'free') {
       console.log('Redirecting free user from dashboard to summaries');
       return NextResponse.redirect(new URL('/summaries', req.url));
@@ -69,7 +70,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/summaries', req.url));
     }
     
-    // Redirect paid/trial users to dashboard
+    // Redirect premium, trial, and standard users to dashboard
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
