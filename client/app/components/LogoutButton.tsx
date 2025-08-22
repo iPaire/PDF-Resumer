@@ -4,10 +4,15 @@ import { signOut } from 'next-auth/react';
 import { analyticsEvents } from '@/lib/analytics';
 
 export default function LogoutButton() {
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Track logout event
     analyticsEvents.userLogout();
-    signOut({ callbackUrl: '/' });
+    await signOut({ 
+      callbackUrl: '/',
+      redirect: true 
+    });
+    // Forțează refresh pentru clear cache complet
+    window.location.href = '/';
   };
 
   return (
