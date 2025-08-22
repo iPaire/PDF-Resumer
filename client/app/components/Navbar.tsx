@@ -172,9 +172,14 @@ export default function Navbar() {
                   {t('settings')}
                 </Link>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     analyticsEvents.userLogout();
-                    signOut({ callbackUrl: '/' });
+                    await signOut({ 
+                      callbackUrl: '/',
+                      redirect: true 
+                    });
+                    // Forțează refresh pentru clear cache complet
+                    window.location.href = '/';
                   }}
                   className="cursor-pointer w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                 >
