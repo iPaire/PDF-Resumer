@@ -308,6 +308,7 @@ Format așteptat (JSON):
       data: {
         title: summaryTitle,
         content: summaryContent,
+        language: documentLanguage,
         userId: user.id,
       }
     });

@@ -16,7 +16,9 @@
       "Bash(done)",
       "Bash(cd:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

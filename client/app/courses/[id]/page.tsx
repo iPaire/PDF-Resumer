@@ -1098,29 +1098,33 @@ export default function CoursePage() {
                   <div className="space-y-4">
                     <div className="flex flex-wrap gap-2 mb-4">
                       {quizzes.map((quiz) => (
+                      <div
+                        key={quiz.id}
+                        className={`px-3 py-1 text-sm rounded-lg flex items-center justify-between ${
+                          activeQuiz === quiz.id
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-200 hover:bg-gray-300'
+                        }`}
+                      >
                         <button
-                          key={quiz.id}
                           onClick={() => {
                             setActiveQuiz(quiz.id);
                             setQuizResults(null);
                           }}
-                          className={`px-3 py-1 text-sm rounded-lg ${
-                            activeQuiz === quiz.id
-                              ? 'bg-purple-600 text-white'
-                              : 'bg-gray-200 hover:bg-gray-300'
-                          }`}
+                          className="flex-1 text-left"
                         >
                           {new Date(quiz.createdAt).toLocaleDateString(locale)}
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteQuiz(quiz.id);
-                            }}
-                            className="ml-2 text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="inline h-4 w-4" />
-                          </button>
                         </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteQuiz(quiz.id);
+                          }}
+                          className="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                       ))}
                     </div>
 

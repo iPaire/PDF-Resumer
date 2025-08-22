@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
+import { generateRelevantFormulas, generateKeyDefinitions, getFormulaGenerationPrompt, getDefinitionsGenerationPrompt, parseFormulasFromAIResponse, parseDefinitionsFromAIResponse } from '@/ai-functions';
 
 // POST - Generate printable cheat sheet
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
               select: {
                 id: true,
                 title: true,
-                content: true
+                content: true,
+                language: true
               }
             }
           },
@@ -47,15 +49,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Course has no summaries' }, { status: 400 });
     }
 
-    // 2. Combine all summaries
+    // 2. Detect predominant language from summaries
+    const languages = course.summaries.map(cs => cs.summary.language || 'en');
+    const languageCount: Record<string, number> = {};
+    languages.forEach(lang => languageCount[lang] = (languageCount[lang] || 0) + 1);
+    const predominantLanguage = Object.keys(languageCount).reduce((a, b) => languageCount[a] > languageCount[b] ? a : b);
+
+    // 3. Combine all summaries
     const combinedText = course.summaries.map(cs => 
       `## ${cs.summary.title}\n\n${cs.summary.content}`
     ).join('\n\n---\n\n');
 
-    // 3. Generate cheat sheet using local function
-    const cheatSheetContent = generateCheatSheet(
+    // 4. Generate cheat sheet using AI-enhanced function
+    const cheatSheetContent = await generateEnhancedCheatSheet(
       course.title,
-      combinedText
+      combinedText,
+      predominantLanguage
     );
 
     // 4. Save cheat sheet to database
@@ -180,22 +189,49 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
 // ============== HELPER FUNCTIONS ==============
 
-function generateCheatSheet(courseTitle: string, combinedContent: string): string {
-  // Extracted content
-  const formulas = extractFormulas(combinedContent);
-  const definitions = extractDefinitions(combinedContent);
-  const keyTerms = extractKeyTerms(combinedContent);
+// Enhanced cheat sheet generation with AI-generated formulas
+async function generateEnhancedCheatSheet(courseTitle: string, combinedContent: string, language: string = 'en'): Promise<string> {
+  // Get AI-enhanced content
+  const enhancedFormulas = await generateRelevantFormulas(courseTitle, combinedContent, language);
+  const enhancedDefinitions = await generateKeyDefinitions(courseTitle, combinedContent, language);
+  
+  // Extract existing content
+  const existingFormulas = extractFormulas(combinedContent);
+  const existingDefinitions = extractDefinitions(combinedContent);
   const procedures = extractProcedures(combinedContent);
   const constants = extractConstants(combinedContent);
-  const diagrams = extractDiagramConcepts(combinedContent);
+  
+  // Combine AI-generated with existing content
+  const allFormulas = [...enhancedFormulas, ...existingFormulas].slice(0, 12);
+  const allDefinitions = [...enhancedDefinitions, ...existingDefinitions].slice(0, 10);
+  
+  return generateCheatSheetHTML(courseTitle, {
+    formulas: allFormulas,
+    definitions: allDefinitions,
+    procedures,
+    constants
+  }, language);
+}
+
+
+function generateCheatSheetHTML(courseTitle: string, content: {
+  formulas: string[];
+  definitions: Array<{term: string, definition: string}>;
+  procedures: string[];
+  constants: string[];
+}, language: string = 'en'): string {
+  const { formulas, definitions, procedures, constants } = content;
+  
+  // Language-specific labels
+  const labels = getCheatSheetLabels(language);
 
   return `
 <!DOCTYPE html>
-<html lang="ro">
+<html lang="${language}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Copiuță - ${escapeHtml(courseTitle)}</title>
+  <title>${labels.cheatsheet} - ${escapeHtml(courseTitle)}</title>
   <style>
     @page {
       size: A4;
@@ -203,14 +239,17 @@ function generateCheatSheet(courseTitle: string, combinedContent: string): strin
     }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      font-size: 9pt;
-      line-height: 1.4;
+      font-size: 8pt;
+      line-height: 1.3;
       margin: 0;
-      padding: 5mm;
+      padding: 4mm;
       color: #333;
       background: white;
       max-width: 210mm;
       margin: 0 auto;
+      column-count: 2;
+      column-gap: 5mm;
+      column-rule: 1px solid #e2e8f0;
     }
     .header {
       text-align: center;
@@ -229,51 +268,84 @@ function generateCheatSheet(courseTitle: string, combinedContent: string): strin
       color: #718096;
       margin: 1mm 0 0;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 4mm;
-      margin-top: 3mm;
+    .content {
+      column-span: none;
+      break-inside: avoid;
+      margin-bottom: 3mm;
+    }
+    .full-width {
+      column-span: all;
+      margin-bottom: 2mm;
     }
     .section {
-      margin-bottom: 4mm;
+      margin-bottom: 3mm;
       page-break-inside: avoid;
+      break-inside: avoid;
     }
     .section-title {
-      font-size: 10pt;
+      font-size: 9pt;
       font-weight: 600;
       color: #2c5282;
       background: #ebf8ff;
-      padding: 2mm 3mm;
-      border-left: 3px solid #2c5282;
-      margin: 0 0 2mm;
+      padding: 1.5mm 2mm;
+      border-left: 2px solid #2c5282;
+      margin: 0 0 1.5mm;
     }
     .items {
-      padding-left: 3mm;
+      padding-left: 2mm;
     }
     .item {
-      margin-bottom: 1.5mm;
+      margin-bottom: 1mm;
+      font-size: 7.5pt;
     }
     .formula {
-      font-family: 'Cambria Math', serif;
-      font-size: 9pt;
-      padding: 1mm 0;
+      font-family: 'Cambria Math', 'Times New Roman', serif;
+      font-size: 8pt;
+      padding: 0.5mm 0;
+      font-weight: 500;
+      background: #f8fafc;
+      border-radius: 2px;
+      padding: 1mm 2mm;
+      margin: 0.5mm 0;
     }
     .definition {
-      display: flex;
+      display: block;
       margin-bottom: 1mm;
+      line-height: 1.2;
     }
     .term {
       font-weight: 600;
-      min-width: 25mm;
+      color: #2c5282;
+      display: inline;
     }
-    .diagram-box {
+    .definition-compact {
+      font-size: 7pt;
+      margin-bottom: 0.8mm;
+      line-height: 1.2;
+    }
+    .term-compact {
+      font-weight: 600;
+      color: #2c5282;
+    }
+    .workspace-area {
+      border: 1px solid #e2e8f0;
+      padding: 3mm;
+      margin-top: 2mm;
+    }
+    .workspace-title {
+      font-size: 8pt;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 1mm;
+    }
+    .calculation-space {
+      border: 1px dashed #cbd5e0;
+      height: 15mm;
+      margin-bottom: 3mm;
+    }
+    .notes-space-large {
       border: 1px dashed #cbd5e0;
       height: 20mm;
-      margin-top: 2mm;
-      padding: 1mm;
-      font-size: 8pt;
-      color: #718096;
     }
     .footer {
       margin-top: 4mm;
@@ -300,6 +372,16 @@ function generateCheatSheet(courseTitle: string, combinedContent: string): strin
     @media print {
       body {
         padding: 0;
+        font-size: 7pt;
+      }
+      .section-title {
+        font-size: 8pt;
+      }
+      .formula {
+        font-size: 7.5pt;
+      }
+      .header {
+        margin-bottom: 3mm;
       }
     }
   </style>
@@ -307,103 +389,89 @@ function generateCheatSheet(courseTitle: string, combinedContent: string): strin
 <body>
   <div class="header">
     <h1 class="title">${escapeHtml(courseTitle)}</h1>
-    <p class="subtitle">Copiuță de formule și concepte</p>
+    <p class="subtitle">${labels.subtitle}</p>
   </div>
 
-  <div class="grid">
-    <div>
-      ${formulas.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Formule Cheie</h2>
-          <div class="items">
-            ${formulas.map(f => `
-              <div class="item formula">${escapeHtml(f)}</div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
-
-      ${definitions.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Definiții</h2>
-          <div class="items">
-            ${definitions.map(d => `
-              <div class="item definition">
-                <span class="term">${escapeHtml(d.term)}:</span>
-                <span>${escapeHtml(d.definition)}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
-
-      ${constants.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Constante</h2>
-          <div class="items">
-            ${constants.map(c => `
-              <div class="item">${escapeHtml(c)}</div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+  <!-- Formule și constante în partea de sus -->
+  ${formulas.length > 0 ? `
+    <div class="section full-width">
+      <h2 class="section-title">${labels.formulas}</h2>
+      <div class="items" style="columns: 2; column-gap: 3mm;">
+        ${formulas.map(f => `
+          <div class="item formula">${escapeHtml(f)}</div>
+        `).join('')}
+      </div>
     </div>
+  ` : ''}
 
-    <div>
-      ${keyTerms.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Termeni Cheie</h2>
-          <div class="items">
-            ${keyTerms.map(t => `
-              <div class="item">• ${escapeHtml(t)}</div>
-            `).join('')}
+  <!-- Definițiile principale -->
+  ${definitions.slice(0, 8).length > 0 ? `
+    <div class="section content">
+      <h2 class="section-title">${labels.definitions}</h2>
+      <div class="items">
+        ${definitions.slice(0, 8).map(d => `
+          <div class="item definition">
+            <span class="term">${escapeHtml(d.term)}:</span><br>
+            <span style="font-size: 7pt; color: #4a5568;">${escapeHtml(d.definition)}</span>
           </div>
-        </div>
-      ` : ''}
+        `).join('')}
+      </div>
+    </div>
+  ` : ''}
 
-      ${procedures.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Proceduri</h2>
-          <div class="items">
-            ${procedures.map((p, i) => `
-              <div class="item">
-                <strong>${i+1}.</strong> ${escapeHtml(p)}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
+  <!-- Constante -->
+  ${constants.length > 0 ? `
+    <div class="section content">
+      <h2 class="section-title">${labels.constants}</h2>
+      <div class="items">
+        ${constants.map(c => `
+          <div class="item" style="font-family: monospace; font-size: 7.5pt;">${escapeHtml(c)}</div>
+        `).join('')}
+      </div>
+    </div>
+  ` : ''}
 
-      ${diagrams.length > 0 ? `
-        <div class="section">
-          <h2 class="section-title">Diagrame</h2>
-          <div class="items">
-            ${diagrams.map(d => `
-              <div class="item">• ${escapeHtml(d)}</div>
-              <div class="diagram-box">Spațiu pentru diagramă</div>
-            `).join('')}
+  <!-- Proceduri -->
+  ${procedures.length > 0 ? `
+    <div class="section content">
+      <h2 class="section-title">${labels.procedures}</h2>
+      <div class="items">
+        ${procedures.slice(0, 4).map((p, i) => `
+          <div class="item" style="font-size: 7pt;">
+            <strong style="color: #2c5282;">${i+1}.</strong> ${escapeHtml(p.substring(0, 100))}${p.length > 100 ? '...' : ''}
           </div>
-        </div>
-      ` : ''}
+        `).join('')}
+      </div>
+    </div>
+  ` : ''}
+
+  <!-- Spațiu de lucru -->
+  <div class="section content">
+    <h2 class="section-title">${labels.workspace}</h2>
+    <div class="workspace-area" style="height: 25mm; border: 1px dashed #cbd5e0; padding: 2mm;">
+      <div style="font-size: 7pt; color: #718096; margin-bottom: 2mm;">${labels.calculations}:</div>
+      <div style="border-bottom: 1px dotted #cbd5e0; height: 8mm; margin-bottom: 2mm;"></div>
+      <div style="font-size: 7pt; color: #718096; margin-bottom: 1mm;">${labels.notes}:</div>
+      <div style="border-bottom: 1px dotted #cbd5e0; height: 8mm;"></div>
     </div>
   </div>
 
   <div class="footer">
     <div class="notation">
       <div class="notation-item">
-        <strong>Notații:</strong><br>
-        f(x) - funcție, Δ - variație, ∑ - sumă
+        <strong>${labels.notations}:</strong><br>
+        ${labels.notationExamples}
       </div>
       <div class="notation-item">
-        <strong>Unități:</strong><br>
-        m - metri, s - secunde, kg - kilograme
+        <strong>${labels.units}:</strong><br>
+        ${labels.unitExamples}
       </div>
       <div class="notation-item">
-        <strong>Notițe:</strong>
+        <strong>${labels.notes}:</strong>
         <div class="notes-space"></div>
       </div>
     </div>
-    <p>Generat automat • ${new Date().toLocaleDateString('ro-RO')}</p>
+    <p>${labels.generated} • ${new Date().toLocaleDateString(getLocaleFromLanguage(language))}</p>
   </div>
 </body>
 </html>
@@ -582,4 +650,115 @@ function extractDiagramConcepts(text: string): string[] {
   });
 
   return diagrams.slice(0, 5); // Limit to 5 diagram concepts
+}
+
+// Language-specific labels for cheat sheet
+function getCheatSheetLabels(language: string) {
+  const labels = {
+    'ro': {
+      cheatsheet: 'Copiuță',
+      subtitle: 'Copiuță de formule și concepte',
+      formulas: 'Formule Cheie',
+      definitions: 'Definiții',
+      constants: 'Constante',
+      quickReference: 'Referință Rapidă',
+      procedures: 'Proceduri',
+      workspace: 'Spațiu de Lucru',
+      calculations: 'Calcule',
+      notes: 'Notițe',
+      notations: 'Notații',
+      notationExamples: 'f(x) - funcție, Δ - variație, ∑ - sumă',
+      units: 'Unități',
+      unitExamples: 'm - metri, s - secunde, kg - kilograme',
+      notes: 'Notițe',
+      generated: 'Generat automat'
+    },
+    'en': {
+      cheatsheet: 'Cheat Sheet',
+      subtitle: 'Formula and concept reference',
+      formulas: 'Key Formulas',
+      definitions: 'Definitions',
+      constants: 'Constants',
+      quickReference: 'Quick Reference',
+      procedures: 'Procedures', 
+      workspace: 'Workspace',
+      calculations: 'Calculations',
+      notes: 'Notes',
+      notations: 'Notations',
+      notationExamples: 'f(x) - function, Δ - variation, ∑ - sum',
+      units: 'Units',
+      unitExamples: 'm - meters, s - seconds, kg - kilograms',
+      notes: 'Notes',
+      generated: 'Auto-generated'
+    },
+    'fr': {
+      cheatsheet: 'Aide-mémoire',
+      subtitle: 'Référence de formules et concepts',
+      formulas: 'Formules Clés',
+      definitions: 'Définitions',
+      constants: 'Constantes',
+      quickReference: 'Référence Rapide',
+      procedures: 'Procédures',
+      workspace: 'Espace de Travail',
+      calculations: 'Calculs',
+      notes: 'Notes',
+      notations: 'Notations',
+      notationExamples: 'f(x) - fonction, Δ - variation, ∑ - somme',
+      units: 'Unités',
+      unitExamples: 'm - mètres, s - secondes, kg - kilogrammes',
+      notes: 'Notes',
+      generated: 'Généré automatiquement'
+    },
+    'de': {
+      cheatsheet: 'Spickzettel',
+      subtitle: 'Formel- und Konzeptreferenz',
+      formulas: 'Wichtige Formeln',
+      definitions: 'Definitionen',
+      constants: 'Konstanten',
+      quickReference: 'Schnellreferenz',
+      procedures: 'Verfahren',
+      workspace: 'Arbeitsbereich',
+      calculations: 'Berechnungen',
+      notes: 'Notizen',
+      notations: 'Notationen',
+      notationExamples: 'f(x) - Funktion, Δ - Variation, ∑ - Summe',
+      units: 'Einheiten',
+      unitExamples: 'm - Meter, s - Sekunden, kg - Kilogramm',
+      notes: 'Notizen',
+      generated: 'Automatisch generiert'
+    },
+    'es': {
+      cheatsheet: 'Hoja de Referencia',
+      subtitle: 'Referencia de fórmulas y conceptos',
+      formulas: 'Fórmulas Clave',
+      definitions: 'Definiciones',
+      constants: 'Constantes',
+      quickReference: 'Referencia Rápida',
+      procedures: 'Procedimientos',
+      workspace: 'Espacio de Trabajo', 
+      calculations: 'Cálculos',
+      notes: 'Notas',
+      notations: 'Notaciones',
+      notationExamples: 'f(x) - función, Δ - variación, ∑ - suma',
+      units: 'Unidades',
+      unitExamples: 'm - metros, s - segundos, kg - kilogramos',
+      notes: 'Notas',
+      generated: 'Generado automáticamente'
+    }
+  };
+  
+  return labels[language as keyof typeof labels] || labels['en'];
+}
+
+// Convert language code to locale for date formatting
+function getLocaleFromLanguage(language: string): string {
+  const localeMap = {
+    'ro': 'ro-RO',
+    'en': 'en-US',
+    'fr': 'fr-FR',
+    'de': 'de-DE',
+    'es': 'es-ES'
+  };
+  
+  return localeMap[language as keyof typeof localeMap] || 'en-US';
 }
