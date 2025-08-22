@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { useTranslations } from 'next-intl';
+import { analyticsEvents } from '@/lib/analytics';
 
 type Summary = {
   id: string;
@@ -161,6 +162,10 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
   const handleDownload = async () => {
     if (!summary) return;
     
+    // Track download event
+    analyticsEvents.summaryDownloaded();
+    analyticsEvents.buttonClick('download_summary', 'summary_detail_page');
+    
     try {
       const response = await fetch(`/api/summaries/${id}/download`);
       if (response.status === 403) {
@@ -191,6 +196,10 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
     if (!confirm(t('deleteConfirm'))) {
       return;
     }
+
+    // Track delete event
+    analyticsEvents.summaryDeleted();
+    analyticsEvents.buttonClick('delete_summary', 'summary_detail_page');
 
     try {
       const response = await fetch(`/api/summaries/${id}`, {

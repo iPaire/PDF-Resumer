@@ -41,7 +41,8 @@ export default function PricingPage() {
     }
 
     // Track subscription upgrade attempt
-    const planType = priceId === PRICE_IDS.premium_monthly ? 'premium_monthly' : 'premium_annual';
+    const planType = priceId === PRICE_IDS.PREMIUM ? 'premium_monthly' : 'premium_annual';
+    analyticsEvents.buttonClick(`purchase_${planType}`, 'pricing_page');
     analyticsEvents.subscriptionUpgrade(planType);
 
     setSelectedPlan(priceId);
@@ -77,6 +78,8 @@ export default function PricingPage() {
   };
 
   const handleFreePlan = () => {
+    // Track free plan selection
+    analyticsEvents.buttonClick('start_free_plan', 'pricing_page');
     router.push(session ? '/upload' : '/login');
   };
 

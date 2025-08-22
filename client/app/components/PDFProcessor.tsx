@@ -116,13 +116,10 @@ export default function PDFProcessor() {
     }
   }, [status]);
 
-  // Check if we should show feedback request
+  // Check if we should show feedback request at exactly 3 usages
   useEffect(() => {
-    if (status === 'authenticated' && usage.used >= usage.limit && usage.limit === 3) {
-      const feedbackDismissed = localStorage.getItem('feedbackDismissed');
-      if (!feedbackDismissed) {
-        setTimeout(() => setShowFeedback(true), 1500);
-      }
+    if (status === 'authenticated' && usage.used === 3) {
+      setTimeout(() => setShowFeedback(true), 1500);
     }
   }, [usage, status]);
 
@@ -216,6 +213,12 @@ export default function PDFProcessor() {
         setSummaryLanguage(data.meta?.language || 'en');
         fetchUsage();
         
+        // Check if we should show feedback after exactly 3 summaries
+        const totalSummaries = (usage.used || 0) + 1; // Current usage + the one we just generated
+        if (totalSummaries === 3) {
+          setTimeout(() => setShowFeedback(true), 2000);
+        }
+        
         // Track successful processing
         const processingTime = Date.now() - processingStartTime;
         analyticsEvents.pdfProcessingCompleted(processingTime);
@@ -298,7 +301,6 @@ export default function PDFProcessor() {
         setFeedbackSubmitted(true);
         setTimeout(() => {
           setShowFeedback(false);
-          localStorage.setItem('feedbackDismissed', 'true');
         }, 2000);
       } else {
         throw new Error('Failed to submit feedback');
@@ -655,7 +657,6 @@ export default function PDFProcessor() {
         show={showFeedback}
         onClose={() => {
           setShowFeedback(false);
-          localStorage.setItem('feedbackDismissed', 'true');
         }}
         onSubmit={submitFeedback}
         isSubmitting={isSubmittingFeedback}

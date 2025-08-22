@@ -529,7 +529,16 @@
   },
   "contact": {
     "title": "Contact",
-    "description": "Have questions? You can contact us at"
+    "description": "Have questions? You can contact us at",
+    "feedback": {
+      "title": "Give us your feedback",
+      "description": "Your opinion is important to us. Tell us how we can improve SmartPDF Notes.",
+      "placeholder": "Write your feedback, suggestions, or report issues...",
+      "submit": "Send Feedback",
+      "submitting": "Sending...",
+      "success": "Thank you for your feedback! We appreciate your input.",
+      "error": "Failed to send feedback. Please try again or contact us directly."
+    }
   },
   "privacy": {
     "title": "Privacy Policy",

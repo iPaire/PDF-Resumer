@@ -97,12 +97,20 @@ export const analyticsEvents = {
   fileConverterUsed: () => 
     trackEvent('file_converter_used', 'feature_usage'),
 
+  // Course events  
+  courseDeleted: () => 
+    trackEvent('course_deleted', 'content_interaction'),
+
   // Engagement events
   pageView: (pageName: string) => 
     trackEvent('page_view', 'engagement', pageName),
   
   buttonClick: (buttonName: string, location: string) => 
     trackEvent('button_click', 'ui_interaction', `${location}_${buttonName}`),
+
+  // Dashboard navigation
+  navigationClick: (destination: string, source: string) =>
+    trackEvent('navigation_click', 'ui_interaction', `${source}_to_${destination}`),
 
   // Error tracking
   errorOccurred: (errorType: string, errorMessage: string) => 
