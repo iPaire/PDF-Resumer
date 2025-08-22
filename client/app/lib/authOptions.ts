@@ -39,5 +39,11 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
+    signOut: "/",
+  },
+  events: {
+    async signOut() {
+      // Clear any custom session data if needed
+    },
   }
 };

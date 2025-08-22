@@ -18,7 +18,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(python:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(vercel logout:*)"
     ],
     "deny": [],
     "ask": []
