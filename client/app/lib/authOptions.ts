@@ -41,9 +41,12 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     signOut: "/",
   },
+  url: process.env.NEXTAUTH_URL,
   events: {
-    async signOut() {
+    async signOut({ token }) {
       // Clear any custom session data if needed
+      console.log('User signed out:', token);
     },
-  }
+  },
+  useSecureCookies: process.env.NODE_ENV === 'production'
 };
