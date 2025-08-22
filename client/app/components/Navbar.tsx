@@ -54,12 +54,19 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center space-x-2 md:space-x-4">
-        <Link href="/" className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block">{t('home')}</Link>
+        <Link 
+          href="/" 
+          onClick={() => analyticsEvents.navigationClick('home', 'navbar')}
+          className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block"
+        >
+          {t('home')}
+        </Link>
         
         {/* Buton de Upload între Acasă și Prețuri */}
         {session && (
           <Link 
             href="/upload" 
+            onClick={() => analyticsEvents.navigationClick('upload', 'navbar')}
             className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition flex items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -69,7 +76,13 @@ export default function Navbar() {
           </Link>
         )}
 
-        <Link href="/pricing" className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block">{t('pricing')}</Link>
+        <Link 
+          href="/pricing" 
+          onClick={() => analyticsEvents.navigationClick('pricing', 'navbar')}
+          className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block"
+        >
+          {t('pricing')}
+        </Link>
 
         {session ? (
           <div ref={menuRef} className="relative">

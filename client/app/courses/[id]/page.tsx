@@ -9,6 +9,7 @@ import {
   Loader, Download, X, CheckCircle, XCircle
 } from 'react-feather';
 import { useTranslations, useLocale } from 'next-intl';
+import { analyticsEvents } from '@/lib/analytics';
 
 type Summary = {
   id: string;
@@ -473,6 +474,10 @@ export default function CoursePage() {
       return;
     }
 
+    // Track quiz generation attempt
+    analyticsEvents.buttonClick('generate_quiz', 'course_page');
+    analyticsEvents.quizGenerated(course.summaries.length);
+
     setGenerating(prev => ({...prev, quiz: true}));
     try {
       const res = await fetch(`/api/courses/${courseId}/quiz`, { 
@@ -591,6 +596,10 @@ export default function CoursePage() {
   const submitQuiz = async () => {
     if (!activeQuiz) return;
     
+    // Track quiz submission
+    analyticsEvents.buttonClick('submit_quiz', 'course_page');
+    analyticsEvents.quizStarted();
+    
     setIsSubmittingQuiz(true);
     
     try {
@@ -608,6 +617,11 @@ export default function CoursePage() {
       if (response.ok) {
         const result = await response.json();
         setQuizResults(result);
+        
+        // Track quiz completion with score
+        if (result.summary?.percentage) {
+          analyticsEvents.quizCompleted(result.summary.percentage);
+        }
       } else {
         throw new Error(t('errorSubmittingAnswers'));
       }
@@ -1343,7 +1357,7 @@ export default function CoursePage() {
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">{t('addSummariesToCourse')}</h3>
+                <h3 className="text-xl text-black font-bold">{t('addSummariesToCourse')}</h3>
                 <button 
                   onClick={() => setShowAddSummaries(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -1438,7 +1452,7 @@ export default function CoursePage() {
           <div className="bg-white rounded-2xl w-full max-w-md">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">{t('editCourse')}</h3>
+                <h3 className="text-xl text-black font-bold">{t('editCourse')}</h3>
                 <button 
                   onClick={() => setShowEditCourse(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -1449,22 +1463,22 @@ export default function CoursePage() {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('courseTitle')}</label>
+                  <label className="block text-sm text-black font-medium mb-2">{t('courseTitle')}</label>
                   <input
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border text-black border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder={t('courseTitlePlaceholder')}
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('courseDescription')}</label>
+                  <label className="block text-sm text-black font-medium mb-2">{t('courseDescription')}</label>
                   <textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border text-black border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     rows={3}
                     placeholder={t('courseDescriptionPlaceholder')}
                   />
@@ -1482,7 +1496,7 @@ export default function CoursePage() {
                   onClick={updateCourse}
                   className="px-5 py-2.5 rounded-xl font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"
                 >
-                  {tCommon('saveChanges')}
+                  {t('saveChanges')}
                 </button>
               </div>
             </div>

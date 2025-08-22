@@ -29,6 +29,7 @@ model User {
   summaries     Summary[]
   quizzes       Quiz[]
   cheatSheets   CheatSheet[]
+  feedback      Feedback[]
 
   trialOffered  Boolean?  @default(false)
   trialExpires  DateTime? @db.Timestamp(6)
@@ -147,4 +148,13 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Feedback {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rating    Int?     // 1-5 stars, optional for general feedback
+  comment   String?  // Optional comment
+  userId    String?  @db.Uuid // Optional user association
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
 }

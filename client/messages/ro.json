@@ -452,7 +452,16 @@
   },
   "contact": {
     "title": "Contact",
-    "description": "Ai întrebări? Ne poți contacta la"
+    "description": "Ai întrebări? Ne poți contacta la",
+    "feedback": {
+      "title": "Trimite-ne feedback-ul tău",
+      "description": "Opinia ta este importantă pentru noi. Spune-ne cum putem îmbunătăți SmartPDF Notes.",
+      "placeholder": "Scrie feedback-ul tău, sugestii sau raportează probleme...",
+      "submit": "Trimite Feedback",
+      "submitting": "Se trimite...",
+      "success": "Mulțumim pentru feedback! Apreciem contribuția ta.",
+      "error": "Nu s-a putut trimite feedback-ul. Te rugăm să încerci din nou sau să ne contactezi direct."
+    }
   },
   "privacy": {
     "title": "Politica de Confidențialitate",

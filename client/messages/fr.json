@@ -448,7 +448,16 @@
   },
   "contact": {
     "title": "Contact",
-    "description": "Vous avez des questions ? Vous pouvez nous contacter à"
+    "description": "Vous avez des questions ? Vous pouvez nous contacter à",
+    "feedback": {
+      "title": "Donnez-nous votre avis",
+      "description": "Votre opinion est importante pour nous. Dites-nous comment nous pouvons améliorer SmartPDF Notes.",
+      "placeholder": "Rédigez vos commentaires, suggestions ou signalez des problèmes...",
+      "submit": "Envoyer les commentaires",
+      "submitting": "Envoi en cours...",
+      "success": "Merci pour vos commentaires ! Nous apprécions votre contribution.",
+      "error": "Échec de l'envoi des commentaires. Veuillez réessayer ou nous contacter directement."
+    }
   },
   "privacy": {
     "title": "Politique de confidentialité",
