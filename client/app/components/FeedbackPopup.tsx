@@ -65,7 +65,7 @@ const FeedbackPopup = ({
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="What did you like? What can be improved?"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 rows={2}
               />
             </div>
