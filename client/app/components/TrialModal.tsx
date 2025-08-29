@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useTrial } from '@/context/TrialContext'
 
 const TrialModal = () => {
-  const { data: session } = useSession()
+  const { data: session, update } = useSession()
   const { showTrialModal, setShowTrialModal } = useTrial()
   const [isLoading, setIsLoading] = useState(false)
   
@@ -25,8 +25,8 @@ const TrialModal = () => {
       
       if (response.ok) {
         // Actualizăm sesiunea și închidem modalul
+        await update()
         setShowTrialModal(false)
-        window.location.reload() // Reîmprospătăm pentru a actualiza sesiunea
       } else {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to activate trial')
