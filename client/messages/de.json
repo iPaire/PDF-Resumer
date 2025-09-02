@@ -332,7 +332,11 @@
     "noSummary": "Zusammenfassung konnte nicht generiert werden. Bitte versuchen Sie es mit einer anderen Datei.",
     "feedbackError": "Feedback konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.",
     "clickToSeeAnswer": "(klicken Sie, um die Antwort zu sehen)",
-    "answer": "Antwort: "
+    "answer": "Antwort: ",
+    "summaryLength": "Zusammenfassung Typ",
+    "academicSummary": "Akademische Zusammenfassung",
+    "shortSummary": "Kurze Zusammenfassung",
+    "longSummary": "Detaillierte Zusammenfassung"
   },
   "summaries": {
     "title": "Ihre Zusammenfassungen",

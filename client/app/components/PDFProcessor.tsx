@@ -24,64 +24,58 @@ const parseJSON = async (response: Response) => {
 const getSectionTitles = (lang: string) => {
   const titles: Record<string, Record<string, string>> = {
     en: {
-      topics: "1. Key Topics Overview",
-      glossary: "2. Glossary of Terms",
-      prerequisites: "3. Prerequisite Knowledge",
-      concepts: "4. Key Concepts Explained",
-      diagrams: "5. Conceptual Diagrams",
-      examples: "6. Practical Examples/Case Studies",
-      resources: "7. Recommended Resources",
-      questions: "8. Self-Assessment Questions"
+      intro: "1. Introduction and Context",
+      fundamentals: "2. Fundamental Concepts",
+      development: "3. Chapter Development",
+      glossary: "4. Extended Technical Glossary",
+      relations: "5. Essential Relations and Formulas",
+      comparisons: "6. Comparisons and Classifications", 
+      questions: "7. Advanced Self-Assessment Questions"
     },
     ro: {
-      topics: "1. Descriere pe Subiecte Principale",
-      glossary: "2. Glosar de Termeni",
-      prerequisites: "3. Cunoștințe Necesare",
-      concepts: "4. Explicații Detaliate ale Conceptelor Cheie",
-      diagrams: "5. Diagrame Conceptuale",
-      examples: "6. Studii de Caz/Exemple Practice",
-      resources: "7. Resurse Recomandate",
-      questions: "8. Întrebări de Autoevaluare"
+      intro: "1. Introducere și context",
+      fundamentals: "2. Concepte fundamentale", 
+      development: "3. Dezvoltare pe capitole",
+      glossary: "4. Glosar tehnic extins",
+      relations: "5. Relații și formule esențiale",
+      comparisons: "6. Comparații și clasificări",
+      questions: "7. Întrebări de autoevaluare avansate"
     },
     fr: {
-      topics: "1. Aperçu des sujets clés",
-      glossary: "2. Glossaire des termes",
-      prerequisites: "3. Connaissances préalables",
-      concepts: "4. Explication des concepts clés",
-      diagrams: "5. Diagrammes conceptuels",
-      examples: "6. Exemples pratiques/Études de cas",
-      resources: "7. Ressources recommandées",
-      questions: "8. Questions d'auto-évaluation"
+      intro: "1. Introduction et contexte",
+      fundamentals: "2. Concepts fondamentaux",
+      development: "3. Développement par chapitres",
+      glossary: "4. Glossaire technique étendu", 
+      relations: "5. Relations et formules essentielles",
+      comparisons: "6. Comparaisons et classifications",
+      questions: "7. Questions d'auto-évaluation avancées"
     },
     es: {
-      topics: "1. Descripción de temas principales",
-      glossary: "2. Glosario de términos",
-      prerequisites: "3. Conocimientos previos necesarios",
-      concepts: "4. Explicaciones detalladas de conceptos clave",
-      diagrams: "5. Diagramas conceptuales",
-      examples: "6. Ejemplos prácticos/Casos de estudio",
-      resources: "7. Recursos recomendados",
-      questions: "8. Preguntas de autoevaluación"
+      intro: "1. Introducción y contexto",
+      fundamentals: "2. Conceptos fundamentales",
+      development: "3. Desarrollo por capítulos",
+      glossary: "4. Glosario técnico extendido",
+      relations: "5. Relaciones y fórmulas esenciales", 
+      comparisons: "6. Comparaciones y clasificaciones",
+      questions: "7. Preguntas de autoevaluación avanzadas"
     },
     de: {
-      topics: "1. Überblick über Hauptthemen",
-      glossary: "2. Glossar der Begriffe",
-      prerequisites: "3. Voraussetzungen",
-      concepts: "4. Detaillierte Erklärungen der Schlüsselkonzepte",
-      diagrams: "5. Konzeptionelle Diagramme",
-      examples: "6. Praktische Beispiele/Fallstudien",
-      resources: "7. Empfohlene Ressourcen",
-      questions: "8. Selbstbewertungsfragen"
+      intro: "1. Einführung und Kontext",
+      fundamentals: "2. Grundlegende Konzepte",
+      development: "3. Kapitelentwicklung",
+      glossary: "4. Erweitertes technisches Glossar",
+      relations: "5. Wesentliche Beziehungen und Formeln",
+      comparisons: "6. Vergleiche und Klassifikationen", 
+      questions: "7. Erweiterte Selbstbewertungsfragen"
     },
     it: {
-      topics: "1. Panoramica degli argomenti principali",
-      glossary: "2. Glossario dei termini",
-      prerequisites: "3. Conoscenze preliminari necessarie",
-      concepts: "4. Spiegazioni dettagliate dei concetti chiave",
-      diagrams: "5. Diagrammi concettuali",
-      examples: "6. Esempi pratici/Casi di studio",
-      resources: "7. Risorse consigliate",
-      questions: "8. Domande di autovalutazione"
+      intro: "1. Introduzione e contesto",
+      fundamentals: "2. Concetti fondamentali",
+      development: "3. Sviluppo per capitoli", 
+      glossary: "4. Glossario tecnico esteso",
+      relations: "5. Relazioni e formule essenziali",
+      comparisons: "6. Confronti e classificazioni",
+      questions: "7. Domande di autovalutazione avanzate"
     }
   };
   
@@ -107,6 +101,9 @@ export default function PDFProcessor() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [summaryLength, setSummaryLength] = useState<'short' | 'long' | 'academic'>('long');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch usage data on component mount
@@ -138,7 +135,29 @@ export default function PDFProcessor() {
     }
   };
 
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+  const selectFile = async (file: File) => {
+    if (file.type !== 'application/pdf') {
+      setError(t('pdfOnly'));
+      return;
+    }
+    
+    if (file.size > usage.fileSizeLimit) {
+      const maxSizeMB = usage.fileSizeLimit / (1024 * 1024);
+      setError(t('fileTooBig', { maxSizeMB }));
+      return;
+    }
+    
+    setError('');
+    setSelectedFile(file);
+    setFileName(file.name);
+    setFileSize(file.size);
+    setSummary('');
+    
+    // Automatically start processing the file
+    await processFile(file);
+  };
+
+  const processFile = async (file: File) => {
     if (status !== 'authenticated') {
       router.push('/login');
       return;
@@ -150,33 +169,11 @@ export default function PDFProcessor() {
         : t('limitReachedWait', { limit: usage.limit }));
       return;
     }
-
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
     
     // Track PDF upload
     analyticsEvents.pdfUpload(file.size);
     
-    setError('');
-    setSummary('');
-    setFileName(file.name);
-    setFileSize(file.size);
     setIsLoading(true);
-    
-    if (file.size > usage.fileSizeLimit) {
-      const maxSizeMB = usage.fileSizeLimit / (1024 * 1024);
-      setError(t('fileTooBig', { maxSizeMB }));
-      setIsLoading(false);
-      return;
-    }
-    
-    if (file.type !== 'application/pdf') {
-      setError(t('pdfOnly'));
-      setIsLoading(false);
-      return;
-    }
     
     try {
       // Track processing started
@@ -186,6 +183,7 @@ export default function PDFProcessor() {
       const formData = new FormData();
       formData.append('pdf', file);
       formData.append('filename', file.name);
+      formData.append('summaryLength', summaryLength);
 
       const response = await fetch('/api/summarize', {
         method: 'POST',
@@ -249,6 +247,38 @@ export default function PDFProcessor() {
     }
   };
 
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    await selectFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      await selectFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
   const toggleAnswer = (index: number) => {
     setRevealedAnswers(prev => ({
       ...prev,
@@ -268,6 +298,13 @@ export default function PDFProcessor() {
         : t('limitReachedWait', { limit: usage.limit }));
       return;
     }
+    
+    // Reset states when selecting new file
+    setSelectedFile(null);
+    setFileName('');
+    setFileSize(0);
+    setError('');
+    setSummary('');
     
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -350,7 +387,14 @@ export default function PDFProcessor() {
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden transition-all hover:shadow-xl">
+        <div 
+          className={`bg-white rounded-xl shadow-lg overflow-hidden transition-all hover:shadow-xl ${
+            isDragOver ? 'ring-4 ring-blue-500 ring-opacity-50 bg-blue-50' : ''
+          }`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
           <div className="px-6 py-8 sm:p-10">
             <div className="text-center">
               <div className="mx-auto bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mb-6">
@@ -374,8 +418,65 @@ export default function PDFProcessor() {
               </h3>
               
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                {t('secureProcessing')}
+                {isDragOver ? t('dropHere') : t('secureProcessing')}
               </p>
+              
+              {/* Summary Length Selector */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  {t('summaryLength')}
+                </label>
+                <div className="flex justify-center flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSummaryLength('short')}
+                    className={`px-4 py-2 text-sm font-medium rounded-full border transition-all ${
+                      summaryLength === 'short'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t('shortSummary')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSummaryLength('long')}
+                    className={`px-4 py-2 text-sm font-medium rounded-full border transition-all ${
+                      summaryLength === 'long'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t('longSummary')}
+                  </button>
+                  {session && usage.limit  > 3 && session.user.subscription == 'premium' && (
+                    <button
+                      type="button"
+                      onClick={() => setSummaryLength('academic')}
+                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-all flex items-center space-x-2 ${
+                        summaryLength === 'academic'
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-600 shadow-lg'
+                          : 'bg-white text-gray-700 border-purple-300 hover:bg-purple-50'
+                      }`}
+                    >
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-bold">PREMIUM</span>
+                      <span>Rezumat Academic</span>
+                    </button>
+                  )}
+                </div>
+                {summaryLength === 'academic' && (
+                  <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm text-purple-800 font-medium">
+                        Rezumat Academic Premium - Include structură detaliată cu glosar tehnic, formule corectate și întrebări de autoevaluare
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               <div className="mt-6">
                 <input 
@@ -414,16 +515,6 @@ export default function PDFProcessor() {
                   )}
                 </button>
                 
-                {fileName && !error && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg inline-flex items-center">
-                    <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <span className="text-sm font-medium text-blue-800">
-                      {fileName} ({formatFileSize(fileSize)})
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -444,6 +535,7 @@ export default function PDFProcessor() {
                     setFileName('');
                     setFileSize(0);
                     setError('');
+                    setSelectedFile(null);
                     if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
                   className="text-gray-500 hover:text-gray-700"
@@ -483,16 +575,53 @@ export default function PDFProcessor() {
                       rehypePlugins={[rehypeRaw]}
                       components={{
                         h1({ node, children, ...props }) {
-                          return <h1 className="text-3xl font-bold mt-8 mb-4 border-b pb-2" {...props}>{children}</h1>;
+                          const text = String(children);
+                          const isMainSection = /^\d+\.\s/.test(text);
+                          return (
+                            <h1 
+                              className={`text-3xl font-bold mt-8 mb-4 pb-2 ${
+                                isMainSection 
+                                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent border-b-2 border-blue-300' 
+                                  : 'border-b'
+                              }`} 
+                              {...props}
+                            >
+                              {children}
+                            </h1>
+                          );
                         },
                         h2({ node, children, ...props }) {
-                          return <h2 className="text-2xl font-bold mt-6 mb-3 border-b pb-1" {...props}>{children}</h2>;
+                          const text = String(children);
+                          const isMainSection = /^\d+\.\s/.test(text);
+                          return (
+                            <h2 
+                              className={`text-2xl font-bold mt-6 mb-3 pb-1 ${
+                                isMainSection 
+                                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent border-b-2 border-blue-200' 
+                                  : 'border-b'
+                              }`} 
+                              {...props}
+                            >
+                              {children}
+                            </h2>
+                          );
                         },
                         h3({ node, children, ...props }) {
-                          return <h3 className="text-xl font-bold mt-4 mb-2" {...props}>{children}</h3>;
+                          const text = String(children);
+                          const isTechnicalSection = text.includes('Glosar') || text.includes('Formule') || text.includes('Glossary') || text.includes('Formula');
+                          return (
+                            <h3 
+                              className={`text-xl font-bold mt-4 mb-2 ${
+                                isTechnicalSection ? 'text-green-700 bg-green-50 p-2 rounded-md' : ''
+                              }`} 
+                              {...props}
+                            >
+                              {children}
+                            </h3>
+                          );
                         },
                         h4({ node, children, ...props }) {
-                          return <h4 className="text-lg font-semibold mt-3 mb-1" {...props}>{children}</h4>;
+                          return <h4 className="text-lg font-semibold mt-3 mb-1 text-indigo-700" {...props}>{children}</h4>;
                         },
                         p({ node, children, ...props }) {
                           return <p className="mb-4 text-gray-700 leading-relaxed" {...props}>{children}</p>;
@@ -507,6 +636,35 @@ export default function PDFProcessor() {
                           return <li className="mb-1" {...props}>{children}</li>;
                         },
                         code({ node, inline, className, children, ...props }) {
+                          const text = String(children);
+                          
+                          // Enhanced formula detection for LaTeX and mathematical expressions
+                          const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+/.test(text);
+                          const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
+                          const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
+                          const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
+                          
+                          if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && !inline) {
+                            return (
+                              <div className="bg-blue-50 border-l-4 border-blue-400 pl-4 py-3 my-4 rounded-r">
+                                <div className="flex items-center mb-2">
+                                  <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Formulă</span>
+                                </div>
+                                <code className="font-mono text-blue-900 text-lg font-semibold whitespace-pre-wrap block" {...props}>
+                                  {children}
+                                </code>
+                              </div>
+                            );
+                          }
+                          
+                          if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && inline) {
+                            return (
+                              <code className="font-mono text-blue-800 bg-blue-100 px-2 py-1 rounded text-base font-semibold" {...props}>
+                                {children}
+                              </code>
+                            );
+                          }
+                          
                           return !inline ? (
                             <code className={`${className} bg-gray-100 block p-4 rounded-md overflow-x-auto font-mono text-sm`} {...props}>
                               {children}
@@ -548,9 +706,35 @@ export default function PDFProcessor() {
                         td({ node, children, ...props }) {
                           return <td className="border border-gray-300 px-4 py-2" {...props}>{children}</td>;
                         },
+                        strong({ node, children, ...props }) {
+                          const text = String(children);
+                          const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\cdot|Formulă:|Formula:/i.test(text);
+                          const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+/.test(text);
+                          const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
+                          
+                          if (isLatexFormula || isMathFormula || hasSubscriptSuperscript) {
+                            return (
+                              <strong className="font-mono text-blue-800 font-bold bg-blue-50 px-2 py-1 rounded" {...props}>
+                                {children}
+                              </strong>
+                            );
+                          }
+                          
+                          return <strong {...props}>{children}</strong>;
+                        },
                         blockquote({ node, children, ...props }) {
+                          const text = String(children);
+                          const isTechnicalNote = text.includes('Important') || text.includes('Note') || text.includes('Notă') || text.includes('Importante');
+                          
                           return (
-                            <blockquote className="border-l-4 border-blue-500 bg-blue-50 italic text-gray-700 pl-4 py-2 my-4" {...props}>
+                            <blockquote 
+                              className={`border-l-4 pl-4 py-3 my-4 rounded-r-md ${
+                                isTechnicalNote 
+                                  ? 'border-orange-500 bg-orange-50 text-orange-800' 
+                                  : 'border-blue-500 bg-blue-50 text-gray-700'
+                              } italic`} 
+                              {...props}
+                            >
                               {children}
                             </blockquote>
                           );
@@ -706,6 +890,32 @@ export default function PDFProcessor() {
           padding: 0.2em 0.4em;
           border-radius: 0.25rem;
           font-family: monospace;
+        }
+        
+        /* Formula highlighting */
+        .prose .formula-highlight {
+          background: linear-gradient(120deg, #a8e6cf 0%, #dcedc8 100%);
+          padding: 0.5em 1em;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          margin: 1em 0;
+          border-left: 4px solid #4caf50;
+        }
+        
+        /* Numerical values highlighting */
+        .prose .numerical-highlight {
+          background-color: #fff3cd;
+          border-left: 4px solid #ffc107;
+          padding: 0.75em;
+          margin: 0.5em 0;
+          border-radius: 0.375rem;
+        }
+        
+        /* Section separators */
+        .prose .section-separator {
+          border-top: 2px solid #e2e8f0;
+          margin: 2em 0;
+          padding-top: 1.5em;
         }
         .prose pre {
           background-color: #2d3748;

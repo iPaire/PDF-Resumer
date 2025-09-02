@@ -19,7 +19,8 @@
       "Bash(python:*)",
       "Bash(npx prisma migrate dev:*)",
       "Bash(npm run lint)",
-      "Bash(vercel logout:*)"
+      "Bash(vercel logout:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

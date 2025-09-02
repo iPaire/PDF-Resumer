@@ -49,14 +49,13 @@ const formatMarkdownSpacing = (text: string) => {
 // Funcție optimizată pentru parsarea conținutului premium
 const parsePremiumContent = (content: string, lang: string = 'ro') => {
   const sectionTitles = [
-    "1. Descriere pe subiecte principale",
-    "2. Glosar de termeni",
-    "3. Cunoștințe necesare pentru înțelegere",
-    "4. Explicații detaliate ale conceptelor cheie",
-    "5. Diagrame conceptuale",
-    "6. Studii de caz/exemple practice",
-    "7. Resurse recomandate",
-    "8. Întrebări de autoevaluare"
+    "1. Introducere și context",
+    "2. Concepte fundamentale", 
+    "3. Dezvoltare pe capitole",
+    "4. Glosar tehnic extins",
+    "5. Relații și formule esențiale",
+    "6. Comparații și clasificări",
+    "7. Întrebări de autoevaluare avansate"
   ];
 
   const sections: Record<string, string> = {};
@@ -89,7 +88,7 @@ const parsePremiumContent = (content: string, lang: string = 'ro') => {
   // Completează secțiunile lipsă
   sectionTitles.forEach(title => {
     if (!sections[title]) {
-      sections[title] = t('contentNotAvailable');
+      sections[title] = 'Conținut indisponibil';
     }
   });
 
@@ -316,14 +315,16 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
   
   // Detectare îmbunătățită a conținutului premium
   const hasPremiumStructure = 
-    /## 5\. Diagrame conceptuale/.test(displayContent) || 
-    /5\. Diagrame conceptuale/.test(displayContent);
+    /## 5\. Relații și formule esențiale/.test(displayContent) || 
+    /5\. Relații și formule esențiale/.test(displayContent) ||
+    /## 4\. Glosar tehnic extins/.test(displayContent) ||
+    /4\. Glosar tehnic extins/.test(displayContent);
   
   const isPremium = summary.isPremium && hasPremiumStructure;
   
   const sections = isPremium ? parsePremiumContent(displayContent, lang) : null;
-  const assessmentQuestions = sections?.["8. Întrebări de autoevaluare"] 
-    ? parseAssessmentQuestions(sections["8. Întrebări de autoevaluare"])
+  const assessmentQuestions = sections?.["7. Întrebări de autoevaluare avansate"] 
+    ? parseAssessmentQuestions(sections["7. Întrebări de autoevaluare avansate"])
     : [];
 
   return (
@@ -396,22 +397,95 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
               {isPremium && sections ? (
                 <>
                   {/* Secțiuni standard */}
-                  {Object.entries(sections).filter(([title]) => title !== "8. Întrebări de autoevaluare").map(([title, content], index) => (
+                  {Object.entries(sections).filter(([title]) => title !== "7. Întrebări de autoevaluare avansate").map(([title, content], index) => (
                     <div 
                       key={index} 
                       className={`mb-8 ${
-                        title.includes("Diagrame") ? "bg-blue-50 p-4 rounded-lg border border-blue-200" :
-                        title.includes("Studii") ? "bg-green-50 p-4 rounded-lg border border-green-200" :
-                        title.includes("Resurse") ? "bg-yellow-50 p-4 rounded-lg border border-yellow-200" : ""
+                        title.includes("formule") ? "bg-blue-50 p-4 rounded-lg border border-blue-200" :
+                        title.includes("Glosar") ? "bg-green-50 p-4 rounded-lg border border-green-200" :
+                        title.includes("Comparații") ? "bg-yellow-50 p-4 rounded-lg border border-yellow-200" : ""
                       }`}
                     >
                       <h2 className="text-2xl font-bold mb-4 border-b pb-2">{title}</h2>
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm]} 
-                        rehypePlugins={title.includes("Explicații") ? [rehypeRaw] : undefined}
+                        rehypePlugins={title.includes("Dezvoltare") ? [rehypeRaw] : undefined}
                         components={{
+                          table({ node, children, ...props }) {
+                            return (
+                              <div className="overflow-x-auto my-4">
+                                <table className="min-w-full border-collapse border border-gray-300" {...props}>
+                                  {children}
+                                </table>
+                              </div>
+                            );
+                          },
+                          thead({ node, children, ...props }) {
+                            return <thead className="bg-gray-100" {...props}>{children}</thead>;
+                          },
+                          th({ node, children, ...props }) {
+                            return <th className="border border-gray-300 px-4 py-2 text-left font-semibold" {...props}>{children}</th>;
+                          },
+                          td({ node, children, ...props }) {
+                            return <td className="border border-gray-300 px-4 py-2" {...props}>{children}</td>;
+                          },
                           code({ node, className, children, ...props }) {
                             const isInline = !className;
+                            const text = String(children);
+                            
+                            // Enhanced formula detection
+                            const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+/.test(text);
+                            const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
+                            const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
+                            const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
+                            
+                            // Enhanced text processing for better display
+                            const processFormulaText = (text) => {
+                              return text
+                                // Replace multiplication symbols
+                                .replace(/\*/g, '×')
+                                .replace(/\bx\b/g, '×')
+                                // Improve subscripts and superscripts display
+                                .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1₍$2₎')
+                                .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^($2)')
+                                // Replace common math symbols
+                                .replace(/<=?/g, '≤')
+                                .replace(/>=?/g, '≥')
+                                .replace(/!=/g, '≠')
+                                .replace(/~=/g, '≈')
+                                // Format fractions better
+                                .replace(/(\d+)\/(\d+)/g, '$1/$2')
+                                // Improve spacing around operators
+                                .replace(/([A-Za-z0-9])([=≈≤≥<>≠])([A-Za-z0-9])/g, '$1 $2 $3')
+                                .replace(/([A-Za-z0-9])([+\-×])([A-Za-z0-9])/g, '$1 $2 $3');
+                            };
+                            
+                            if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && !isInline) {
+                              const processedText = processFormulaText(text);
+                              return (
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-md">
+                                  <div className="flex items-center mb-3">
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                    <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                  </div>
+                                  <div className="bg-white rounded-md p-4 border border-blue-200">
+                                    <code className="font-mono text-blue-900 text-xl font-bold whitespace-pre-wrap block leading-relaxed" {...props}>
+                                      {processedText}
+                                    </code>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && isInline) {
+                              const processedText = processFormulaText(text);
+                              return (
+                                <code className="font-mono text-blue-800 bg-blue-100 px-3 py-1 rounded-md text-lg font-bold shadow-sm border border-blue-200" {...props}>
+                                  {processedText}
+                                </code>
+                              );
+                            }
+                            
                             return isInline ? (
                               <code 
                                 className="bg-gray-100 px-1.5 py-0.5 rounded text-red-600 font-mono text-sm"
@@ -483,16 +557,53 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                   rehypePlugins={[rehypeRaw]}
                   components={{
                     h1({ node, children, ...props }) {
-                      return <h1 className="text-3xl font-bold mt-8 mb-4 border-b pb-2" {...props}>{children}</h1>;
+                      const text = String(children);
+                      const isMainSection = /^\d+\.\s/.test(text);
+                      return (
+                        <h1 
+                          className={`text-3xl font-bold mt-8 mb-4 pb-2 ${
+                            isMainSection 
+                              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent border-b-2 border-blue-300' 
+                              : 'border-b'
+                          }`} 
+                          {...props}
+                        >
+                          {children}
+                        </h1>
+                      );
                     },
                     h2({ node, children, ...props }) {
-                      return <h2 className="text-2xl font-bold mt-6 mb-3 border-b pb-1" {...props}>{children}</h2>;
+                      const text = String(children);
+                      const isMainSection = /^\d+\.\s/.test(text);
+                      return (
+                        <h2 
+                          className={`text-2xl font-bold mt-6 mb-3 pb-1 ${
+                            isMainSection 
+                              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent border-b-2 border-blue-200' 
+                              : 'border-b'
+                          }`} 
+                          {...props}
+                        >
+                          {children}
+                        </h2>
+                      );
                     },
                     h3({ node, children, ...props }) {
-                      return <h3 className="text-xl font-bold mt-4 mb-2" {...props}>{children}</h3>;
+                      const text = String(children);
+                      const isTechnicalSection = text.includes('Glosar') || text.includes('Formule') || text.includes('Glossary') || text.includes('Formula');
+                      return (
+                        <h3 
+                          className={`text-xl font-bold mt-4 mb-2 ${
+                            isTechnicalSection ? 'text-green-700 bg-green-50 p-2 rounded-md' : ''
+                          }`} 
+                          {...props}
+                        >
+                          {children}
+                        </h3>
+                      );
                     },
                     h4({ node, children, ...props }) {
-                      return <h4 className="text-lg font-semibold mt-3 mb-1" {...props}>{children}</h4>;
+                      return <h4 className="text-lg font-semibold mt-3 mb-1 text-indigo-700" {...props}>{children}</h4>;
                     },
                     p({ node, children, ...props }) {
                       return <p className="mb-4 text-gray-700 leading-relaxed" {...props}>{children}</p>;
@@ -508,6 +619,61 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                     },
                     code({ node, className, children, ...props }) {
                       const isInline = !className;
+                      const text = String(children);
+                      
+                      // Enhanced formula detection (same as premium)
+                      const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+/.test(text);
+                      const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
+                      const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
+                      const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
+                      
+                      // Enhanced text processing for better display (same as premium)
+                      const processFormulaText = (text) => {
+                        return text
+                          // Replace multiplication symbols
+                          .replace(/\*/g, '×')
+                          .replace(/\bx\b/g, '×')
+                          // Improve subscripts and superscripts display
+                          .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1₍$2₎')
+                          .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^($2)')
+                          // Replace common math symbols
+                          .replace(/<=?/g, '≤')
+                          .replace(/>=?/g, '≥')
+                          .replace(/!=/g, '≠')
+                          .replace(/~=/g, '≈')
+                          // Format fractions better
+                          .replace(/(\d+)\/(\d+)/g, '$1/$2')
+                          // Improve spacing around operators
+                          .replace(/([A-Za-z0-9])([=≈≤≥<>≠])([A-Za-z0-9])/g, '$1 $2 $3')
+                          .replace(/([A-Za-z0-9])([+\-×])([A-Za-z0-9])/g, '$1 $2 $3');
+                      };
+                      
+                      if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && !isInline) {
+                        const processedText = processFormulaText(text);
+                        return (
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-md">
+                            <div className="flex items-center mb-3">
+                              <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                              <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                            </div>
+                            <div className="bg-white rounded-md p-4 border border-blue-200">
+                              <code className="font-mono text-blue-900 text-xl font-bold whitespace-pre-wrap block leading-relaxed" {...props}>
+                                {processedText}
+                              </code>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && isInline) {
+                        const processedText = processFormulaText(text);
+                        return (
+                          <code className="font-mono text-blue-800 bg-blue-100 px-3 py-1 rounded-md text-lg font-bold shadow-sm border border-blue-200" {...props}>
+                            {processedText}
+                          </code>
+                        );
+                      }
+                      
                       return isInline ? (
                         <code 
                           className="bg-gray-100 px-1.5 py-0.5 rounded text-red-600 font-mono text-sm"
@@ -556,11 +722,54 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                       return <td className="border border-gray-300 px-4 py-2" {...props}>{children}</td>;
                     },
                     blockquote({ node, children, ...props }) {
+                      const text = String(children);
+                      const isTechnicalNote = text.includes('Important') || text.includes('Note') || text.includes('Notă') || text.includes('Importante');
+                      
                       return (
-                        <blockquote className="border-l-4 border-blue-500 bg-blue-50 italic text-gray-700 pl-4 py-2 my-4" {...props}>
+                        <blockquote 
+                          className={`border-l-4 pl-4 py-3 my-4 rounded-r-md ${
+                            isTechnicalNote 
+                              ? 'border-orange-500 bg-orange-50 text-orange-800' 
+                              : 'border-blue-500 bg-blue-50 text-gray-700'
+                          } italic`} 
+                          {...props}
+                        >
                           {children}
                         </blockquote>
                       );
+                    },
+                    strong({ node, children, ...props }) {
+                      const text = String(children);
+                      const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\cdot|Formulă:|Formula:/i.test(text);
+                      const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+/.test(text);
+                      const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
+                      
+                      // Process formula text for better display
+                      const processFormulaText = (text) => {
+                        return text
+                          .replace(/\*/g, '×')
+                          .replace(/\bx\b/g, '×')
+                          .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1₍$2₎')
+                          .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^($2)')
+                          .replace(/<=?/g, '≤')
+                          .replace(/>=?/g, '≥')
+                          .replace(/!=/g, '≠')
+                          .replace(/~=/g, '≈')
+                          .replace(/(\d+)\/(\d+)/g, '$1/$2')
+                          .replace(/([A-Za-z0-9])([=≈≤≥<>≠])([A-Za-z0-9])/g, '$1 $2 $3')
+                          .replace(/([A-Za-z0-9])([+\-×])([A-Za-z0-9])/g, '$1 $2 $3');
+                      };
+                      
+                      if (isLatexFormula || isMathFormula || hasSubscriptSuperscript) {
+                        const processedText = processFormulaText(text);
+                        return (
+                          <strong className="font-mono text-blue-800 font-bold bg-blue-100 px-3 py-1 rounded-md border border-blue-200 text-lg" {...props}>
+                            {processedText}
+                          </strong>
+                        );
+                      }
+                      
+                      return <strong {...props}>{children}</strong>;
                     },
                   }}
                 >
