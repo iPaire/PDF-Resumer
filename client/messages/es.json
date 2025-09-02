@@ -332,7 +332,12 @@
     "noSummary": "No se pudo generar el resumen. Por favor prueba con otro archivo.",
     "feedbackError": "Error al enviar comentarios. Por favor inténtalo de nuevo.",
     "clickToSeeAnswer": "(haga clic para ver la respuesta)",
-    "answer": "Respuesta: "
+    "answer": "Respuesta: ",
+    "summaryLength": "Tipo de resumen",
+    "academicSummary": "Resumen Académico",
+    "shortSummary": "Resumen Corto",
+    "longSummary": "Resumen Largo",
+    "dropHere": "Suelta tu PDF aquí"
   },
   "summaries": {
     "title": "Tus Resúmenes",

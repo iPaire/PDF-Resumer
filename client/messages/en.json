@@ -360,7 +360,11 @@
     "noSummary": "Could not generate summary. Please try another file.",
     "feedbackError": "Failed to submit feedback. Please try again.",
     "clickToSeeAnswer": "(click to see answer)",
-    "answer": "Answer: "
+    "answer": "Answer: ",
+    "summaryLength": "Summary Type",
+    "academicSummary": "Academic Summary",
+    "shortSummary": "Short Summary",
+    "longSummary": "Detailed Summary"
   },
   "summaries": {
     "title": "Your Summaries",

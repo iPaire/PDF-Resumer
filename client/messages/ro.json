@@ -332,7 +332,12 @@
     "noSummary": "Nu s-a putut genera rezumat. Te rugăm să încerci alt fișier.",
     "feedbackError": "Eșec la trimiterea feedback-ului. Te rugăm să încerci din nou.",
     "clickToSeeAnswer": "(click pentru a vedea răspunsul)",
-    "answer": "Răspuns: "
+    "answer": "Răspuns: ",
+    "summaryLength": "Tipul de rezumat",
+    "academicSummary": "Rezumat Academic",
+    "shortSummary": "Rezumat Scurt",
+    "longSummary": "Rezumat Detaliat",
+    "dropHere": "Eliberează aici pentru a încărca"
   },
   "summaries": {
     "title": "Rezumatele Tale",

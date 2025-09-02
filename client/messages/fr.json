@@ -328,7 +328,11 @@
     "noSummary": "Impossible de générer le résumé. Veuillez essayer un autre fichier.",
     "feedbackError": "Échec de l'envoi des commentaires. Veuillez réessayer.",
     "clickToSeeAnswer": "(cliquez pour voir la réponse)",
-    "answer": "Réponse : "
+    "answer": "Réponse : ",
+    "summaryLength": "Type de résumé",
+    "academicSummary": "Résumé Académique",
+    "shortSummary": "Résumé Court",
+    "longSummary": "Résumé Détaillé"
   },
   "summaries": {
     "title": "Vos résumés",
