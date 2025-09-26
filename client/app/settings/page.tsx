@@ -58,6 +58,7 @@ export default function SettingsPage() {
   const [subscriptionDetails, setSubscriptionDetails] = useState<StripeSubscription | null>(null);
   const [invoices, setInvoices] = useState<StripeInvoice[]>([]);
   const [currentPlan, setCurrentPlan] = useState<string>(session?.user?.subscription || 'free');
+  const [hasPassword, setHasPassword] = useState<boolean>(false);
 
   // Inițializare plan curent din sesiune
   useEffect(() => {
@@ -66,6 +67,26 @@ export default function SettingsPage() {
     } else {
       setCurrentPlan('free');
     }
+  }, [session]);
+
+  // Check if user has password (email auth) vs OAuth
+  useEffect(() => {
+    const checkUserAuthMethod = async () => {
+      if (!session?.user?.id) return;
+      
+      try {
+        const res = await fetch(`/api/user/auth-method`);
+        const data = await res.json();
+        
+        if (res.ok) {
+          setHasPassword(data.hasPassword);
+        }
+      } catch (error) {
+        console.error('Error checking auth method:', error);
+      }
+    };
+    
+    checkUserAuthMethod();
   }, [session]);
 
   // Fetch subscription details and invoices
@@ -282,8 +303,16 @@ export default function SettingsPage() {
                   id="email"
                   value={formData.email}
                   onChange={handleProfileChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  disabled={hasPassword}
+                  className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    hasPassword ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''
+                  }`}
                 />
+                {hasPassword && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t('emailCannotBeChanged')}
+                  </p>
+                )}
               </div>
               
               {profileError && (
