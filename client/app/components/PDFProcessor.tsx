@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
 import FeedbackPopup from './FeedbackPopup';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -639,30 +641,82 @@ export default function PDFProcessor() {
                           const text = String(children);
                           
                           // Enhanced formula detection for LaTeX and mathematical expressions
-                          const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+/.test(text);
+                          const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+|\$.*\$/.test(text);
                           const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
                           const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
                           const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
                           
-                          if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && !inline) {
-                            return (
-                              <div className="bg-blue-50 border-l-4 border-blue-400 pl-4 py-3 my-4 rounded-r">
-                                <div className="flex items-center mb-2">
-                                  <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Formulă</span>
-                                </div>
-                                <code className="font-mono text-blue-900 text-lg font-semibold whitespace-pre-wrap block" {...props}>
-                                  {children}
-                                </code>
-                              </div>
-                            );
-                          }
+                          // Function to convert common notation to LaTeX
+                          const convertToLatex = (text) => {
+                            return text
+                              // Convert subscripts: A_1 -> A_{1}
+                              .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1_{$2}')
+                              // Convert superscripts: A^2 -> A^{2}  
+                              .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^{$2}')
+                              // Convert fractions: a/b -> \frac{a}{b}
+                              .replace(/([A-Za-z0-9]+)\/([A-Za-z0-9]+)/g, '\\frac{$1}{$2}')
+                              // Convert multiplication: * -> \cdot
+                              .replace(/\*/g, '\\cdot')
+                              // Convert square root: sqrt -> \sqrt
+                              .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
+                              // Convert infinity
+                              .replace(/infinity|∞/g, '\\infty')
+                              // Convert degrees
+                              .replace(/(\d+)°/g, '$1^{\\circ}')
+                              // Remove Formula: prefix for cleaner display
+                              .replace(/^(Formulă|Formula):\s*/i, '');
+                          };
                           
-                          if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && inline) {
-                            return (
-                              <code className="font-mono text-blue-800 bg-blue-100 px-2 py-1 rounded text-base font-semibold" {...props}>
-                                {children}
-                              </code>
-                            );
+                          if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords)) {
+                            const latexText = convertToLatex(text.replace(/^\$|\$$/g, '')); // Remove $ delimiters
+                            
+                            try {
+                              if (!inline) {
+                                return (
+                                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-lg">
+                                    <div className="flex items-center mb-4">
+                                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                      <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
+                                      <BlockMath math={latexText} />
+                                    </div>
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <span className="inline-flex items-center bg-blue-100 border border-blue-300 rounded-md px-2 py-1 mx-1">
+                                    <InlineMath math={latexText} />
+                                  </span>
+                                );
+                              }
+                            } catch (error) {
+                              // Fallback to enhanced text display if KaTeX fails
+                              const processedText = text
+                                .replace(/\*/g, '×')
+                                .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1₍$2₎')
+                                .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^($2)')
+                                .replace(/<=?/g, '≤').replace(/>=?/g, '≥').replace(/!=/g, '≠').replace(/~=/g, '≈');
+                              
+                              if (!inline) {
+                                return (
+                                  <div className="bg-blue-50 border-l-4 border-blue-400 pl-4 py-3 my-4 rounded-r">
+                                    <div className="flex items-center mb-2">
+                                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Formulă</span>
+                                    </div>
+                                    <code className="font-mono text-blue-900 text-lg font-semibold whitespace-pre-wrap block" {...props}>
+                                      {processedText}
+                                    </code>
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <code className="font-mono text-blue-800 bg-blue-100 px-2 py-1 rounded text-base font-semibold" {...props}>
+                                    {processedText}
+                                  </code>
+                                );
+                              }
+                            }
                           }
                           
                           return !inline ? (

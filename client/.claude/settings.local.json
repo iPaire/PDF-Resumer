@@ -20,7 +20,13 @@
       "Bash(npx prisma migrate dev:*)",
       "Bash(npm run lint)",
       "Bash(vercel logout:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\api\\summarize/**)",
+      "Bash(npx tsc:*)",
+      "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\types/**)",
+      "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\api\\auth\\login/**)",
+      "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\api\\auth\\register/**)",
+      "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\api\\auth\\[...nextauth]/**)"
     ],
     "deny": [],
     "ask": []

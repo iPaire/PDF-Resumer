@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
 import { useTranslations } from 'next-intl';
 import { analyticsEvents } from '@/lib/analytics';
 
@@ -434,12 +436,33 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                             const text = String(children);
                             
                             // Enhanced formula detection
-                            const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+/.test(text);
+                            const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+|\$.*\$/.test(text);
                             const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
                             const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
                             const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
                             
-                            // Enhanced text processing for better display
+                            // Function to convert common notation to LaTeX
+                            const convertToLatex = (text) => {
+                              return text
+                                // Convert subscripts: A_1 -> A_{1}
+                                .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1_{$2}')
+                                // Convert superscripts: A^2 -> A^{2}  
+                                .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^{$2}')
+                                // Convert fractions: a/b -> \frac{a}{b}
+                                .replace(/([A-Za-z0-9]+)\/([A-Za-z0-9]+)/g, '\\frac{$1}{$2}')
+                                // Convert multiplication: * -> \cdot
+                                .replace(/\*/g, '\\cdot')
+                                // Convert square root: sqrt -> \sqrt
+                                .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
+                                // Convert infinity
+                                .replace(/infinity|∞/g, '\\infty')
+                                // Convert degrees
+                                .replace(/(\d+)°/g, '$1^{\\circ}')
+                                // Remove Formula: prefix for cleaner display
+                                .replace(/^(Formulă|Formula):\s*/i, '');
+                            };
+                            
+                            // Enhanced text processing for fallback display
                             const processFormulaText = (text) => {
                               return text
                                 // Replace multiplication symbols
@@ -460,30 +483,55 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                                 .replace(/([A-Za-z0-9])([+\-×])([A-Za-z0-9])/g, '$1 $2 $3');
                             };
                             
-                            if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && !isInline) {
-                              const processedText = processFormulaText(text);
-                              return (
-                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-md">
-                                  <div className="flex items-center mb-3">
-                                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                                    <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
-                                  </div>
-                                  <div className="bg-white rounded-md p-4 border border-blue-200">
-                                    <code className="font-mono text-blue-900 text-xl font-bold whitespace-pre-wrap block leading-relaxed" {...props}>
+                            if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords)) {
+                              const latexText = convertToLatex(text.replace(/^\$|\$$/g, '')); // Remove $ delimiters
+                              
+                              try {
+                                if (!isInline) {
+                                  return (
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-lg">
+                                      <div className="flex items-center mb-4">
+                                        <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                        <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                      </div>
+                                      <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
+                                        <BlockMath math={latexText} />
+                                      </div>
+                                    </div>
+                                  );
+                                } else {
+                                  return (
+                                    <span className="inline-flex items-center bg-blue-100 border border-blue-300 rounded-md px-2 py-1 mx-1">
+                                      <InlineMath math={latexText} />
+                                    </span>
+                                  );
+                                }
+                              } catch (error) {
+                                // Fallback to enhanced text display if KaTeX fails
+                                const processedText = processFormulaText(text);
+                                
+                                if (!isInline) {
+                                  return (
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-md">
+                                      <div className="flex items-center mb-3">
+                                        <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                        <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                      </div>
+                                      <div className="bg-white rounded-md p-4 border border-blue-200">
+                                        <code className="font-mono text-blue-900 text-xl font-bold whitespace-pre-wrap block leading-relaxed" {...props}>
+                                          {processedText}
+                                        </code>
+                                      </div>
+                                    </div>
+                                  );
+                                } else {
+                                  return (
+                                    <code className="font-mono text-blue-800 bg-blue-100 px-3 py-1 rounded-md text-lg font-bold shadow-sm border border-blue-200" {...props}>
                                       {processedText}
                                     </code>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            
-                            if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && isInline) {
-                              const processedText = processFormulaText(text);
-                              return (
-                                <code className="font-mono text-blue-800 bg-blue-100 px-3 py-1 rounded-md text-lg font-bold shadow-sm border border-blue-200" {...props}>
-                                  {processedText}
-                                </code>
-                              );
+                                  );
+                                }
+                              }
                             }
                             
                             return isInline ? (
@@ -622,12 +670,33 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                       const text = String(children);
                       
                       // Enhanced formula detection (same as premium)
-                      const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+/.test(text);
+                      const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+|\$.*\$/.test(text);
                       const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
                       const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
                       const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
                       
-                      // Enhanced text processing for better display (same as premium)
+                      // Function to convert common notation to LaTeX
+                      const convertToLatex = (text) => {
+                        return text
+                          // Convert subscripts: A_1 -> A_{1}
+                          .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1_{$2}')
+                          // Convert superscripts: A^2 -> A^{2}  
+                          .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^{$2}')
+                          // Convert fractions: a/b -> \frac{a}{b}
+                          .replace(/([A-Za-z0-9]+)\/([A-Za-z0-9]+)/g, '\\frac{$1}{$2}')
+                          // Convert multiplication: * -> \cdot
+                          .replace(/\*/g, '\\cdot')
+                          // Convert square root: sqrt -> \sqrt
+                          .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
+                          // Convert infinity
+                          .replace(/infinity|∞/g, '\\infty')
+                          // Convert degrees
+                          .replace(/(\d+)°/g, '$1^{\\circ}')
+                          // Remove Formula: prefix for cleaner display
+                          .replace(/^(Formulă|Formula):\s*/i, '');
+                      };
+                      
+                      // Enhanced text processing for fallback display
                       const processFormulaText = (text) => {
                         return text
                           // Replace multiplication symbols
@@ -648,30 +717,55 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                           .replace(/([A-Za-z0-9])([+\-×])([A-Za-z0-9])/g, '$1 $2 $3');
                       };
                       
-                      if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && !isInline) {
-                        const processedText = processFormulaText(text);
-                        return (
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-md">
-                            <div className="flex items-center mb-3">
-                              <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                              <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
-                            </div>
-                            <div className="bg-white rounded-md p-4 border border-blue-200">
-                              <code className="font-mono text-blue-900 text-xl font-bold whitespace-pre-wrap block leading-relaxed" {...props}>
+                      if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords)) {
+                        const latexText = convertToLatex(text.replace(/^\$|\$$/g, '')); // Remove $ delimiters
+                        
+                        try {
+                          if (!isInline) {
+                            return (
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-lg">
+                                <div className="flex items-center mb-4">
+                                  <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                  <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                </div>
+                                <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
+                                  <BlockMath math={latexText} />
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <span className="inline-flex items-center bg-blue-100 border border-blue-300 rounded-md px-2 py-1 mx-1">
+                                <InlineMath math={latexText} />
+                              </span>
+                            );
+                          }
+                        } catch (error) {
+                          // Fallback to enhanced text display if KaTeX fails
+                          const processedText = processFormulaText(text);
+                          
+                          if (!isInline) {
+                            return (
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-md">
+                                <div className="flex items-center mb-3">
+                                  <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                  <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                </div>
+                                <div className="bg-white rounded-md p-4 border border-blue-200">
+                                  <code className="font-mono text-blue-900 text-xl font-bold whitespace-pre-wrap block leading-relaxed" {...props}>
+                                    {processedText}
+                                  </code>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <code className="font-mono text-blue-800 bg-blue-100 px-3 py-1 rounded-md text-lg font-bold shadow-sm border border-blue-200" {...props}>
                                 {processedText}
                               </code>
-                            </div>
-                          </div>
-                        );
-                      }
-                      
-                      if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords) && isInline) {
-                        const processedText = processFormulaText(text);
-                        return (
-                          <code className="font-mono text-blue-800 bg-blue-100 px-3 py-1 rounded-md text-lg font-bold shadow-sm border border-blue-200" {...props}>
-                            {processedText}
-                          </code>
-                        );
+                            );
+                          }
+                        }
                       }
                       
                       return isInline ? (

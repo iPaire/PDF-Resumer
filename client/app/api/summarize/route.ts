@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
       trial: {
         model: 'gpt-3.5-turbo', // Faster than 16k variant
         temperature: 0.3,
-        sections: ['standard'],
+        sections: ['trial'],
         maxQuestions: 5
       },
       standard: {
@@ -296,25 +296,31 @@ export async function POST(request: NextRequest) {
         /[A-Za-z_]+\^{?[A-Za-z0-9]+}?\s*[=≈]/g,
         /I_[a-zA-Z]+\s*=|R_[a-zA-Z]+\s*=|U_[a-zA-Z]+\s*=/g
       ];
-      
+
       let allFormulas: string[] = [];
       formulaPatterns.forEach(pattern => {
         const matches = text.match(pattern) || [];
         allFormulas = [...allFormulas, ...matches];
       });
-      
+
       // Remove duplicates and limit to most important ones
       const formulas = [...new Set(allFormulas)].slice(0, 5);
       const formulaCount = formulas.length;
-      
+
       // Count technical terms
       const technicalTerms = (text.match(/\b[A-Z][a-z]*(?:[A-Z][a-z]*)*\b/g) || []).length;
-      
-      return { 
-        formulas, 
-        formulaCount, 
+
+      // Check if document has meaningful mathematical content
+      const hasMeaningfulFormulas = formulaCount >= 3 ||
+        /\b(ecuația|formula|calculul|teorema|principiul)\b/i.test(text) ||
+        /\b(equation|formula|calculation|theorem|principle)\b/i.test(text);
+
+      return {
+        formulas,
+        formulaCount,
         technicalTerms: Math.min(technicalTerms, 30),
-        numericalValues: [] 
+        numericalValues: [],
+        hasMeaningfulFormulas
       };
     }
     
@@ -329,23 +335,55 @@ export async function POST(request: NextRequest) {
       improved = improved.replace(/\[nume fisier\]/g, filename);
       improved = improved.replace(/\[numar pagini\]/g, numpages.toString());
       
-      // Adaugă separatori pentru secțiuni mari
-      improved = improved.replace(/(#{1,3}\s*\*\*[^*]+\*\*)/g, '\n\n$1');
+      // Îmbunătățește formatarea titlurilor pentru a fi consistentă
+      improved = improved.replace(/^(#{1,3})\s*\*\*([^*]+)\*\*$/gm, '$1 **$2**\n');
       
-      // Îmbunătățește formatarea formulelor cu detectare îmbunătățită
-      improved = improved.replace(/([A-Za-z_]+\s*[=≈≤≥]\s*[A-Za-z0-9\s+\-*/()^.\\frac{}]+)/g, '\n\n**Formulă:** $1\n');
-      improved = improved.replace(/(\\frac\{[^}]+\}\{[^}]+\})/g, '\n\n**Formulă:** $1\n');
-      improved = improved.replace(/([A-Za-z_]+_{[^}]+}\s*[=≈])/g, '\n\n**Formulă:** $1\n');
+      // Asigură spații adecvate între secțiuni
+      improved = improved.replace(/(#{1,3}[^\n]*)\n{0,1}([^#\n])/g, '$1\n\n$2');
+      
+      // Îmbunătățește formatarea formulelor - păstrează exact din text
+      // Pentru formule simple cu egale
+      improved = improved.replace(/([A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z0-9\s+\-*/()^.\\{}]+)(?=\s|$|\n)/g, (match) => {
+        if (!match.includes('**Formulă:**')) {
+          return `\n\n**Formulă:** \`${match.trim()}\`\n`;
+        }
+        return match;
+      });
+      
+      // Pentru formule LaTeX
+      improved = improved.replace(/(\\frac\{[^}]+\}\{[^}]+\})/g, (match) => {
+        return `\n\n**Formulă:** \`${match}\`\n`;
+      });
+      
+      // Pentru formule cu indici
+      improved = improved.replace(/([A-Za-z_]+_{[^}]+}[^a-zA-Z]*[=≈≤≥<>][^=]*)/g, (match) => {
+        if (!match.includes('**Formulă:**')) {
+          return `\n\n**Formulă:** \`${match.trim()}\`\n`;
+        }
+        return match;
+      });
+      
+      // Formatare îmbunătățită pentru tabele - asigură header corect
+      improved = improved.replace(/\|([^|\n]+\|[^|\n]+\|[^|\n]+)\|/g, '| $1 |');
+      improved = improved.replace(/^\s*\|([^|]+)\|([^|]+)\|([^|]+)\|\s*$/gm, '| $1 | $2 | $3 |');
+      
+      // Adaugă separatori pentru tabele dacă lipsesc
+      const tableRegex = /(\|[^|\n]+\|[^|\n]+\|[^|\n]+\|)\s*\n(?!\|[\-\s|]+\|)/g;
+      improved = improved.replace(tableRegex, '$1\n|---|---|---|\n');
       
       // Evidențiază valorile numerice cu unități
-      improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%]+)/g, '**$1**');
+      improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%Ω]+)/g, '**$1**');
       
-      // Îmbunătățește formatarea listelor
+      // Îmbunătățește formatarea listelor - asigură consistență
       improved = improved.replace(/^(\s*-)(\s*)/gm, '- ');
+      improved = improved.replace(/^(\s*)(\d+\.)(\s*)/gm, '$1$2 ');
       
-      // Curăță duplicatele de spații și linii goale
-      improved = improved.replace(/\n{3,}/g, '\n\n');
+      // Curăță duplicatele de spații și linii goale dar păstrează structura
+      improved = improved.replace(/\n{4,}/g, '\n\n\n');
       improved = improved.replace(/\s+$/gm, '');
+      
+      // Asigură că formulele sunt separate proper
+      improved = improved.replace(/(\*\*Formulă:\*\*[^\n]*)\n([^\n*#])/g, '$1\n\n$2');
       
       return improved.trim();
     }
@@ -391,58 +429,205 @@ export async function POST(request: NextRequest) {
     }
     
     const technicalContent = extractTechnicalContent(text);
-    
+
+    // Function to generate adaptive section content based on document type
+    function getAdaptiveSectionContent(planType: string, hasMathContent: boolean) {
+      if (hasMathContent) {
+        // For mathematical documents, use formula sections
+        if (planType === 'basic') {
+          return {
+            title: 'Formule Esențiale',
+            content: `Pentru formulele principale identificate în text:
+
+**Formulă:** \`[formula exactă din text]\`
+- Aplicare: [context scurt]`,
+            question: 'Întrebare despre formulă'
+          };
+        } else if (planType === 'trial') {
+          return {
+            title: 'Formule Principale (Selecție Trial)',
+            content: `Pentru MAXIM 4-5 formule principale identificate în text:
+
+**Formulă:** \`[formula exactă din text]\`
+- Variabile: [explicații scurte]
+- Aplicare: [context esențial]`,
+            question: 'Întrebare despre formulă'
+          };
+        } else { // standard
+          return {
+            title: 'Formule și Relații Matematice (Selecție Standard)',
+            content: `Pentru MAXIM 8-10 formule principale identificate în text:
+
+**Formulă:** \`[formula exactă din text]\`
+- Variabile și parametri: [explicații moderate]
+- Context de aplicare: [când și cum se folosește]`,
+            question: 'Întrebare despre formulă'
+          };
+        }
+      } else {
+        // For non-mathematical documents, use procedural/practical sections
+        if (planType === 'basic') {
+          return {
+            title: 'Proceduri și Implementări',
+            content: `Pentru metodele și procedurile principale:
+
+**Procedură:** [nume procedură]
+- Pași: [pași principali]
+- Aplicare: [când se folosește]`,
+            question: 'Întrebare despre proceduri'
+          };
+        } else if (planType === 'trial') {
+          return {
+            title: 'Implementări Practice și Metode',
+            content: `Pentru metodele și implementările principale:
+
+**Metodă:** [nume metodă]
+- Descriere: [cum funcționează]
+- Avantaje: [beneficii principale]
+- Limitări: [când nu se aplică]`,
+            question: 'Întrebare despre implementări'
+          };
+        } else { // standard
+          return {
+            title: 'Analiză Tehnică și Implementări',
+            content: `Pentru fiecare implementare tehnică principală:
+
+**Tehnică:** [nume tehnică]
+- Principiul de funcționare: [cum lucrează]
+- Parametri critici: [factori importanți]
+- Cazuri de utilizare: [aplicații practice]
+- Performanțe: [rezultate așteptate]`,
+            question: 'Întrebare despre implementări'
+          };
+        }
+      }
+    }
+
     // Section generation prompts based on subscription tier and length
     let wordLimit: string;
     if (summaryLength === 'short') {
-      wordLimit = user.subscription === 'free' ? '800 cuvinte' : '1000 cuvinte';
+      wordLimit = user.subscription === 'free' ? '800 cuvinte' : 
+                  user.subscription === 'trial' ? '900 cuvinte' : '1000 cuvinte';
     } else if (summaryLength === 'academic') {
       wordLimit = user.subscription === 'premium' ? '4000 cuvinte' : '3000 cuvinte';
     } else {
-      wordLimit = user.subscription === 'free' ? '1500 cuvinte' : user.subscription === 'premium' ? '2500 cuvinte' : '2000 cuvinte';
+      wordLimit = user.subscription === 'free' ? '1500 cuvinte' : 
+                  user.subscription === 'trial' ? '1750 cuvinte' :
+                  user.subscription === 'premium' ? '2500 cuvinte' : '2000 cuvinte';
     }
 
     const sectionPrompts: Record<string, string> = {
-      basic: `Creează un rezumat ${summaryLength === 'short' ? 'concis' : 'detaliat'} pentru acest material tehnic (${targetLanguage}):
+      basic: `Creează un REZUMAT TEHNIC FREE pentru acest material (${targetLanguage}):
 
 [TEXT]
 
-${summaryLength === 'short' ? 'Structură simplificată:' : 'Structură:'}
-1. **Introducere și Context**
-   - Subiectul principal și domeniul
-   - De ce este important acest subiect
+## **Rezumat Tehnic Free**
 
-2. **Concepte Fundamentale**
-   - Definiții principale
-   - Principii de funcționare
+**Document:** [nume fisier]
+**Limba:** ${targetLanguage}
+**Pagini:** [numar pagini]
+**Data generării:** [data curentă]
+**Nivel detaliu:** Free (Compact)
 
-${summaryLength === 'short' ? '' : '3. **Exemple Practice**\n   - Aplicații concrete\n\n'}Răspunde în ${targetLanguage}. Maxim ${wordLimit}.`,
+### **1. Introducere Scurtă**
+Prezintă pe scurt subiectul principal, domeniul de aplicare și importanța practică în 2-3 propoziții.
 
-      standard: `Creează un rezumat tehnic ${summaryLength === 'short' ? 'concis dar complet' : 'detaliat'} pentru acest material (${targetLanguage}):
+### **2. Concepte Cheie**
+Listează punctual conceptele fundamentale:
+- **[Concept]:** Definiție foarte scurtă
+- **[Concept]:** Definiție foarte scurtă
+- **[Concept]:** Definiție foarte scurtă
+
+### **3. [SECTION_3_TITLE]**
+[SECTION_3_CONTENT]
+
+### **4. Glosar Minim**
+Pentru termenii tehnici principali:
+**[Termen]:** Definiție scurtă în 1 propoziție
+
+### **5. Autoevaluare**
+1. Întrebare conceptuală simplă
+2. [SECTION_3_QUESTION]
+3. Întrebare despre aplicație
+
+**CERINȚE STRICTE:**
+- Elimină complet: emailuri, motto-uri, texte irelevante
+- Păstrează doar conținut tehnic util
+- Scrie clar și concis, fără repetiții
+
+Răspunde în ${targetLanguage}. STRICT maxim ${wordLimit}.`,
+
+      trial: `Creează un REZUMAT TEHNIC TRIAL pentru acest material (${targetLanguage}):
 
 [TEXT]
 
-${summaryLength === 'short' ? 'Structură optimizată:' : 'Structură:'}
-1. **Introducere și Context**
-   - Subiectul principal și domeniul
-   - De ce este important acest subiect
-   ${summaryLength === 'short' ? '' : '- Aplicații practice principale'}
+## **Rezumat Tehnic Trial**
 
-2. **Concepte Fundamentale**
-   - Definiții ${summaryLength === 'short' ? 'esențiale' : 'clare pentru fiecare concept principal'}
-   - Principii de funcționare
-   ${summaryLength === 'short' ? '' : '- Importanța în context'}
+**Document:** [nume fisier]
+**Limba:** ${targetLanguage}
+**Pagini:** [numar pagini]
+**Data generării:** [data curentă]
+**Nivel detaliu:** Trial (Optimizat, 4 secțiuni)
 
-3. **${summaryLength === 'short' ? 'Formule Principale' : 'Formule și Relații Esențiale'}**
-   - Ecuațiile ${summaryLength === 'short' ? 'principale' : 'complete'} (PĂSTREAZĂ EXACT din text)
-   - ${summaryLength === 'short' ? 'Variabilele importante' : 'Explicația variabilelor'}  
-   - Valorile numerice importante
+### **1. Introducere și Context**
+Prezintă subiectul principal, domeniul de aplicare și importanța în teoria și practica actuală. Explică relevanța industrială și contextul de utilizare în 2-3 paragrafe.
 
-${summaryLength === 'short' ? '' : '4. **Aplicații Practice**\n   - Metode/Concept | Aplicații | Avantaje (format tabel)\n   - Exemple concrete cu valori numerice\n\n'}${summaryLength === 'short' ? '4' : '5'}. **Întrebări de Autoevaluare**
-   - Testează înțelegerea conceptelor
-   ${summaryLength === 'short' ? '' : '- Include calcule cu formule\n   - Oferă răspunsuri detaliate'}
+### **2. Concepte Fundamentale**
+Definiții clare pentru conceptele de bază și principiile de funcționare esențiale. Include DOAR cei mai importanți 4-5 parametri critici și caracteristicile fundamentale necesare pentru înțelegere.
 
-Păstrează termenii tehnici originali. Răspunde în ${targetLanguage}. Maxim ${wordLimit}.`,
+### **3. [SECTION_3_TITLE]**
+[SECTION_3_CONTENT]
+
+### **4. Glosar Tehnic Esențial (10-12 termeni)**
+Pentru DOAR termenii tehnici principali (maxim 12):
+**[Termen]:** Definiție precisă și aplicabilitate
+
+**CERINȚE:**
+- Elimină zgomotul (emailuri, motto-uri)
+- Conținut strict tehnic și didactic
+- Calitate foarte bună
+
+Răspunde în ${targetLanguage}. Maxim ${wordLimit}.`,
+
+      standard: `Creează un REZUMAT TEHNIC STANDARD pentru acest material (${targetLanguage}):
+
+[TEXT]
+
+## **Rezumat Tehnic Standard**
+
+**Document:** [nume fisier]
+**Limba:** ${targetLanguage}
+**Pagini:** [numar pagini]
+**Data generării:** [data curentă]
+**Nivel detaliu:** Standard (Optimizat, 5 secțiuni)
+
+### **1. Introducere și Context Detaliat**
+Prezintă subiectul principal, domeniul de aplicare și importanța în contextul teoretic și practic actual. Explică relevanța industrială, academică și evoluția domeniului în 3-4 paragrafe bine dezvoltate.
+
+### **2. Concepte Fundamentale Avansate**
+Definiții precise și complete pentru conceptele principale. Explică principiile de funcționare, teoriile de bază și MAXIM 8-10 parametri critici principali. Include analiza interrelațiilor conceptuale de bază.
+
+### **3. Dezvoltare Tehnică pe Capitole**
+Pentru fiecare tip principal din document (maxim 4-5 tipuri principale):
+
+- Principiul de funcționare detaliat
+- Schema și implementarea practică
+- Performanțe și limitări
+- Aplicații specifice și contexte de utilizare
+
+### **4. [SECTION_4_TITLE]**
+[SECTION_4_CONTENT]
+
+### **5. Glosar Tehnic Standard (20-25 termeni)**
+Pentru MAXIM 25 de termeni tehnici principali:
+**[Termen]:** Definiție completă cu exemple și aplicabilitate
+
+**CERINȚE:**
+- Conținut strict tehnic, elimină zgomotul complet
+- Ton profesional și didactic
+- Calitate foarte ridicată
+
+Răspunde în ${targetLanguage}. Maxim ${wordLimit}.`,
 
       premium: `Creează un rezumat tehnic ${summaryLength === 'short' ? 'premium concis' : summaryLength === 'academic' ? 'academic premium ultra-detaliat' : 'complet premium'} pentru acest material (${targetLanguage}):
 
@@ -515,10 +700,7 @@ ${summaryLength === 'short' ? '' : '- Interrelații conceptuale'}`}
 ### **5. ${summaryLength === 'short' ? 'Formule Principale' : 'Relații și Formule Esențiale (Corectate și Normalizate)'}**
 [Pentru ${summaryLength === 'short' ? 'formulele principale' : 'fiecare formulă din text'} - PĂSTREAZĂ EXACT]
 
-${summaryLength === 'short' ? '' : '### **6. Comparații și Clasificări Avansate**\n| Tip/Metodă | Avantaje | Dezavantaje | Aplicații Industriale | Costuri |\n[Tabele comparative detaliate]\n\n'}### **${summaryLength === 'short' ? '6' : '7'}. Întrebări de Autoevaluare ${summaryLength === 'short' ? 'Focusate' : 'Avansate și Realiste'}**
-- ${summaryLength === 'short' ? 'Înțelegere conceptuală' : 'Problemă de calcul aplicat'}
-- ${summaryLength === 'short' ? 'Aplicație practică de bază' : 'Analiză comparativă  \n- Aplicație practică\n- Interpretare de rezultate\n- Optimizare și inovație'}
-
+${summaryLength === 'short' ? '' : '### **6. Comparații și Clasificări Avansate**\n| Tip/Metodă | Avantaje | Dezavantaje | Aplicații Industriale | Costuri |\n[Tabele comparative detaliate]\n\n'}
 Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wordLimit}.`
     };
 
@@ -528,9 +710,28 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
     for (const sectionType of config.sections) {
       if (sectionPrompts[sectionType]) {
         try {
-          // Use only first chunk to avoid duplicates and reduce tokens
-          const chunkPrompt = sectionPrompts[sectionType].replace(/\[TEXT\]/g, truncatedText);
-          
+          // Get adaptive section content based on document type
+          let chunkPrompt = sectionPrompts[sectionType].replace(/\[TEXT\]/g, truncatedText);
+
+          // Replace placeholders for dynamic sections
+          if (sectionType === 'basic') {
+            const adaptiveSection = getAdaptiveSectionContent('basic', technicalContent.hasMeaningfulFormulas);
+            chunkPrompt = chunkPrompt
+              .replace('[SECTION_3_TITLE]', adaptiveSection.title)
+              .replace('[SECTION_3_CONTENT]', adaptiveSection.content)
+              .replace('[SECTION_3_QUESTION]', adaptiveSection.question);
+          } else if (sectionType === 'trial') {
+            const adaptiveSection = getAdaptiveSectionContent('trial', technicalContent.hasMeaningfulFormulas);
+            chunkPrompt = chunkPrompt
+              .replace('[SECTION_3_TITLE]', adaptiveSection.title)
+              .replace('[SECTION_3_CONTENT]', adaptiveSection.content);
+          } else if (sectionType === 'standard') {
+            const adaptiveSection = getAdaptiveSectionContent('standard', technicalContent.hasMeaningfulFormulas);
+            chunkPrompt = chunkPrompt
+              .replace('[SECTION_4_TITLE]', adaptiveSection.title)
+              .replace('[SECTION_4_CONTENT]', adaptiveSection.content);
+          }
+
           const sectionCompletion = await openai.chat.completions.create({
             model: summaryModel,
             messages: [
@@ -540,7 +741,7 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
             max_tokens: Math.floor(maxTokens * 0.85), // Use 85% of available tokens for response
             temperature,
           });
-          
+
           const chunkContent = sectionCompletion.choices[0]?.message?.content?.trim() || '';
           if (chunkContent) {
             summaryContent = chunkContent;
@@ -553,6 +754,33 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
     }
 
     summaryContent = improveFormatting(summaryContent);
+
+    // Clean unwanted promotional content and limitations from summary
+    function cleanSummaryContent(content: string): string {
+      let cleaned = content;
+
+      // Remove limitation sections
+      cleaned = cleaned.replace(/\*\*LIMITĂRI [A-Z]+:\*\*[\s\S]*?(?=\*\*[A-Z]|\n###|\n##|$)/g, '');
+
+      // Remove upgrade prompts
+      cleaned = cleaned.replace(/\*\*UPGRADE.*?[\s\S]*?(?=\*\*[A-Z]|\n###|\n##|$)/g, '');
+
+      // Remove requirement sections at the end
+      cleaned = cleaned.replace(/\*\*CERINȚE[:\s]*\*\*[\s\S]*?(?=\n###|\n##|$)/g, '');
+
+      // Remove any promotional text about Premium
+      cleaned = cleaned.replace(/\*Pentru.*?vezi planul Premium\*/g, '');
+
+      // Remove empty sections that might be left
+      cleaned = cleaned.replace(/###\s*\*\*[^*]*\*\*\s*\n\s*(?=###|##|$)/g, '');
+
+      // Clean multiple newlines
+      cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+      return cleaned.trim();
+    }
+
+    summaryContent = cleanSummaryContent(summaryContent);
 
     // Cache the result for future use
     summaryCache.set(cacheKey, {
