@@ -26,7 +26,10 @@
       "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\types/**)",
       "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\api\\auth\\login/**)",
       "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\api\\auth\\register/**)",
-      "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\api\\auth\\[...nextauth]/**)"
+      "Read(/C:\\Users\\paire\\Documents\\VSCode\\Saas Resumer\\smartpdf-notes\\PDF-Resumer\\client\\app\\api\\auth\\[...nextauth]/**)",
+      "Bash(convert:*)",
+      "Bash(copy public\\logo.png public\\favicon.ico)",
+      "Bash(copy public\\logo.png public\\apple-touch-icon.png)"
     ],
     "deny": [],
     "ask": []
