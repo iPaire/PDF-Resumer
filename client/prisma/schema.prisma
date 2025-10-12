@@ -159,3 +159,19 @@ model Feedback {
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @db.Timestamp(6)
 }
+
+model AnalyticsLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String?  @db.Uuid
+  eventType     String   // e.g., 'purchase_button_click', 'purchase_completed'
+  eventCategory String   // e.g., 'ecommerce', 'engagement'
+  eventLabel    String?  // e.g., 'premium_monthly', 'premium_annual'
+  eventValue    Float?   // e.g., price amount
+  metadata      Json?    // Additional data like plan details, transaction ID, etc.
+  timestamp     DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([eventType])
+  @@index([eventCategory])
+  @@index([userId])
+  @@index([timestamp])
+}

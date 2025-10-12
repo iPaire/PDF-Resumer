@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import prisma from '@/lib/prisma';
+import { logPurchaseCompleted } from '@/lib/analytics-logger';
 
 export async function POST(req) {
   try {
@@ -57,6 +58,7 @@ async function handleCheckoutCompleted(session) {
       return;
     }
 
+    // Update user subscription
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -65,6 +67,34 @@ async function handleCheckoutCompleted(session) {
         subscription: 'active'
       }
     });
+
+    // Get subscription details to log the purchase
+    try {
+      const subscription = await stripe.subscriptions.retrieve(session.subscription);
+      const priceId = subscription.items.data[0]?.price.id;
+      const amount = session.amount_total / 100; // Convert from cents
+      const currency = session.currency?.toUpperCase() || 'USD';
+
+      // Determine plan type based on price
+      let planType = 'premium_monthly';
+      if (priceId.includes('annual') || amount >= 80) {
+        planType = 'premium_annual';
+      }
+
+      // Log the purchase completion for analytics
+      await logPurchaseCompleted(
+        userId,
+        planType,
+        amount,
+        session.id,
+        currency
+      );
+
+      console.log(`Purchase logged: ${planType} - ${currency}${amount} for user ${userId}`);
+    } catch (analyticsError) {
+      // Don't fail the webhook if analytics logging fails
+      console.error('Failed to log purchase analytics:', analyticsError);
+    }
   } catch (error) {
     console.error('Eroare la actualizare după checkout:', error);
     throw error;
