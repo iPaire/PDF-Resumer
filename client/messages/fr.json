@@ -290,6 +290,8 @@
     "freeUpdates": "Mises à jour gratuites",
     "pricesInEuro": "Les prix sont en euros et peuvent inclure la TVA",
     "euro": "€",
+    "currency": "EUR",
+    "currencySymbol": "€",
     "month": "mois",
     "year": "an",
     "selfAssessmentQuestions": "Questions d'auto-évaluation",
