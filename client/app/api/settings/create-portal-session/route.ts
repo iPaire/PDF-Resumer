@@ -34,9 +34,13 @@ export async function POST(req: NextRequest) {
       throw new Error('Stripe nu este configurat corect');
     }
 
+    // Detectează URL-ul de bază (pentru production pe Vercel și development local)
+    const baseUrl = process.env.NEXTAUTH_URL ||
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: returnUrl || `${process.env.NEXTAUTH_URL}/settings`,
+      return_url: returnUrl || `${baseUrl}/settings`,
     });
 
     return NextResponse.json({ url: portalSession.url });
