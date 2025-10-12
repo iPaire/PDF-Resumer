@@ -42,15 +42,33 @@ export async function POST(req) {
       });
     }
 
+    // Detectează URL-ul de bază (pentru production pe Vercel și development local)
+    let baseUrl = process.env.NEXTAUTH_URL;
+
+    // Dacă NEXTAUTH_URL nu este setat, folosește VERCEL_URL sau localhost
+    if (!baseUrl) {
+      if (process.env.VERCEL_URL) {
+        baseUrl = `https://${process.env.VERCEL_URL}`;
+      } else {
+        baseUrl = 'http://localhost:3000';
+      }
+    }
+
+    // Verifică că URL-ul începe cu http:// sau https://
+    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+      baseUrl = `https://${baseUrl}`;
+    }
+
     console.log('Creating Stripe checkout session with:', {
       priceId,
       email: session.user.email,
-      userId: session.user.id
+      userId: session.user.id,
+      baseUrl: baseUrl,
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/pricing`
     });
-
-    // Detectează URL-ul de bază (pentru production pe Vercel și development local)
-    const baseUrl = process.env.NEXTAUTH_URL ||
-                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
