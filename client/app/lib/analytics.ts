@@ -84,11 +84,43 @@ export const analyticsEvents = {
     trackEvent('course_viewed', 'content_interaction'),
 
   // Subscription events
-  subscriptionUpgrade: (plan: string) => 
+  subscriptionUpgrade: (plan: string) =>
     trackEvent('subscription_upgrade', 'monetization', plan),
-  
-  subscriptionCancel: () => 
+
+  subscriptionCancel: () =>
     trackEvent('subscription_cancel', 'monetization'),
+
+  // Purchase button clicks (funnel tracking)
+  purchaseButtonClick: (plan: string, price: number) => {
+    trackEvent('begin_checkout', 'ecommerce', plan, price);
+    // Also track as button click for UI analytics
+    trackEvent('button_click', 'purchase', `${plan}_button`, price);
+  },
+
+  // Purchase completion (conversion)
+  purchaseCompleted: (plan: string, price: number, transactionId?: string, currency: string = 'USD') => {
+    // Track as GA4 purchase event
+    if (isGALoaded()) {
+      window.gtag('event', 'purchase', {
+        transaction_id: transactionId || `txn_${Date.now()}`,
+        value: price,
+        currency: currency,
+        items: [{
+          item_id: plan,
+          item_name: `${plan} Subscription`,
+          category: 'subscription',
+          quantity: 1,
+          price: price,
+        }],
+      });
+    }
+    // Also track as conversion event
+    trackConversion('subscription_purchase', price);
+  },
+
+  // Checkout abandonment
+  checkoutAbandoned: (plan?: string) =>
+    trackEvent('checkout_abandoned', 'ecommerce', plan || 'unknown'),
 
   // Feature usage
   languageChanged: (language: string) => 

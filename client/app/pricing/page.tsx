@@ -94,9 +94,14 @@ export default function PricingPage() {
       return;
     }
 
-    // Track subscription upgrade attempt
+    // Track subscription upgrade attempt with detailed analytics
     const planType = priceId === PRICE_IDS.PREMIUM ? 'premium_monthly' : 'premium_annual';
-    analyticsEvents.buttonClick(`purchase_${planType}`, 'pricing_page');
+    const planPrice = priceId === PRICE_IDS.PREMIUM
+      ? (hasDiscount() ? prices.PREMIUM_MONTHLY_REDUCED : prices.PREMIUM_MONTHLY)
+      : prices.PREMIUM_ANNUAL;
+
+    // Track the purchase button click
+    analyticsEvents.purchaseButtonClick(planType, planPrice);
     analyticsEvents.subscriptionUpgrade(planType);
 
     setSelectedPlan(priceId);
