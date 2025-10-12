@@ -48,6 +48,10 @@ export async function POST(req) {
       userId: session.user.id
     });
 
+    // Detectează URL-ul de bază (pentru production pe Vercel și development local)
+    const baseUrl = process.env.NEXTAUTH_URL ||
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -55,8 +59,8 @@ export async function POST(req) {
         quantity: 1,
       }],
       mode: 'subscription',
-      success_url: `${process.env.NEXTAUTH_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/pricing`,
+      success_url: `${baseUrl}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/pricing`,
       customer_email: session.user.email,
       metadata: {
         userId: session.user.id,
