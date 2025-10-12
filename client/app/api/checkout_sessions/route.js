@@ -1,18 +1,20 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
-import { stripe, PRICE_IDS } from "@/lib/stripe";
+import { stripe, getAllValidPriceIds } from "@/lib/stripe";
 
 export async function POST(req) {
   try {
     // Verifică dacă Stripe este inițializat corect
     if (!stripe) {
+      console.error('Stripe initialization error: STRIPE_SECRET_KEY missing');
       throw new Error('Stripe nu este configurat corect');
     }
 
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
-      return new Response(JSON.stringify({ error: 'Neautorizat' }), { 
+      console.error('Unauthorized checkout attempt');
+      return new Response(JSON.stringify({ error: 'Neautorizat' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -20,15 +22,31 @@ export async function POST(req) {
 
     const body = await req.json();
     const priceId = body.priceId;
-    
-    // Verifică dacă ID-ul de preț este valid
-    const validPriceIds = Object.values(PRICE_IDS).filter(id => id);
+
+    console.log('Checkout attempt:', {
+      priceId,
+      userId: session.user.id,
+      email: session.user.email,
+    });
+
+    // Verifică dacă ID-ul de preț este valid (aceptăm precios de todas las monedas)
+    const validPriceIds = getAllValidPriceIds();
     if (!validPriceIds.includes(priceId)) {
-      return new Response(JSON.stringify({ error: 'ID preț invalid' }), {
+      console.error('Invalid price ID:', { priceId, validPriceIds });
+      return new Response(JSON.stringify({
+        error: 'ID preț invalid',
+        details: `Prețul ${priceId} nu este valid. Prețuri disponibile: ${validPriceIds.join(', ')}`
+      }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    console.log('Creating Stripe checkout session with:', {
+      priceId,
+      email: session.user.email,
+      userId: session.user.id
+    });
 
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -50,16 +68,32 @@ export async function POST(req) {
       }
     });
 
+    console.log('Checkout session created successfully:', checkoutSession.id);
+
     return new Response(JSON.stringify({ sessionId: checkoutSession.id }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Eroare Stripe:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message || 'Eroare server' 
+    console.error('Eroare Stripe:', {
+      message: error.message,
+      type: error.type,
+      statusCode: error.statusCode,
+      code: error.code,
+      param: error.param,
+      stack: error.stack
+    });
+
+    // Determine appropriate status code
+    const statusCode = error.statusCode || (error.type === 'StripeInvalidRequestError' ? 400 : 500);
+
+    return new Response(JSON.stringify({
+      error: error.message || 'Eroare server',
+      type: error.type,
+      code: error.code,
+      details: error.param ? `Parametru invalid: ${error.param}` : undefined
     }), {
-      status: 500,
+      status: statusCode,
       headers: { 'Content-Type': 'application/json' }
     });
   }

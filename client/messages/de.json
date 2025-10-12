@@ -294,6 +294,8 @@
     "freeUpdates": "Kostenlose Updates",
     "pricesInEuro": "Preise sind in Euro und können Mehrwertsteuer enthalten",
     "euro": "€",
+    "currency": "EUR",
+    "currencySymbol": "€",
     "month": "Monat",
     "year": "Jahr",
     "selfAssessmentQuestions": "Selbstbewertungsfragen",

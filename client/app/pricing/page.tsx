@@ -2,17 +2,71 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { PRICE_IDS, getClientStripe } from '@/lib/stripe';
-import { useTranslations } from 'next-intl';
+import { getClientStripe } from '@/lib/stripe';
+import { useTranslations, useLocale } from 'next-intl';
 import { analyticsEvents } from '@/lib/analytics';
+
+// Mapeo de idiomas a monedas y precios
+const LOCALE_TO_CURRENCY = {
+  'en': 'usd',
+  'ro': 'ron',
+  'es': 'eur',
+  'de': 'eur',
+  'fr': 'eur',
+};
+
+// Prețurile pentru fiecare valută
+const PRICES_BY_CURRENCY = {
+  usd: {
+    FREE: 0,
+    PREMIUM_MONTHLY: 10,
+    PREMIUM_MONTHLY_REDUCED: 7,
+    PREMIUM_ANNUAL: 100,
+  },
+  ron: {
+    FREE: 0,
+    PREMIUM_MONTHLY: 50,
+    PREMIUM_MONTHLY_REDUCED: 35,
+    PREMIUM_ANNUAL: 500,
+  },
+  eur: {
+    FREE: 0,
+    PREMIUM_MONTHLY: 10,
+    PREMIUM_MONTHLY_REDUCED: 7,
+    PREMIUM_ANNUAL: 100,
+  },
+};
+
+// Price IDs por moneda
+const PRICE_IDS_BY_CURRENCY = {
+  usd: {
+    PREMIUM: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRICE_ID_USD || 'price_1RakRZPRCTOomzu98xVshiPb',
+    PREMIUM_ANNUAL: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_ANNUAL_PRICE_ID_USD || 'price_1SHXBCPRCTOomzu9Xc01pKZt',
+  },
+  eur: {
+    PREMIUM: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRICE_ID_EUR || 'price_1RakRZPRCTOomzu98xVshiPb',
+    PREMIUM_ANNUAL: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_ANNUAL_PRICE_ID_EUR || 'price_1SHXBCPRCTOomzu9Xc01pKZt',
+  },
+  ron: {
+    PREMIUM: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRICE_ID_RON || 'price_1RakRZPRCTOomzu98xVshiPb',
+    PREMIUM_ANNUAL: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_ANNUAL_PRICE_ID_RON || 'price_1SHXBCPRCTOomzu9Xc01pKZt',
+  },
+};
 
 export default function PricingPage() {
   const t = useTranslations('pricing');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const [isMobile, setIsMobile] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const { data: session } = useSession();
   const router = useRouter();
+
+  // Obtener los price IDs según el idioma/moneda
+  const currency = LOCALE_TO_CURRENCY[locale] || 'eur';
+  const PRICE_IDS = PRICE_IDS_BY_CURRENCY[currency];
+  const prices = PRICES_BY_CURRENCY[currency];
+  const currencySymbol = t('currencySymbol');
 
   useEffect(() => {
     const checkIfMobile = () => setIsMobile(window.innerWidth < 768);
@@ -103,7 +157,7 @@ export default function PricingPage() {
                 <li>{t('aiSummary')}</li>
                 <li>{t('quizTests')}</li>
               </ul>
-              <p className="font-bold text-gray-800 text-lg mb-4">{t('euro')}0 / {t('month')}</p>
+              <p className="font-bold text-gray-800 text-lg mb-4">{currencySymbol}{prices.FREE} / {t('month')}</p>
               <button 
                 onClick={handleFreePlan}
                 className="w-full py-2 px-4 rounded-lg border border-gray-300 text-gray-800 font-medium hover:bg-gray-300 hover:text-white"
@@ -131,13 +185,13 @@ export default function PricingPage() {
                 {hasDiscount() ? (
                   <div>
                     <div className="mb-2">
-                      <span className="font-bold text-gray-800 text-lg">{t('euro')}7 / {t('month')}</span>
-                      <span className="ml-2 text-xs text-gray-500 line-through">{t('euro')}10</span>
+                      <span className="font-bold text-gray-800 text-lg">{currencySymbol}{prices.PREMIUM_MONTHLY_REDUCED} / {t('month')}</span>
+                      <span className="ml-2 text-xs text-gray-500 line-through">{currencySymbol}{prices.PREMIUM_MONTHLY}</span>
                     </div>
-                    <p className="text-xs text-gray-600 mb-4">{t('firstTwoMonths')} {t('euro')}10/{t('month')}</p>
+                    <p className="text-xs text-gray-600 mb-4">{t('firstTwoMonths')} {currencySymbol}{prices.PREMIUM_MONTHLY}/{t('month')}</p>
                   </div>
                 ) : (
-                  <p className="font-bold text-gray-800 text-lg mb-4">{t('euro')}10 / {t('month')}</p>
+                  <p className="font-bold text-gray-800 text-lg mb-4">{currencySymbol}{prices.PREMIUM_MONTHLY} / {t('month')}</p>
                 )}
                 
                 <button 
@@ -167,11 +221,11 @@ export default function PricingPage() {
                   <li>Profesor AI (video lecții personalizate)</li>
                   <li>{t('save17Percent')}</li>
                 </ul>
-                <p className="font-bold text-gray-800 text-lg mb-4">{t('euro')}100 / {t('year')}</p>
-                <button 
+                <p className="font-bold text-gray-800 text-lg mb-4">{currencySymbol}{prices.PREMIUM_ANNUAL} / {t('year')}</p>
+                <button
                   onClick={() => handleCheckout(PRICE_IDS.PREMIUM_ANNUAL)}
                   disabled={isLoading(PRICE_IDS.PREMIUM_ANNUAL)}
-                  className={`w-full py-2 px-4 rounded-lg border font-medium 
+                  className={`w-full py-2 px-4 rounded-lg border font-medium
                     ${isLoading(PRICE_IDS.PREMIUM_ANNUAL)
                       ? 'bg-yellow-300 cursor-not-allowed text-white'
                       : 'text-yellow-500 border-yellow-500 hover:bg-yellow-500 hover:text-white'}`}
@@ -192,7 +246,7 @@ export default function PricingPage() {
                 <li>{t('maxFileSize')} 10MB</li>
                 <li>{t('selfAssessmentQuestions')}</li>
               </ul>
-              <p className="font-bold text-gray-800 text-lg mb-6">{t('euro')}0 / {t('month')}</p>
+              <p className="font-bold text-gray-800 text-lg mb-6">{currencySymbol}{prices.FREE} / {t('month')}</p>
               <button 
                 onClick={handleFreePlan}
                 className="w-full py-3 px-4 rounded-lg border border-gray-300 text-gray-800 font-medium hover:bg-gray-300 hover:text-white"
@@ -220,13 +274,13 @@ export default function PricingPage() {
                 {hasDiscount() ? (
                   <div>
                     <div className="mb-2">
-                      <span className="font-bold text-gray-800 text-lg">{t('euro')}7 / {t('month')}</span>
-                      <span className="ml-2 text-sm text-gray-500 line-through">{t('euro')}10</span>
+                      <span className="font-bold text-gray-800 text-lg">{currencySymbol}{prices.PREMIUM_MONTHLY_REDUCED} / {t('month')}</span>
+                      <span className="ml-2 text-sm text-gray-500 line-through">{currencySymbol}{prices.PREMIUM_MONTHLY}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-6">{t('firstTwoMonths')} {t('euro')}10/{t('month')}</p>
+                    <p className="text-sm text-gray-600 mb-6">{t('firstTwoMonths')} {currencySymbol}{prices.PREMIUM_MONTHLY}/{t('month')}</p>
                   </div>
                 ) : (
-                  <p className="font-bold text-gray-800 text-lg mb-6">{t('euro')}10 / {t('month')}</p>
+                  <p className="font-bold text-gray-800 text-lg mb-6">{currencySymbol}{prices.PREMIUM_MONTHLY} / {t('month')}</p>
                 )}
                 
                 <button 
@@ -257,7 +311,7 @@ export default function PricingPage() {
                   <li>{t('aiAdvancedAnswers')}</li>
                   <li>{t('save17Percent')}</li>
                 </ul>
-                <p className="font-bold text-gray-800 text-lg mb-6">{t('euro')}100 / {t('year')}</p>
+                <p className="font-bold text-gray-800 text-lg mb-6">{currencySymbol}{prices.PREMIUM_ANNUAL} / {t('year')}</p>
                 <button 
                   onClick={() => handleCheckout(PRICE_IDS.PREMIUM_ANNUAL)}
                   disabled={isLoading(PRICE_IDS.PREMIUM_ANNUAL)}
