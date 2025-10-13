@@ -338,6 +338,7 @@
     "answer": "Respuesta: ",
     "summaryLength": "Tipo de resumen",
     "academicSummary": "Resumen Académico",
+    "academicSummaryDescription": "Resumen Académico Premium - Incluye estructura detallada con glosario técnico, fórmulas corregidas y preguntas de autoevaluación",
     "shortSummary": "Resumen Corto",
     "longSummary": "Resumen Largo",
     "dropHere": "Suelta tu PDF aquí"

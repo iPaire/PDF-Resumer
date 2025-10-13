@@ -365,8 +365,10 @@
     "answer": "Answer: ",
     "summaryLength": "Summary Type",
     "academicSummary": "Academic Summary",
+    "academicSummaryDescription": "Premium Academic Summary - Includes detailed structure with technical glossary, corrected formulas, and self-assessment questions",
     "shortSummary": "Short Summary",
-    "longSummary": "Detailed Summary"
+    "longSummary": "Detailed Summary",
+    "dropHere": "Drop here to upload"
   },
   "summaries": {
     "title": "Your Summaries",

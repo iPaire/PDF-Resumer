@@ -337,8 +337,10 @@
     "answer": "Antwort: ",
     "summaryLength": "Zusammenfassung Typ",
     "academicSummary": "Akademische Zusammenfassung",
+    "academicSummaryDescription": "Premium Akademische Zusammenfassung - Enthält detaillierte Struktur mit technischem Glossar, korrigierten Formeln und Selbstbewertungsfragen",
     "shortSummary": "Kurze Zusammenfassung",
-    "longSummary": "Detaillierte Zusammenfassung"
+    "longSummary": "Detaillierte Zusammenfassung",
+    "dropHere": "Hier ablegen zum Hochladen"
   },
   "summaries": {
     "title": "Ihre Zusammenfassungen",
