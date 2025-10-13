@@ -106,27 +106,29 @@ export default function PDFProcessor() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [summaryLength, setSummaryLength] = useState<'short' | 'long' | 'academic'>('long');
+  const [hasPreviousFeedback, setHasPreviousFeedback] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch usage data on component mount
+  // Fetch usage data and feedback status on component mount
   useEffect(() => {
     if (status === 'authenticated') {
       fetchUsage();
+      checkFeedbackStatus();
     }
   }, [status]);
 
   // Check if we should show feedback request at exactly 3 usages
   useEffect(() => {
-    if (status === 'authenticated' && usage.used === 3) {
+    if (status === 'authenticated' && usage.used === 3 && !hasPreviousFeedback) {
       setTimeout(() => setShowFeedback(true), 1500);
     }
-  }, [usage, status]);
+  }, [usage, status, hasPreviousFeedback]);
 
   const fetchUsage = async () => {
     try {
       const response = await fetch('/api/usage');
       if (!response.ok) throw new Error('Failed to fetch usage');
-      
+
       const data = await response.json();
       if (response.ok) {
         const fileSizeLimitBytes = data.fileSizeLimit * 1024 * 1024;
@@ -134,6 +136,18 @@ export default function PDFProcessor() {
       }
     } catch (error) {
       console.error('Error fetching usage:', error);
+    }
+  };
+
+  const checkFeedbackStatus = async () => {
+    try {
+      const response = await fetch('/api/feedback');
+      if (!response.ok) throw new Error('Failed to check feedback status');
+
+      const data = await response.json();
+      setHasPreviousFeedback(data.hasFeedback);
+    } catch (error) {
+      console.error('Error checking feedback status:', error);
     }
   };
 
@@ -212,13 +226,13 @@ export default function PDFProcessor() {
         setSummary(data.summary);
         setSummaryLanguage(data.meta?.language || 'en');
         fetchUsage();
-        
+
         // Check if we should show feedback after exactly 3 summaries
         const totalSummaries = (usage.used || 0) + 1; // Current usage + the one we just generated
-        if (totalSummaries === 3) {
+        if (totalSummaries === 3 && !hasPreviousFeedback) {
           setTimeout(() => setShowFeedback(true), 2000);
         }
-        
+
         // Track successful processing
         const processingTime = Date.now() - processingStartTime;
         analyticsEvents.pdfProcessingCompleted(processingTime);
@@ -338,6 +352,7 @@ export default function PDFProcessor() {
 
       if (response.ok) {
         setFeedbackSubmitted(true);
+        setHasPreviousFeedback(true); // Mark that user has given feedback
         setTimeout(() => {
           setShowFeedback(false);
         }, 2000);

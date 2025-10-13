@@ -3,6 +3,33 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import prisma from '@/lib/prisma';
 
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has already submitted feedback with a rating
+    const existingFeedback = await prisma.feedback.findFirst({
+      where: {
+        userId: session.user.id,
+        rating: {
+          not: null, // Only consider feedback with ratings
+        },
+      },
+    });
+
+    return NextResponse.json({
+      hasFeedback: !!existingFeedback
+    }, { status: 200 });
+  } catch (error) {
+    console.error('Failed to check feedback status:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
