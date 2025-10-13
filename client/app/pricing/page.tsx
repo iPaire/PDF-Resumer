@@ -100,8 +100,11 @@ export default function PricingPage() {
       ? (hasDiscount() ? prices.PREMIUM_MONTHLY_REDUCED : prices.PREMIUM_MONTHLY)
       : prices.PREMIUM_ANNUAL;
 
-    // Track the purchase button click
-    analyticsEvents.purchaseButtonClick(planType, planPrice);
+    // Get currency code based on current currency
+    const currencyCode = currency.toUpperCase();
+
+    // Track the purchase button click with currency
+    analyticsEvents.purchaseButtonClick(planType, planPrice, currencyCode);
     analyticsEvents.subscriptionUpgrade(planType);
 
     setSelectedPlan(priceId);

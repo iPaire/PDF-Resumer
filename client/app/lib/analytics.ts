@@ -91,8 +91,20 @@ export const analyticsEvents = {
     trackEvent('subscription_cancel', 'monetization'),
 
   // Purchase button clicks (funnel tracking)
-  purchaseButtonClick: (plan: string, price: number) => {
-    trackEvent('begin_checkout', 'ecommerce', plan, price);
+  purchaseButtonClick: (plan: string, price: number, currency: string = 'USD') => {
+    // Track begin_checkout with full ecommerce data
+    if (isGALoaded()) {
+      window.gtag('event', 'begin_checkout', {
+        currency: currency,
+        value: price,
+        items: [{
+          item_id: plan,
+          item_name: `${plan} Subscription`,
+          category: 'subscription',
+          price: price,
+        }],
+      });
+    }
     // Also track as button click for UI analytics
     trackEvent('button_click', 'purchase', `${plan}_button`, price);
   },
