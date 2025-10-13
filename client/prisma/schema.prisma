@@ -30,6 +30,7 @@ model User {
   quizzes       Quiz[]
   cheatSheets   CheatSheet[]
   feedback      Feedback[]
+  passwordResetTokens PasswordResetToken[] @relation("PasswordResetTokens")
 
   trialOffered  Boolean?  @default(false)
   trialExpires  DateTime? @db.Timestamp(6)
@@ -149,6 +150,18 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation("PasswordResetTokens", fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expires   DateTime @db.Timestamp(6)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([userId])
+  @@index([token])
 }
 
 model Feedback {

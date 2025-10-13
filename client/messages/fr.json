@@ -333,8 +333,10 @@
     "answer": "Réponse : ",
     "summaryLength": "Type de résumé",
     "academicSummary": "Résumé Académique",
+    "academicSummaryDescription": "Résumé Académique Premium - Comprend une structure détaillée avec glossaire technique, formules corrigées et questions d'auto-évaluation",
     "shortSummary": "Résumé Court",
-    "longSummary": "Résumé Détaillé"
+    "longSummary": "Résumé Détaillé",
+    "dropHere": "Déposez ici pour télécharger"
   },
   "summaries": {
     "title": "Vos résumés",

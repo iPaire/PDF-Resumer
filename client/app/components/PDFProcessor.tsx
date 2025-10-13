@@ -462,7 +462,7 @@ export default function PDFProcessor() {
                       }`}
                     >
                       <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-bold">PREMIUM</span>
-                      <span>Rezumat Academic</span>
+                      <span>{t('academicSummary')}</span>
                     </button>
                   )}
                 </div>
@@ -473,7 +473,7 @@ export default function PDFProcessor() {
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
                       <p className="text-sm text-purple-800 font-medium">
-                        Rezumat Academic Premium - Include structură detaliată cu glosar tehnic, formule corectate și întrebări de autoevaluare
+                        {t('academicSummaryDescription')}
                       </p>
                     </div>
                   </div>
