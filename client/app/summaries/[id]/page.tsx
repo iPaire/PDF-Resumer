@@ -10,7 +10,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { analyticsEvents } from '@/lib/analytics';
 
 type Summary = {
@@ -37,7 +37,7 @@ type Summary = {
 // Funcție îmbunătățită pentru formatarea Markdown
 const formatMarkdownSpacing = (text: string) => {
   // Improved section title preservation
-  return text
+  let formatted = text
     // Preserve section titles exactly as they are
     .replace(/(\n## \d+\.\s+[^\n]+)/g, '$1\n\n')
     // Add spacing before headers
@@ -46,6 +46,22 @@ const formatMarkdownSpacing = (text: string) => {
     .replace(/(```[\s\S]*?```)(?=\S)/g, '$1\n\n')
     // Add spacing between paragraphs
     .replace(/(?<=\S)\n(?=\S)/g, '\n\n');
+
+  // Fix duplicate table separator rows and ensure proper table structure
+  // Remove all separator rows first
+  formatted = formatted.replace(/^\s*\|[\s\-:|]+\|\s*$/gm, '');
+
+  // Clean up extra newlines in tables
+  formatted = formatted.replace(/(\|[^\n]+\|)\n\n+(\|[^\n]+\|)/g, '$1\n$2');
+
+  // Add back proper separators after header rows
+  formatted = formatted.replace(/(\|[^\n]+\|)\n(\|(?!\s*-)[^\n]+\|)/g, (match, header, nextRow) => {
+    const columnCount = (header.match(/\|/g) || []).length - 1;
+    const separator = '|' + ' --- |'.repeat(columnCount);
+    return `${header}\n${separator}\n${nextRow}`;
+  });
+
+  return formatted;
 };
 
 // Funcție optimizată pentru parsarea conținutului premium
@@ -101,9 +117,10 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
   // Unwrap params using React.use()
   const resolvedParams = use(params);
   const { id } = resolvedParams;
-  
+
   const t = useTranslations('summaryDetail');
   const tCommon = useTranslations('common');
+  const locale = useLocale(); // Get current UI language
   const { data: session, status } = useSession();
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -311,7 +328,10 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const lang = summary.language === 'en' ? 'en' : 'ro';
+  // Use summary language for content, but UI language (locale) for interface labels
+  const summaryLang = summary.language || 'ro'; // Language of the summary content
+  const uiLang = locale || 'ro'; // Language of the UI (from browser/settings)
+
   const displayName = summary.title || summary.name || t('untitled');
   const displayContent = summary.content || summary.summary || t('noContentAvailable');
   
@@ -321,10 +341,10 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
     /5\. Relații și formule esențiale/.test(displayContent) ||
     /## 4\. Glosar tehnic extins/.test(displayContent) ||
     /4\. Glosar tehnic extins/.test(displayContent);
-  
+
   const isPremium = summary.isPremium && hasPremiumStructure;
-  
-  const sections = isPremium ? parsePremiumContent(displayContent, lang) : null;
+
+  const sections = isPremium ? parsePremiumContent(displayContent, summaryLang) : null;
   const assessmentQuestions = sections?.["7. Întrebări de autoevaluare avansate"] 
     ? parseAssessmentQuestions(sections["7. Întrebări de autoevaluare avansate"])
     : [];
@@ -345,7 +365,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{displayName}</h1>
               <p className="mt-2 text-gray-600">
-                {t('createdOn')} {new Date(summary.createdAt).toLocaleDateString(lang === 'ro' ? 'ro-RO' : 'en-US')}
+                {t('createdOn')} {new Date(summary.createdAt).toLocaleDateString(uiLang === 'ro' ? 'ro-RO' : uiLang === 'en' ? 'en-US' : `${uiLang}-${uiLang.toUpperCase()}`)}
                 {summary.pages && (
                   <>
                     {' • '}{summary.pages} {t('pages')}
@@ -425,6 +445,12 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                           thead({ node, children, ...props }) {
                             return <thead className="bg-gray-100" {...props}>{children}</thead>;
                           },
+                          tbody({ node, children, ...props }) {
+                            return <tbody {...props}>{children}</tbody>;
+                          },
+                          tr({ node, children, ...props }) {
+                            return <tr {...props}>{children}</tr>;
+                          },
                           th({ node, children, ...props }) {
                             return <th className="border border-gray-300 px-4 py-2 text-left font-semibold" {...props}>{children}</th>;
                           },
@@ -439,14 +465,14 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                             const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+|\$.*\$/.test(text);
                             const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
                             const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
-                            const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
-                            
+                            const containsFormulaKeywords = /Formulă:|Formula:|Formule:|Formel:/i.test(text);
+
                             // Function to convert common notation to LaTeX
                             const convertToLatex = (text) => {
                               return text
                                 // Convert subscripts: A_1 -> A_{1}
                                 .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1_{$2}')
-                                // Convert superscripts: A^2 -> A^{2}  
+                                // Convert superscripts: A^2 -> A^{2}
                                 .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^{$2}')
                                 // Convert fractions: a/b -> \frac{a}{b}
                                 .replace(/([A-Za-z0-9]+)\/([A-Za-z0-9]+)/g, '\\frac{$1}{$2}')
@@ -459,9 +485,9 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                                 // Convert degrees
                                 .replace(/(\d+)°/g, '$1^{\\circ}')
                                 // Remove Formula: prefix for cleaner display
-                                .replace(/^(Formulă|Formula):\s*/i, '');
+                                .replace(/^(Formulă|Formula|Formule|Formel):\s*/i, '');
                             };
-                            
+
                             // Enhanced text processing for fallback display
                             const processFormulaText = (text) => {
                               return text
@@ -482,17 +508,28 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                                 .replace(/([A-Za-z0-9])([=≈≤≥<>≠])([A-Za-z0-9])/g, '$1 $2 $3')
                                 .replace(/([A-Za-z0-9])([+\-×])([A-Za-z0-9])/g, '$1 $2 $3');
                             };
-                            
+
                             if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords)) {
                               const latexText = convertToLatex(text.replace(/^\$|\$$/g, '')); // Remove $ delimiters
-                              
+
                               try {
                                 if (!isInline) {
+                                  // Get formula label based on UI language (not summary language)
+                                  const formulaLabels: Record<string, string> = {
+                                    en: 'Mathematical Formula',
+                                    ro: 'Formulă Matematică',
+                                    fr: 'Formule Mathématique',
+                                    es: 'Fórmula Matemática',
+                                    de: 'Mathematische Formel',
+                                    it: 'Formula Matematica'
+                                  };
+                                  const formulaLabel = formulaLabels[uiLang] || formulaLabels.en;
+
                                   return (
                                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-lg">
                                       <div className="flex items-center mb-4">
                                         <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                                        <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                        <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">{formulaLabel}</span>
                                       </div>
                                       <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
                                         <BlockMath math={latexText} />
@@ -509,13 +546,24 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                               } catch (error) {
                                 // Fallback to enhanced text display if KaTeX fails
                                 const processedText = processFormulaText(text);
-                                
+
                                 if (!isInline) {
+                                  // Get formula label based on UI language (not summary language)
+                                  const formulaLabels: Record<string, string> = {
+                                    en: 'Mathematical Formula',
+                                    ro: 'Formulă Matematică',
+                                    fr: 'Formule Mathématique',
+                                    es: 'Fórmula Matemática',
+                                    de: 'Mathematische Formel',
+                                    it: 'Formula Matematica'
+                                  };
+                                  const formulaLabel = formulaLabels[uiLang] || formulaLabels.en;
+
                                   return (
                                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-md">
                                       <div className="flex items-center mb-3">
                                         <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                                        <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                        <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">{formulaLabel}</span>
                                       </div>
                                       <div className="bg-white rounded-md p-4 border border-blue-200">
                                         <code className="font-mono text-blue-900 text-xl font-bold whitespace-pre-wrap block leading-relaxed" {...props}>
@@ -638,12 +686,12 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                     },
                     h3({ node, children, ...props }) {
                       const text = String(children);
-                      const isTechnicalSection = text.includes('Glosar') || text.includes('Formule') || text.includes('Glossary') || text.includes('Formula');
+                      const isTechnicalSection = text.includes('Glosar') || text.includes('Formule') || text.includes('Glossary') || text.includes('Formula') || text.includes('Formulas') || text.includes('Formules') || text.includes('Formeln') || text.includes('Formule');
                       return (
-                        <h3 
+                        <h3
                           className={`text-xl font-bold mt-4 mb-2 ${
                             isTechnicalSection ? 'text-green-700 bg-green-50 p-2 rounded-md' : ''
-                          }`} 
+                          }`}
                           {...props}
                         >
                           {children}
@@ -673,14 +721,14 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                       const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+|\$.*\$/.test(text);
                       const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
                       const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
-                      const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
-                      
+                      const containsFormulaKeywords = /Formulă:|Formula:|Formule:|Formel:/i.test(text);
+
                       // Function to convert common notation to LaTeX
                       const convertToLatex = (text) => {
                         return text
                           // Convert subscripts: A_1 -> A_{1}
                           .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1_{$2}')
-                          // Convert superscripts: A^2 -> A^{2}  
+                          // Convert superscripts: A^2 -> A^{2}
                           .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^{$2}')
                           // Convert fractions: a/b -> \frac{a}{b}
                           .replace(/([A-Za-z0-9]+)\/([A-Za-z0-9]+)/g, '\\frac{$1}{$2}')
@@ -693,7 +741,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                           // Convert degrees
                           .replace(/(\d+)°/g, '$1^{\\circ}')
                           // Remove Formula: prefix for cleaner display
-                          .replace(/^(Formulă|Formula):\s*/i, '');
+                          .replace(/^(Formulă|Formula|Formule|Formel):\s*/i, '');
                       };
                       
                       // Enhanced text processing for fallback display
@@ -722,11 +770,22 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                         
                         try {
                           if (!isInline) {
+                            // Get formula label based on UI language (not summary language)
+                            const formulaLabels: Record<string, string> = {
+                              en: 'Mathematical Formula',
+                              ro: 'Formulă Matematică',
+                              fr: 'Formule Mathématique',
+                              es: 'Fórmula Matemática',
+                              de: 'Mathematische Formel',
+                              it: 'Formula Matematica'
+                            };
+                            const formulaLabel = formulaLabels[uiLang] || formulaLabels.en;
+
                             return (
                               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-lg">
                                 <div className="flex items-center mb-4">
                                   <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                                  <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                  <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">{formulaLabel}</span>
                                 </div>
                                 <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
                                   <BlockMath math={latexText} />
@@ -743,13 +802,24 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                         } catch (error) {
                           // Fallback to enhanced text display if KaTeX fails
                           const processedText = processFormulaText(text);
-                          
+
                           if (!isInline) {
+                            // Get formula label based on UI language (not summary language)
+                            const formulaLabels: Record<string, string> = {
+                              en: 'Mathematical Formula',
+                              ro: 'Formulă Matematică',
+                              fr: 'Formule Mathématique',
+                              es: 'Fórmula Matemática',
+                              de: 'Mathematische Formel',
+                              it: 'Formula Matematica'
+                            };
+                            const formulaLabel = formulaLabels[uiLang] || formulaLabels.en;
+
                             return (
                               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-md">
                                 <div className="flex items-center mb-3">
                                   <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                                  <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                  <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">{formulaLabel}</span>
                                 </div>
                                 <div className="bg-white rounded-md p-4 border border-blue-200">
                                   <code className="font-mono text-blue-900 text-xl font-bold whitespace-pre-wrap block leading-relaxed" {...props}>
@@ -834,10 +904,10 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                     },
                     strong({ node, children, ...props }) {
                       const text = String(children);
-                      const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\cdot|Formulă:|Formula:/i.test(text);
+                      const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\cdot|Formulă:|Formula:|Formule:|Formel:/i.test(text);
                       const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+/.test(text);
                       const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
-                      
+
                       // Process formula text for better display
                       const processFormulaText = (text) => {
                         return text
@@ -853,7 +923,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                           .replace(/([A-Za-z0-9])([=≈≤≥<>≠])([A-Za-z0-9])/g, '$1 $2 $3')
                           .replace(/([A-Za-z0-9])([+\-×])([A-Za-z0-9])/g, '$1 $2 $3');
                       };
-                      
+
                       if (isLatexFormula || isMathFormula || hasSubscriptSuperscript) {
                         const processedText = processFormulaText(text);
                         return (
@@ -862,7 +932,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                           </strong>
                         );
                       }
-                      
+
                       return <strong {...props}>{children}</strong>;
                     },
                   }}

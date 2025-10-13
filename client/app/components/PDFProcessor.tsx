@@ -625,12 +625,17 @@ export default function PDFProcessor() {
                         },
                         h3({ node, children, ...props }) {
                           const text = String(children);
-                          const isTechnicalSection = text.includes('Glosar') || text.includes('Formule') || text.includes('Glossary') || text.includes('Formula');
+                          // Check for glossary and formula keywords in all supported languages
+                          const technicalKeywords = {
+                            glossary: ['Glosar', 'Glossary', 'Glossaire', 'Glosario', 'Glossar', 'Glossario'],
+                            formula: ['Formule', 'Formula', 'Formulas', 'Formules', 'Fórmulas', 'Formeln', 'Formule']
+                          };
+                          const isTechnicalSection = [...technicalKeywords.glossary, ...technicalKeywords.formula].some(keyword => text.includes(keyword));
                           return (
-                            <h3 
+                            <h3
                               className={`text-xl font-bold mt-4 mb-2 ${
                                 isTechnicalSection ? 'text-green-700 bg-green-50 p-2 rounded-md' : ''
-                              }`} 
+                              }`}
                               {...props}
                             >
                               {children}
@@ -659,14 +664,15 @@ export default function PDFProcessor() {
                           const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\sum|\\int|\\cdot|\\[a-zA-Z_]+|\$.*\$/.test(text);
                           const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+|\([A-Za-z_]+\s*[=≈≤≥<>]/.test(text);
                           const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
-                          const containsFormulaKeywords = /Formulă:|Formula:/i.test(text);
+                          // Check for formula keywords in all supported languages
+                          const containsFormulaKeywords = /Formulă:|Formula:|Formule:|Formel:|Fórmula:|Formule Mathématique:|Mathematical Formula:|Mathematische Formel:|Formula Matematica:/i.test(text);
                           
                           // Function to convert common notation to LaTeX
-                          const convertToLatex = (text) => {
+                          const convertToLatex = (text: string) => {
                             return text
                               // Convert subscripts: A_1 -> A_{1}
                               .replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '$1_{$2}')
-                              // Convert superscripts: A^2 -> A^{2}  
+                              // Convert superscripts: A^2 -> A^{2}
                               .replace(/([A-Za-z]+)\^([A-Za-z0-9]+)/g, '$1^{$2}')
                               // Convert fractions: a/b -> \frac{a}{b}
                               .replace(/([A-Za-z0-9]+)\/([A-Za-z0-9]+)/g, '\\frac{$1}{$2}')
@@ -678,8 +684,8 @@ export default function PDFProcessor() {
                               .replace(/infinity|∞/g, '\\infty')
                               // Convert degrees
                               .replace(/(\d+)°/g, '$1^{\\circ}')
-                              // Remove Formula: prefix for cleaner display
-                              .replace(/^(Formulă|Formula):\s*/i, '');
+                              // Remove Formula: prefix in all supported languages for cleaner display
+                              .replace(/^(Formulă|Formula|Formule|Formel|Fórmula):\s*/i, '');
                           };
                           
                           if ((isLatexFormula || isMathFormula || hasSubscriptSuperscript || containsFormulaKeywords)) {
@@ -687,11 +693,22 @@ export default function PDFProcessor() {
                             
                             try {
                               if (!inline) {
+                                // Get formula label based on summary language
+                                const formulaLabels: Record<string, string> = {
+                                  en: 'Mathematical Formula',
+                                  ro: 'Formulă Matematică',
+                                  fr: 'Formule Mathématique',
+                                  es: 'Fórmula Matemática',
+                                  de: 'Mathematische Formel',
+                                  it: 'Formula Matematica'
+                                };
+                                const formulaLabel = formulaLabels[summaryLanguage] || formulaLabels.en;
+
                                 return (
                                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-lg block">
                                     <div className="flex items-center mb-4">
                                       <span className="w-3 h-3 bg-blue-500 rounded-full mr-2 inline-block"></span>
-                                      <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
+                                      <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">{formulaLabel}</span>
                                     </div>
                                     <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
                                       <BlockMath math={latexText} />
@@ -714,10 +731,21 @@ export default function PDFProcessor() {
                                 .replace(/<=?/g, '≤').replace(/>=?/g, '≥').replace(/!=/g, '≠').replace(/~=/g, '≈');
                               
                               if (!inline) {
+                                // Get formula label based on summary language
+                                const formulaLabels: Record<string, string> = {
+                                  en: 'Formula',
+                                  ro: 'Formulă',
+                                  fr: 'Formule',
+                                  es: 'Fórmula',
+                                  de: 'Formel',
+                                  it: 'Formula'
+                                };
+                                const formulaLabel = formulaLabels[summaryLanguage] || formulaLabels.en;
+
                                 return (
                                   <div className="bg-blue-50 border-l-4 border-blue-400 pl-4 py-3 my-4 rounded-r">
                                     <div className="flex items-center mb-2">
-                                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Formulă</span>
+                                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">{formulaLabel}</span>
                                     </div>
                                     <code className="font-mono text-blue-900 text-lg font-semibold whitespace-pre-wrap block" {...props}>
                                       {processedText}
@@ -777,10 +805,11 @@ export default function PDFProcessor() {
                         },
                         strong({ node, children, ...props }) {
                           const text = String(children);
-                          const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\cdot|Formulă:|Formula:/i.test(text);
+                          // Check for formula keywords in all supported languages
+                          const isLatexFormula = /\\[a-zA-Z]+\{|\\frac\{|\\sqrt\{|\\cdot|Formulă:|Formula:|Formule:|Formel:|Fórmula:/i.test(text);
                           const isMathFormula = /[A-Za-z_]+\s*[=≈≤≥<>]\s*|[A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z_0-9\s\.\,\-\+\*\/\(\)\{\}\[\]\\]+/.test(text);
                           const hasSubscriptSuperscript = /[A-Za-z_]+[_{][A-Za-z0-9}]+|[A-Za-z_]+\^[A-Za-z0-9]+|[A-Z]+_[A-Z]+/.test(text);
-                          
+
                           if (isLatexFormula || isMathFormula || hasSubscriptSuperscript) {
                             return (
                               <strong className="font-mono text-blue-800 font-bold bg-blue-50 px-2 py-1 rounded" {...props}>
@@ -788,7 +817,7 @@ export default function PDFProcessor() {
                               </strong>
                             );
                           }
-                          
+
                           return <strong {...props}>{children}</strong>;
                         },
                         blockquote({ node, children, ...props }) {
