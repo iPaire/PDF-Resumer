@@ -589,45 +589,47 @@ Pentru DOAR termenii tehnici principali (maxim 12):
 
 Răspunde în ${targetLanguage}. Maxim ${wordLimit}.`,
 
-      standard: `Creează un REZUMAT TEHNIC STANDARD pentru acest material (${targetLanguage}):
+      standard: `Create a comprehensive STANDARD TECHNICAL SUMMARY for this material.
 
+TEXT TO SUMMARIZE:
 [TEXT]
 
-## **Rezumat Tehnic Standard**
+INSTRUCTIONS:
+You must create a well-structured technical summary in ${targetLanguage} language with the following sections:
 
-**Document:** [nume fisier]
-**Limba:** ${targetLanguage}
-**Pagini:** [numar pagini]
-**Data generării:** [data curentă]
-**Nivel detaliu:** Standard (Optimizat, 5 secțiuni)
+## **Technical Summary Document: ${filename}**
 
-### **1. Introducere și Context Detaliat**
-Prezintă subiectul principal, domeniul de aplicare și importanța în contextul teoretic și practic actual. Explică relevanța industrială, academică și evoluția domeniului în 3-4 paragrafe bine dezvoltate.
+**Language:** ${targetLanguage}
+**Pages:** ${numpages}
+**Date of Generation:** ${new Date().toLocaleDateString('en-US')}
+**Detail Level:** Standard (Optimized, 5 sections)
 
-### **2. Concepte Fundamentale Avansate**
-Definiții precise și complete pentru conceptele principale. Explică principiile de funcționare, teoriile de bază și MAXIM 8-10 parametri critici principali. Include analiza interrelațiilor conceptuale de bază.
+### **1. Introduction and Detailed Context**
+Present the main subject, scope, and importance in the current theoretical and practical context. Explain the industrial, academic relevance, and evolution of the field in 3-4 well-developed paragraphs.
 
-### **3. Dezvoltare Tehnică pe Capitole**
-Pentru fiecare tip principal din document (maxim 4-5 tipuri principale):
+### **2. Advanced Fundamental Concepts**
+Precise and complete definitions for the main concepts. Explain the operating principles, basic theories, and MAXIMUM 8-10 key critical parameters. Include an analysis of the basic conceptual interrelationships.
 
-- Principiul de funcționare detaliat
-- Schema și implementarea practică
-- Performanțe și limitări
-- Aplicații specifice și contexte de utilizare
+### **3. Technical Development on Chapters**
+For each main type in the document (maximum 4-5 main types):
+- Detailed operating principle
+- Scheme and practical implementation
+- Performances and limitations
+- Specific applications and usage contexts
 
 ### **4. [SECTION_4_TITLE]**
 [SECTION_4_CONTENT]
 
-### **5. Glosar Tehnic Standard (20-25 termeni)**
-Pentru MAXIM 25 de termeni tehnici principali:
-**[Termen]:** Definiție completă cu exemple și aplicabilitate
+### **5. Standard Technical Glossary (20-25 terms)**
+For MAXIMUM 25 key technical terms:
+**[Term]:** Complete definition with examples and applicability
 
-**CERINȚE:**
-- Conținut strict tehnic, elimină zgomotul complet
-- Ton profesional și didactic
-- Calitate foarte ridicată
+REQUIREMENTS:
+- Strictly technical content, eliminate noise completely
+- Professional and didactic tone
+- Very high quality
 
-Răspunde în ${targetLanguage}. Maxim ${wordLimit}.`,
+Respond in ${targetLanguage}. Maximum ${wordLimit}.`,
 
       premium: `Creează un rezumat tehnic ${summaryLength === 'short' ? 'premium concis' : summaryLength === 'academic' ? 'academic premium ultra-detaliat' : 'complet premium'} pentru acest material (${targetLanguage}):
 
@@ -732,10 +734,14 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
               .replace('[SECTION_4_CONTENT]', adaptiveSection.content);
           }
 
+          const systemMessage = sectionType === 'standard'
+            ? `You are a technical expert specialized in creating educational materials. Create a ${summaryLength === 'short' ? 'concise and efficient' : 'detailed but structured'} summary. IMPORTANT: You must respond with the ACTUAL SUMMARY CONTENT in ${targetLanguage} language, NOT the template instructions. Extract and summarize the provided text content.`
+            : `Ești un expert tehnic specializat în generarea de materiale educaționale. Creează un rezumat ${summaryLength === 'short' ? 'concis și eficient' : 'detaliat dar structurat'}. Folosește limba ${targetLanguage}.`;
+
           const sectionCompletion = await openai.chat.completions.create({
             model: summaryModel,
             messages: [
-              { role: 'system', content: `Ești un expert tehnic specializat în generarea de materiale educaționale. Creează un rezumat ${summaryLength === 'short' ? 'concis și eficient' : 'detaliat dar structurat'}. Folosește limba ${targetLanguage}.` },
+              { role: 'system', content: systemMessage },
               { role: 'user', content: chunkPrompt },
             ],
             max_tokens: Math.floor(maxTokens * 0.85), // Use 85% of available tokens for response
@@ -801,9 +807,11 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
 
     let quiz: QuizQuestion[] = [];
 
-    // Skip quiz generation for better performance - will be generated on demand
-    const skipQuiz = summaryLength === 'short' || user.subscription === 'free';
-    
+    // Generate quiz based on subscription tier (skip only for free users)
+    const skipQuiz = user.subscription === 'free';
+
+    console.log(`Quiz generation check - User: ${user.subscription}, maxQuestions: ${config.maxQuestions}, skipQuiz: ${skipQuiz}`);
+
     // Generate quiz based on subscription tier (only if not skipping)
     if (config.maxQuestions > 0 && !skipQuiz) {
       const numQuestions = config.maxQuestions;
@@ -966,14 +974,51 @@ Format JSON:
         requestOptions.response_format = { type: "json_object" };
       }
       
-      const quizCompletion = await openai.chat.completions.create(requestOptions);
-
       try {
-        const quizJson = JSON.parse(quizCompletion.choices[0]?.message?.content?.trim() || '{}');
+        console.log(`Attempting quiz generation for ${user.subscription} user with ${numQuestions} questions`);
+        const quizCompletion = await openai.chat.completions.create(requestOptions);
+
+        const rawContent = quizCompletion.choices[0]?.message?.content?.trim() || '{}';
+        console.log(`Quiz API response received, length: ${rawContent.length}`);
+
+        // Try to extract JSON if it's wrapped in markdown code blocks
+        let jsonContent = rawContent;
+        if (rawContent.includes('```json')) {
+          const match = rawContent.match(/```json\s*([\s\S]*?)\s*```/);
+          if (match) {
+            jsonContent = match[1].trim();
+          }
+        } else if (rawContent.includes('```')) {
+          const match = rawContent.match(/```\s*([\s\S]*?)\s*```/);
+          if (match) {
+            jsonContent = match[1].trim();
+          }
+        }
+
+        // Try to fix common JSON issues
+        jsonContent = jsonContent
+          .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+          .replace(/\n/g, ' ') // Remove newlines that might break strings
+          .replace(/\r/g, ''); // Remove carriage returns
+
+        const quizJson = JSON.parse(jsonContent);
         quiz = quizJson.questions || [];
-      } catch (error) {
-        console.error('Eroare parsare quiz JSON:', error);
+
+        console.log(`Quiz parsed successfully, ${quiz.length} questions generated`);
+
+        // Validate quiz has the right structure
+        if (!Array.isArray(quiz) || quiz.length === 0) {
+          console.warn('Quiz generated but has no questions');
+          quiz = [];
+        }
+      } catch (error: any) {
+        console.error('Eroare generare/parsare quiz:', error);
+        console.error('Error message:', error.message);
+        // Set empty quiz array on error
+        quiz = [];
       }
+    } else {
+      console.log(`Quiz generation skipped - maxQuestions: ${config.maxQuestions}, skipQuiz: ${skipQuiz}`);
     }
 
     // Parallel database operations for better performance

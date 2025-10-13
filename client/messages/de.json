@@ -183,7 +183,11 @@
     "uploadedFile": "Sie haben eine Datei hochgeladen",
     "viewSummariesButton": "Zusammenfassungen anzeigen",
     "accessQuizzes": "Auf Tests zugreifen",
-    "accessCourses": "Auf Kurse zugreifen"
+    "accessCourses": "Auf Kurse zugreifen",
+    "summary": "Zusammenfassung",
+    "quiz": "Test",
+    "summariesSelected": "Zusammenfassungen ausgewählt",
+    "quizzesSelected": "Tests ausgewählt"
   },
   "upload": {
     "dragAndDrop": "Ziehen Sie Dateien hierher oder klicken Sie zur Auswahl",
@@ -385,7 +389,14 @@
     "downloadError": "Datei konnte nicht heruntergeladen werden",
     "downloadErrorFree": "Kostenlose Benutzer können keine Zusammenfassungen herunterladen",
     "yourSummaries": "Ihre Zusammenfassungen",
-    "allSummariesGenerated": "Alle aus Ihren PDF-Dokumenten generierten Zusammenfassungen"
+    "allSummariesGenerated": "Alle aus Ihren PDF-Dokumenten generierten Zusammenfassungen",
+    "selectAll": "Alle auswählen",
+    "selected": "ausgewählt",
+    "deleteSelected": "Ausgewählte löschen",
+    "noSummariesSelected": "Wählen Sie mindestens eine Zusammenfassung zum Löschen aus",
+    "confirmBulkDelete": "Sind Sie sicher, dass Sie {count} Zusammenfassungen löschen möchten?",
+    "bulkDeleteSuccess": "Zusammenfassungen erfolgreich gelöscht",
+    "bulkDeleteError": "Einige Zusammenfassungen konnten nicht gelöscht werden"
   },
   "summaryDetail": {
     "backToSummaries": "Zurück zu Zusammenfassungen",
@@ -423,7 +434,14 @@
     "noQuizzesTitle": "Keine Tests verfügbar",
     "noQuizzesDescription": "Laden Sie ein PDF-Dokument hoch, um Testfragen zu generieren.",
     "noValidQuizzes": "Alle generierten Tests haben 0 Fragen. Laden Sie ein anderes PDF-Dokument hoch, um Tests zu generieren.",
-    "uploadPdf": "PDF hochladen"
+    "uploadPdf": "PDF hochladen",
+    "selectAll": "Alle auswählen",
+    "selected": "ausgewählt",
+    "deleteSelected": "Ausgewählte löschen",
+    "noQuizzesSelected": "Wählen Sie mindestens einen Test zum Löschen aus",
+    "confirmBulkDelete": "Sind Sie sicher, dass Sie {count} Tests löschen möchten?",
+    "bulkDeleteSuccess": "Tests erfolgreich gelöscht",
+    "bulkDeleteError": "Einige Tests konnten nicht gelöscht werden"
   },
   "quizDetail": {
     "backToQuizzes": "Zurück zu Tests",

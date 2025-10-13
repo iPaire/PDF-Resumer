@@ -60,16 +60,24 @@ export async function GET() {
       100  // Cap at 100% even if over limit
     );
     
-    // Count summaries (files with non-empty summary)
-    const summariesCreated = files.filter(file => 
+    // Count summaries from both old File table and new Summary table
+    const oldSummariesCount = files.filter(file =>
       file.summary && file.summary.trim() !== ''
     ).length;
-    
-    // Count quizzes (files with non-null quiz data)
-    const quizzesGenerated = files.filter(file => 
+    const newSummariesCount = await prisma.summary.count({
+      where: { userId: session.user.id }
+    });
+    const summariesCreated = oldSummariesCount + newSummariesCount;
+
+    // Count quizzes from both old File table and new Quiz table
+    const oldQuizzesCount = files.filter(file =>
       file.quiz !== null && Object.keys(file.quiz).length > 0
     ).length;
-    
+    const newQuizzesCount = await prisma.quiz.count({
+      where: { userId: session.user.id }
+    });
+    const quizzesGenerated = oldQuizzesCount + newQuizzesCount;
+
     // Count courses
     const coursesCreated = await prisma.course.count({
       where: { userId: session.user.id }

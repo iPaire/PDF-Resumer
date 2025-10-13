@@ -183,7 +183,11 @@
     "uploadedFile": "Subiste un archivo",
     "viewSummariesButton": "Ver resúmenes",
     "accessQuizzes": "Acceder a cuestionarios",
-    "accessCourses": "Acceder a cursos"
+    "accessCourses": "Acceder a cursos",
+    "summary": "Resumen",
+    "quiz": "Quiz",
+    "summariesSelected": "resúmenes seleccionados",
+    "quizzesSelected": "quizzes seleccionados"
   },
   "upload": {
     "dragAndDrop": "Arrastra y suelta archivos aquí o haz clic para seleccionar",
@@ -386,7 +390,14 @@
     "downloadError": "No se pudo descargar el archivo",
     "downloadErrorFree": "Los usuarios gratuitos no pueden descargar resúmenes",
     "yourSummaries": "Tus Resúmenes",
-    "allSummariesGenerated": "Todos los resúmenes generados de tus documentos PDF"
+    "allSummariesGenerated": "Todos los resúmenes generados de tus documentos PDF",
+    "selectAll": "Seleccionar todos",
+    "selected": "seleccionados",
+    "deleteSelected": "Eliminar seleccionados",
+    "noSummariesSelected": "Selecciona al menos un resumen para eliminar",
+    "confirmBulkDelete": "¿Estás seguro de que quieres eliminar {count} resúmenes?",
+    "bulkDeleteSuccess": "Resúmenes eliminados con éxito",
+    "bulkDeleteError": "Algunos resúmenes no pudieron ser eliminados"
   },
   "summaryDetail": {
     "backToSummaries": "Volver a resúmenes",
@@ -424,7 +435,14 @@
     "noQuizzesTitle": "No hay pruebas disponibles",
     "noQuizzesDescription": "Sube un documento PDF para generar pruebas de examen.",
     "noValidQuizzes": "Todas las pruebas generadas tienen 0 preguntas. Sube otro documento PDF para generar pruebas.",
-    "uploadPdf": "Subir PDF"
+    "uploadPdf": "Subir PDF",
+    "selectAll": "Seleccionar todos",
+    "selected": "seleccionados",
+    "deleteSelected": "Eliminar seleccionados",
+    "noQuizzesSelected": "Selecciona al menos un quiz para eliminar",
+    "confirmBulkDelete": "¿Estás seguro de que quieres eliminar {count} quizzes?",
+    "bulkDeleteSuccess": "Quizzes eliminados con éxito",
+    "bulkDeleteError": "Algunos quizzes no pudieron ser eliminados"
   },
   "quizDetail": {
     "backToQuizzes": "Volver a pruebas",
