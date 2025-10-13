@@ -11,7 +11,7 @@ const openai = new OpenAI({
 });
 
 // Simple in-memory cache for similar documents (expires in 1 hour)
-const summaryCache = new Map<string, { summary: string, timestamp: number }>();
+const summaryCache = new Map<string, { summary: string, quiz: QuizQuestion[], timestamp: number }>();
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 
 interface QuizQuestion {
@@ -236,8 +236,8 @@ export async function POST(request: NextRequest) {
     // Check cache first
     const cached = summaryCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log('Cache hit - returning cached summary');
-      
+      console.log('Cache hit - returning cached summary and quiz');
+
       // Still record usage and create records
       const [usageRecord, fileRecord, summaryRecord] = await Promise.all([
         prisma.usage.create({ data: { userId: user.id } }),
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
             pages: numpages,
             characters: text.length,
             summary: cached.summary,
-            quiz: [],
+            quiz: cached.quiz,
             language: documentLanguage
           }
         }),
@@ -266,7 +266,7 @@ export async function POST(request: NextRequest) {
       return new Response(
         JSON.stringify({
           summary: cached.summary,
-          quiz: [],
+          quiz: cached.quiz,
           fileID: fileRecord.id,
           meta: { filename, pages: numpages, size: file.size, characters: text.length, language: targetLanguage }
         }),
@@ -327,49 +327,72 @@ export async function POST(request: NextRequest) {
     // Funcție pentru îmbunătățirea formatării și structurii
     function improveFormatting(summary: string): string {
       let improved = summary;
-      
+
       // Înlocuiește date placeholder cu date reale
       const currentDate = new Date().toLocaleDateString('ro-RO');
       improved = improved.replace(/\[data curentă\]/g, currentDate);
       improved = improved.replace(/\[data generării\]/g, currentDate);
       improved = improved.replace(/\[nume fisier\]/g, filename);
       improved = improved.replace(/\[numar pagini\]/g, numpages.toString());
-      
+
       // Îmbunătățește formatarea titlurilor pentru a fi consistentă
       improved = improved.replace(/^(#{1,3})\s*\*\*([^*]+)\*\*$/gm, '$1 **$2**\n');
-      
+
       // Asigură spații adecvate între secțiuni
       improved = improved.replace(/(#{1,3}[^\n]*)\n{0,1}([^#\n])/g, '$1\n\n$2');
-      
-      // Îmbunătățește formatarea formulelor - păstrează exact din text
-      // Pentru formule simple cu egale
+
+      // Get formula label based on document language
+      const formulaLabels: Record<string, string> = {
+        en: 'Formula',
+        ro: 'Formulă',
+        fr: 'Formule',
+        es: 'Fórmula',
+        de: 'Formel',
+        it: 'Formula'
+      };
+      const formulaLabel = formulaLabels[documentLanguage] || 'Formula';
+
+      // Îmbunătățește formatarea formulelor - wrap them in code blocks without the "Formula:" prefix
+      // The prefix is added by the frontend based on UI language
+      // Pentru formule simple cu egale - wrap in backticks without label
       improved = improved.replace(/([A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z0-9\s+\-*/()^.\\{}]+)(?=\s|$|\n)/g, (match) => {
-        if (!match.includes('**Formulă:**')) {
-          return `\n\n**Formulă:** \`${match.trim()}\`\n`;
+        // Skip if already wrapped or is part of a label
+        if (match.includes('`') || match.includes(`**${formulaLabel}:**`)) {
+          return match;
         }
-        return match;
+        return `\n\n\`${match.trim()}\`\n`;
       });
-      
-      // Pentru formule LaTeX
+
+      // Pentru formule LaTeX - wrap in backticks without label
       improved = improved.replace(/(\\frac\{[^}]+\}\{[^}]+\})/g, (match) => {
-        return `\n\n**Formulă:** \`${match}\`\n`;
+        if (match.includes('`')) return match;
+        return `\n\n\`${match}\`\n`;
       });
-      
-      // Pentru formule cu indici
+
+      // Pentru formule cu indici - wrap in backticks without label
       improved = improved.replace(/([A-Za-z_]+_{[^}]+}[^a-zA-Z]*[=≈≤≥<>][^=]*)/g, (match) => {
-        if (!match.includes('**Formulă:**')) {
-          return `\n\n**Formulă:** \`${match.trim()}\`\n`;
+        if (match.includes('`') || match.includes(`**${formulaLabel}:**`)) {
+          return match;
         }
-        return match;
+        return `\n\n\`${match.trim()}\`\n`;
       });
       
-      // Formatare îmbunătățită pentru tabele - asigură header corect
-      improved = improved.replace(/\|([^|\n]+\|[^|\n]+\|[^|\n]+)\|/g, '| $1 |');
-      improved = improved.replace(/^\s*\|([^|]+)\|([^|]+)\|([^|]+)\|\s*$/gm, '| $1 | $2 | $3 |');
-      
-      // Adaugă separatori pentru tabele dacă lipsesc
-      const tableRegex = /(\|[^|\n]+\|[^|\n]+\|[^|\n]+\|)\s*\n(?!\|[\-\s|]+\|)/g;
-      improved = improved.replace(tableRegex, '$1\n|---|---|---|\n');
+      // Formatare îmbunătățită pentru tabele - asigură header corect și separatori
+      // First, remove all existing separator rows
+      improved = improved.replace(/^\s*\|[\s\-:|]+\|\s*$/gm, '');
+
+      // Clean up extra newlines after separator removal
+      improved = improved.replace(/(\|[^\n]+\|)\n\n+(\|[^\n]+\|)/g, '$1\n$2');
+
+      // Add proper table separators after header rows
+      // Match any table row (with any number of columns) followed by a data row
+      improved = improved.replace(/(\|[^\n]+\|)\n(\|(?!\s*-)[^\n]+\|)/g, (match, header, nextRow) => {
+        // Count the number of columns in the header
+        const columnCount = (header.match(/\|/g) || []).length - 1;
+        // Generate separator with correct number of columns
+        const separator = '|' + ' --- |'.repeat(columnCount);
+        return `${header}\n${separator}\n${nextRow}`;
+      });
       
       // Evidențiază valorile numerice cu unități
       improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%Ω]+)/g, '**$1**');
@@ -382,9 +405,11 @@ export async function POST(request: NextRequest) {
       improved = improved.replace(/\n{4,}/g, '\n\n\n');
       improved = improved.replace(/\s+$/gm, '');
       
-      // Asigură că formulele sunt separate proper
-      improved = improved.replace(/(\*\*Formulă:\*\*[^\n]*)\n([^\n*#])/g, '$1\n\n$2');
-      
+      // Asigură că formulele sunt separate proper (using dynamic formula label)
+      const escapedLabel = formulaLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const formulaPattern = new RegExp(`(\\*\\*${escapedLabel}:\\*\\*[^\\n]*)\\n([^\\n*#])`, 'g');
+      improved = improved.replace(formulaPattern, '$1\n\n$2');
+
       return improved.trim();
     }
     
@@ -788,12 +813,6 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
 
     summaryContent = cleanSummaryContent(summaryContent);
 
-    // Cache the result for future use
-    summaryCache.set(cacheKey, {
-      summary: summaryContent,
-      timestamp: Date.now()
-    });
-
     // Clean old cache entries (simple cleanup)
     if (summaryCache.size > 100) {
       const entries = Array.from(summaryCache.entries());
@@ -850,11 +869,29 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
       const quizComplexity = quizComplexityTranslations[documentLanguage] || quizComplexityTranslations.en;
 
       // Multi-language quiz prompts
+      // For detailed/long summaries, use more content or a better sample that includes technical details
+      const getSummaryExcerpt = (content: string, maxLength: number = 2500): string => {
+        if (content.length <= maxLength) return content;
+
+        // For longer summaries, try to get a sample that includes technical content
+        // Start after the table of contents but include technical sections
+        const tocEnd = content.indexOf('### **1.') || content.indexOf('###') || 0;
+        const startPos = Math.min(tocEnd, Math.floor(content.length * 0.1));
+
+        // Take a larger sample from the middle sections for better context
+        const sampleLength = Math.min(maxLength * 2, content.length - startPos);
+        return content.substring(startPos, startPos + sampleLength);
+      };
+
+      const summaryExcerpt = getSummaryExcerpt(summaryContent, user.subscription === 'premium' ? 4000 : 2500);
+
+      console.log(`Summary length: ${summaryContent.length}, Excerpt length: ${summaryExcerpt.length}, Summary type: ${summaryLength}`);
+
       const quizPromptTemplates: Record<string, string> = {
         en: `
 Create EXACTLY ${numQuestions} evaluation questions for this technical material (in ${targetLanguage}):
 
-${summaryContent.substring(0, 2500)}
+${summaryExcerpt}
 
 Level: ${quizComplexity[user.subscription as keyof typeof quizComplexity] || quizComplexity.trial}
 
@@ -899,7 +936,7 @@ JSON Format:
         ro: `
 Creează EXACT ${numQuestions} întrebări de evaluare pentru acest material tehnic (în ${targetLanguage}):
 
-${summaryContent.substring(0, 2500)}
+${summaryExcerpt}
 
 Nivel: ${quizComplexity[user.subscription as keyof typeof quizComplexity] || quizComplexity.trial}
 
@@ -1020,6 +1057,13 @@ Format JSON:
     } else {
       console.log(`Quiz generation skipped - maxQuestions: ${config.maxQuestions}, skipQuiz: ${skipQuiz}`);
     }
+
+    // Cache the result for future use (after quiz generation)
+    summaryCache.set(cacheKey, {
+      summary: summaryContent,
+      quiz: quiz,
+      timestamp: Date.now()
+    });
 
     // Parallel database operations for better performance
     const titlePrefixes: Record<string, string> = {
