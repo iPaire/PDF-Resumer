@@ -19,6 +19,7 @@ export default function QuizzesPage() {
   const { data: session } = useSession();
   const [files, setFiles] = useState<QuizFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedQuizzes, setSelectedQuizzes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (session) {
@@ -37,6 +38,55 @@ export default function QuizzesPage() {
       console.error('Error fetching quizzes:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSelectQuiz = (quizId: string) => {
+    const newSelected = new Set(selectedQuizzes);
+    if (newSelected.has(quizId)) {
+      newSelected.delete(quizId);
+    } else {
+      newSelected.add(quizId);
+    }
+    setSelectedQuizzes(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedQuizzes.size === validQuizzes.length) {
+      setSelectedQuizzes(new Set());
+    } else {
+      setSelectedQuizzes(new Set(validQuizzes.map(q => q.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedQuizzes.size === 0) {
+      alert(t('noQuizzesSelected') || 'Selectează cel puțin un quiz pentru ștergere');
+      return;
+    }
+
+    if (!confirm(t('confirmBulkDelete', { count: selectedQuizzes.size }) || `Sigur vrei să ștergi ${selectedQuizzes.size} quiz-uri?`)) {
+      return;
+    }
+
+    try {
+      const deletePromises = Array.from(selectedQuizzes).map(quizId =>
+        fetch(`/api/quizzes/${quizId}`, { method: 'DELETE' })
+      );
+
+      const results = await Promise.all(deletePromises);
+      const allSuccessful = results.every(res => res.ok);
+
+      if (allSuccessful) {
+        setFiles(files.filter(file => !selectedQuizzes.has(file.id)));
+        setSelectedQuizzes(new Set());
+        alert(t('bulkDeleteSuccess') || 'Quiz-urile au fost șterse cu succes');
+      } else {
+        alert(t('bulkDeleteError') || 'Unele quiz-uri nu au putut fi șterse');
+      }
+    } catch (error) {
+      console.error('Error deleting quizzes:', error);
+      alert(t('bulkDeleteError') || 'Eroare la ștergerea quiz-urilor');
     }
   };
 
@@ -72,30 +122,66 @@ export default function QuizzesPage() {
           <p className="mt-2 text-gray-600">{t('subtitle')}</p>
         </div>
 
+        {validQuizzes.length > 0 && (
+          <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-lg shadow">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedQuizzes.size === validQuizzes.length && validQuizzes.length > 0}
+                  onChange={handleSelectAll}
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  {t('selectAll') || 'Selectează toate'}
+                </span>
+              </label>
+              <span className="text-sm text-gray-500">
+                {selectedQuizzes.size > 0 && `${selectedQuizzes.size} ${t('selected') || 'selectate'}`}
+              </span>
+            </div>
+            {selectedQuizzes.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                {t('deleteSelected') || 'Șterge selectate'} ({selectedQuizzes.size})
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {validQuizzes.map((file) => (
-            <div 
-              key={file.id} 
-              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+            <div
+              key={file.id}
+              className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 ${selectedQuizzes.has(file.id) ? 'ring-2 ring-blue-500' : ''}`}
             >
               <div className="p-6">
                 <div className="flex items-center mb-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedQuizzes.has(file.id)}
+                    onChange={() => handleSelectQuiz(file.id)}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 mr-3"
+                    onClick={(e) => e.stopPropagation()}
+                  />
                   <FileText className="h-10 w-10 text-blue-500 mr-3" />
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 truncate">{file.name}</h3>
                     <p className="text-sm text-gray-500">
                       {new Date(file.createdAt).toLocaleDateString('ro-RO')}
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between mt-4">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                     <BarChart className="mr-1 h-4 w-4" />
                     {file.quizCount} {t('questions')}
                   </span>
-                  
-                  <Link 
+
+                  <Link
                     href={`/quizzes/${file.id}`}
                     className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
                   >

@@ -87,7 +87,7 @@ export async function DELETE(
   try {
     console.log('Attempting to delete quiz:', quizId, 'for user:', userId);
 
-    // Verifică că quiz-ul există și aparține utilizatorului
+    // Mai întâi verificăm dacă este un quiz din tabela Quiz (sistemul nou)
     const quiz = await prisma.quiz.findFirst({
       where: {
         id: quizId,
@@ -95,18 +95,36 @@ export async function DELETE(
       }
     });
 
-    if (!quiz) {
+    if (quiz) {
+      // Șterge quiz-ul din tabela Quiz
+      await prisma.quiz.delete({
+        where: { id: quizId }
+      });
+
+      console.log('Quiz deleted successfully from Quiz table:', quizId);
+      return NextResponse.json({ success: true });
+    }
+
+    // Dacă nu e în Quiz, verificăm în File (sistemul vechi)
+    const file = await prisma.file.findFirst({
+      where: {
+        id: quizId,
+        userId: userId
+      }
+    });
+
+    if (!file) {
       return NextResponse.json({
         error: 'Quiz-ul nu a fost găsit sau nu ai permisiunea să îl ștergi'
       }, { status: 404 });
     }
 
-    // Șterge quiz-ul (cascade va șterge automat relațiile)
-    await prisma.quiz.delete({
+    // Șterge fișierul (care conține quiz-ul)
+    await prisma.file.delete({
       where: { id: quizId }
     });
 
-    console.log('Quiz deleted successfully:', quizId);
+    console.log('Quiz deleted successfully from File table:', quizId);
     return NextResponse.json({ success: true });
 
   } catch (error) {

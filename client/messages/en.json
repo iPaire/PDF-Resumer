@@ -183,7 +183,11 @@
     "uploadedFile": "You uploaded a file",
     "viewSummariesButton": "View Summaries",
     "accessQuizzes": "Access Quizzes",
-    "accessCourses": "Access Courses"
+    "accessCourses": "Access Courses",
+    "summary": "Summary",
+    "quiz": "Quiz",
+    "summariesSelected": "summaries selected",
+    "quizzesSelected": "quizzes selected"
   },
   "upload": {
     "dragAndDrop": "Drag and drop files here or click to select",
@@ -446,7 +450,13 @@
     "deleteConfirm": "Are you sure you want to delete this summary?",
     "loadingSummaries": "Loading summaries...",
     "yourSummaries": "Your Summaries",
-    "allSummariesGenerated": "All summaries generated from your PDF documents"
+    "allSummariesGenerated": "All summaries generated from your PDF documents",
+    "selectAll": "Select all",
+    "deleteSelected": "Delete selected",
+    "noSummariesSelected": "Select at least one summary to delete",
+    "confirmBulkDelete": "Are you sure you want to delete {count} summaries?",
+    "bulkDeleteSuccess": "Summaries deleted successfully",
+    "bulkDeleteError": "Some summaries could not be deleted"
   },
   "summaryDetail": {
     "backToSummaries": "Back to summaries",
@@ -500,7 +510,14 @@
     "ofQuestions": "of questions",
     "retakeTest": "Retake test",
     "otherTests": "Other tests",
-    "backToTests": "Back to tests"
+    "backToTests": "Back to tests",
+    "selectAll": "Select all",
+    "selected": "selected",
+    "deleteSelected": "Delete selected",
+    "noQuizzesSelected": "Select at least one quiz to delete",
+    "confirmBulkDelete": "Are you sure you want to delete {count} quizzes?",
+    "bulkDeleteSuccess": "Quizzes deleted successfully",
+    "bulkDeleteError": "Some quizzes could not be deleted"
   },
   "quizDetail": {
     "backToQuizzes": "Back to tests",

@@ -641,7 +641,7 @@ export default function PDFProcessor() {
                           return <h4 className="text-lg font-semibold mt-3 mb-1 text-indigo-700" {...props}>{children}</h4>;
                         },
                         p({ node, children, ...props }) {
-                          return <p className="mb-4 text-gray-700 leading-relaxed" {...props}>{children}</p>;
+                          return <div className="mb-4 text-gray-700 leading-relaxed" {...props}>{children}</div>;
                         },
                         ul({ node, children, ...props }) {
                           return <ul className="list-disc pl-6 mb-4 space-y-1" {...props}>{children}</ul>;
@@ -688,9 +688,9 @@ export default function PDFProcessor() {
                             try {
                               if (!inline) {
                                 return (
-                                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-lg">
+                                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6 my-6 shadow-lg block">
                                     <div className="flex items-center mb-4">
-                                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                      <span className="w-3 h-3 bg-blue-500 rounded-full mr-2 inline-block"></span>
                                       <span className="text-sm font-bold text-blue-700 uppercase tracking-wide">Formulă Matematică</span>
                                     </div>
                                     <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">

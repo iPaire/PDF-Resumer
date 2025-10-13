@@ -179,7 +179,11 @@
     "uploadedFile": "Vous avez téléchargé un fichier",
     "viewSummariesButton": "Voir les résumés",
     "accessQuizzes": "Accéder aux quiz",
-    "accessCourses": "Accéder aux cours"
+    "accessCourses": "Accéder aux cours",
+    "summary": "Résumé",
+    "quiz": "Quiz",
+    "summariesSelected": "résumés sélectionnés",
+    "quizzesSelected": "quiz sélectionnés"
   },
   "upload": {
     "dragAndDrop": "Glissez-déposez les fichiers ici ou cliquez pour sélectionner",
@@ -381,7 +385,14 @@
     "downloadError": "Impossible de télécharger le fichier",
     "downloadErrorFree": "Les utilisateurs gratuits ne peuvent pas télécharger les résumés",
     "yourSummaries": "Vos résumés",
-    "allSummariesGenerated": "Tous les résumés générés à partir de vos documents PDF"
+    "allSummariesGenerated": "Tous les résumés générés à partir de vos documents PDF",
+    "selectAll": "Tout sélectionner",
+    "selected": "sélectionnés",
+    "deleteSelected": "Supprimer la sélection",
+    "noSummariesSelected": "Sélectionnez au moins un résumé à supprimer",
+    "confirmBulkDelete": "Êtes-vous sûr de vouloir supprimer {count} résumés ?",
+    "bulkDeleteSuccess": "Résumés supprimés avec succès",
+    "bulkDeleteError": "Certains résumés n'ont pas pu être supprimés"
   },
   "summaryDetail": {
     "backToSummaries": "Retour aux résumés",
@@ -419,7 +430,14 @@
     "noQuizzesTitle": "Aucun test disponible",
     "noQuizzesDescription": "Téléchargez un document PDF pour générer des tests de quiz.",
     "noValidQuizzes": "Tous les tests générés ont 0 questions. Téléchargez un autre document PDF pour générer des tests.",
-    "uploadPdf": "Télécharger PDF"
+    "uploadPdf": "Télécharger PDF",
+    "selectAll": "Tout sélectionner",
+    "selected": "sélectionnés",
+    "deleteSelected": "Supprimer la sélection",
+    "noQuizzesSelected": "Sélectionnez au moins un quiz à supprimer",
+    "confirmBulkDelete": "Êtes-vous sûr de vouloir supprimer {count} quiz ?",
+    "bulkDeleteSuccess": "Quiz supprimés avec succès",
+    "bulkDeleteError": "Certains quiz n'ont pas pu être supprimés"
   },
   "quizDetail": {
     "backToQuizzes": "Retour aux tests",

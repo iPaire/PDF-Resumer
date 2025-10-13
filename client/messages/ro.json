@@ -185,7 +185,9 @@
     "accessQuizzes": "Accesează Teste",
     "accessCourses": "Accesează Cursuri",
     "summary": "Rezumat",
-    "quiz": "Test"
+    "quiz": "Test",
+    "summariesSelected": "rezumate selectate",
+    "quizzesSelected": "teste selectate"
   },
   "upload": {
     "dragAndDrop": "Trage și plasează fișierele aici sau click pentru a selecta",
@@ -387,7 +389,13 @@
     "downloadError": "Nu s-a putut descărca fișierul",
     "downloadErrorFree": "Utilizatorii gratuit nu pot descărca rezumate",
     "yourSummaries": "Rezumatele Tale",
-    "allSummariesGenerated": "Toate rezumatele generate din documentele tale PDF"
+    "allSummariesGenerated": "Toate rezumatele generate din documentele tale PDF",
+    "selectAll": "Selectează toate",
+    "deleteSelected": "Șterge selectate",
+    "noSummariesSelected": "Selectează cel puțin un rezumat pentru ștergere",
+    "confirmBulkDelete": "Sigur vrei să ștergi {count} rezumate?",
+    "bulkDeleteSuccess": "Rezumatele au fost șterse cu succes",
+    "bulkDeleteError": "Unele rezumate nu au putut fi șterse"
   },
   "summaryDetail": {
     "backToSummaries": "Înapoi la rezumate",
@@ -425,7 +433,14 @@
     "noQuizzesTitle": "Niciun test disponibil",
     "noQuizzesDescription": "Încarcă un document PDF pentru a genera teste grilă.",
     "noValidQuizzes": "Toate testele generate au 0 întrebări. Încarcă un alt document PDF pentru a genera teste.",
-    "uploadPdf": "Încarcă PDF"
+    "uploadPdf": "Încarcă PDF",
+    "selectAll": "Selectează toate",
+    "selected": "selectate",
+    "deleteSelected": "Șterge selectate",
+    "noQuizzesSelected": "Selectează cel puțin un quiz pentru ștergere",
+    "confirmBulkDelete": "Sigur vrei să ștergi {count} quiz-uri?",
+    "bulkDeleteSuccess": "Quiz-urile au fost șterse cu succes",
+    "bulkDeleteError": "Unele quiz-uri nu au putut fi șterse"
   },
   "quizDetail": {
     "backToQuizzes": "Înapoi la teste",
