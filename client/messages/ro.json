@@ -183,7 +183,9 @@
     "uploadedFile": "Ai încărcat un fișier",
     "viewSummariesButton": "Vizualizează Rezumate",
     "accessQuizzes": "Accesează Teste",
-    "accessCourses": "Accesează Cursuri"
+    "accessCourses": "Accesează Cursuri",
+    "summary": "Rezumat",
+    "quiz": "Test"
   },
   "upload": {
     "dragAndDrop": "Trage și plasează fișierele aici sau click pentru a selecta",
