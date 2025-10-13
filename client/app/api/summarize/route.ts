@@ -810,19 +810,90 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
       const quizModel = config.model;
       const quizMaxTokens = Math.floor(config.maxTokens * 0.5);
 
-      // Enhanced quiz generation based on subscription tier
-      const quizComplexity = {
-        trial: 'Întrebări simple de înțelegere conceptuală',
-        standard: 'Întrebări medii cu aplicații practice',
-        premium: 'Întrebări complexe cu calcule și analize comparative'
+      // Enhanced quiz generation based on subscription tier with language support
+      const quizComplexityTranslations: Record<string, { trial: string; standard: string; premium: string }> = {
+        en: {
+          trial: 'Simple conceptual understanding questions',
+          standard: 'Medium questions with practical applications',
+          premium: 'Complex questions with calculations and comparative analyses'
+        },
+        ro: {
+          trial: 'Întrebări simple de înțelegere conceptuală',
+          standard: 'Întrebări medii cu aplicații practice',
+          premium: 'Întrebări complexe cu calcule și analize comparative'
+        },
+        fr: {
+          trial: 'Questions simples de compréhension conceptuelle',
+          standard: 'Questions moyennes avec applications pratiques',
+          premium: 'Questions complexes avec calculs et analyses comparatives'
+        },
+        de: {
+          trial: 'Einfache konzeptionelle Verständnisfragen',
+          standard: 'Mittlere Fragen mit praktischen Anwendungen',
+          premium: 'Komplexe Fragen mit Berechnungen und vergleichenden Analysen'
+        },
+        es: {
+          trial: 'Preguntas simples de comprensión conceptual',
+          standard: 'Preguntas medias con aplicaciones prácticas',
+          premium: 'Preguntas complejas con cálculos y análisis comparativos'
+        }
       };
 
-      const quizPrompt = `
-Creează EXACT ${numQuestions} întrebări de evaluare pentru acest material tehnic (${targetLanguage}):
+      const quizComplexity = quizComplexityTranslations[documentLanguage] || quizComplexityTranslations.en;
+
+      // Multi-language quiz prompts
+      const quizPromptTemplates: Record<string, string> = {
+        en: `
+Create EXACTLY ${numQuestions} evaluation questions for this technical material (in ${targetLanguage}):
 
 ${summaryContent.substring(0, 2500)}
 
-Nivel: ${quizComplexity[user.subscription as keyof typeof quizComplexity] || 'Întrebări simple'}
+Level: ${quizComplexity[user.subscription as keyof typeof quizComplexity] || quizComplexity.trial}
+
+${user.subscription === 'premium' ? `
+QUESTION DISTRIBUTION (${numQuestions} total):
+- 35% Numerical calculations with concrete formulas from text: ${technicalContent.formulas.slice(0, 4).join(', ')}
+- 25% Practical applications and real case studies
+- 20% Detailed comparisons between methods/technologies
+- 15% Fundamental theoretical principles
+- 5% Interpretation of graphs/diagrams from text
+
+PREMIUM SPECIAL REQUIREMENTS:
+- Each question should have detailed explanations of at least 2 sentences
+- Should include calculations with concrete numerical values from text
+- Should test deep understanding, not memorization
+- Should have 4 realistic answer options
+` : user.subscription === 'standard' ? `
+QUESTION DISTRIBUTION (${numQuestions} total):
+- 50% Application of concepts in practice
+- 30% Understanding basic formulas
+- 20% Identifying advantages/disadvantages
+` : `
+QUESTION DISTRIBUTION (${numQuestions} total):
+- 70% Understanding basic concepts
+- 30% Identifying technical terms
+`}
+
+IMPORTANT: Return EXACTLY ${numQuestions} questions. No fewer!
+
+JSON Format:
+{
+  "questions": [
+    {
+      "question": "complete question with context",
+      "options": ["A) complete option", "B) complete option", "C) complete option", "D) complete option"],
+      "correctAnswer": 0,
+      "explanation": "detailed explanation of at least 2 sentences"
+    }
+  ]
+}
+`,
+        ro: `
+Creează EXACT ${numQuestions} întrebări de evaluare pentru acest material tehnic (în ${targetLanguage}):
+
+${summaryContent.substring(0, 2500)}
+
+Nivel: ${quizComplexity[user.subscription as keyof typeof quizComplexity] || quizComplexity.trial}
 
 ${user.subscription === 'premium' ? `
 DISTRIBUȚIE ÎNTREBĂRI (${numQuestions} total):
@@ -861,15 +932,29 @@ Format JSON:
     }
   ]
 }
-`;
+`
+      };
+
+      const quizPrompt = quizPromptTemplates[documentLanguage] || quizPromptTemplates.en;
 
       // Check if model supports JSON mode, fallback to text parsing
       const supportsJsonMode = (quizModel.includes('gpt-4-turbo') || quizModel.includes('gpt-3.5-turbo-1106') || quizModel.includes('gpt-3.5-turbo-0125') || quizModel.includes('gpt-4o-mini')) && !quizModel.includes('o1');
       
+      // Multi-language system messages
+      const systemMessageTemplates: Record<string, string> = {
+        en: `You are an expert professor who creates high-quality multiple-choice tests. You must generate EXACTLY ${numQuestions} relevant and challenging questions. Use the language: ${targetLanguage}.${!supportsJsonMode ? ' Respond strictly in valid JSON format.' : ''}`,
+        ro: `Ești un profesor expert care creează teste grilă de înaltă calitate. Trebuie să generezi EXACT ${numQuestions} întrebări relevante și provocatoare. Folosește limba: ${targetLanguage}.${!supportsJsonMode ? ' Răspunde strict în format JSON valid.' : ''}`,
+        fr: `Vous êtes un professeur expert qui crée des tests à choix multiples de haute qualité. Vous devez générer EXACTEMENT ${numQuestions} questions pertinentes et stimulantes. Utilisez la langue: ${targetLanguage}.${!supportsJsonMode ? ' Répondez strictement au format JSON valide.' : ''}`,
+        de: `Sie sind ein Experten-Professor, der hochwertige Multiple-Choice-Tests erstellt. Sie müssen GENAU ${numQuestions} relevante und herausfordernde Fragen generieren. Verwenden Sie die Sprache: ${targetLanguage}.${!supportsJsonMode ? ' Antworten Sie strikt im gültigen JSON-Format.' : ''}`,
+        es: `Eres un profesor experto que crea pruebas de opción múltiple de alta calidad. Debes generar EXACTAMENTE ${numQuestions} preguntas relevantes y desafiantes. Usa el idioma: ${targetLanguage}.${!supportsJsonMode ? ' Responde estrictamente en formato JSON válido.' : ''}`
+      };
+
+      const systemMessage = systemMessageTemplates[documentLanguage] || systemMessageTemplates.en;
+
       const requestOptions: any = {
         model: quizModel,
         messages: [
-          { role: 'system', content: `Ești un profesor expert care creează teste grilă de înaltă calitate. Trebuie să generezi EXACT ${numQuestions} întrebări relevante și provocatoare. Folosește limba: ${targetLanguage}.${!supportsJsonMode ? ' Răspunde strict în format JSON valid.' : ''}` },
+          { role: 'system', content: systemMessage },
           { role: 'user', content: quizPrompt },
         ],
         max_tokens: quizMaxTokens,

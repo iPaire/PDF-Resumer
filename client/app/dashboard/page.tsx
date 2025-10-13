@@ -12,7 +12,7 @@ type FileType = {
   id: string;
   name: string;
   date: string;
-  size: string;
+  type: 'summary' | 'quiz';
   status: string;
 };
 
@@ -86,40 +86,24 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDownloadFile = async (id: string, name: string) => {
+  const handleDelete = async (id: string, type: 'summary' | 'quiz') => {
     try {
-      const response = await fetch(`/api/files/${id}`);
-      if (!response.ok) throw new Error('Failed to download file');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download error:', error);
-      alert(t('downloadError'));
-    }
-  };
-
-  const handleDeleteSummary = async (id: string) => {
-    try {
-      const response = await fetch(`/api/summaries/${id}`, {
+      const endpoint = type === 'summary' ? `/api/summaries/${id}` : `/api/quizzes/${id}`;
+      const response = await fetch(endpoint, {
         method: 'DELETE'
       });
 
       if (response.ok) {
         setFiles(files.filter(file => file.id !== id));
         alert(t('deleteSuccess'));
+        // Refresh stats after deletion
+        fetchDashboardData();
       } else {
         const errorData = await response.json();
         alert(t('deleteError', {error: errorData.error}));
       }
     } catch (error) {
-      console.error('Error deleting summary:', error);
+      console.error('Error deleting item:', error);
       alert(t('deleteErrorGeneral'));
     }
   };
@@ -398,8 +382,14 @@ export default function DashboardPage() {
                   <tr key={file.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <FileText className="flex-shrink-0 h-5 w-5 text-gray-400 mr-2" />
-                        <div className="text-sm font-medium text-gray-900">{t('fileProcessing')}</div>
+                        {file.type === 'summary' ? (
+                          <Book className="flex-shrink-0 h-5 w-5 text-green-400 mr-2" />
+                        ) : (
+                          <BarChart2 className="flex-shrink-0 h-5 w-5 text-purple-400 mr-2" />
+                        )}
+                        <div className="text-sm font-medium text-gray-900">
+                          {file.type === 'summary' ? t('summary') : t('quiz')}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -414,15 +404,9 @@ export default function DashboardPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button 
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                        onClick={() => handleDownloadFile(file.id, file.name)}
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button 
+                      <button
                         className="text-red-600 hover:text-red-900"
-                        onClick={() => handleDeleteSummary(file.id)}
+                        onClick={() => handleDelete(file.id, file.type)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
