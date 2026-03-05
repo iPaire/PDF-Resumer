@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
+
+export const maxDuration = 60; // seconds - Vercel Pro supports up to 300
 import pdf from 'pdf-parse';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
