@@ -500,7 +500,21 @@
   },
   "cookies": {
     "title": "Cookie-Richtlinie",
-    "description": "Diese Anwendung verwendet Cookies, um eine optimale Benutzererfahrung zu gewährleisten.",
+    "description": "Diese Anwendung verwendet Cookies, um eine optimale Benutzererfahrung zu gewährleisten. Diese Seite erklärt, welche Cookies wir verwenden und wie Sie diese steuern können.",
+    "whatAreCookies": "Was sind Cookies?",
+    "whatAreCookiesDesc": "Cookies sind kleine Textdateien, die auf Ihrem Gerät gespeichert werden, wenn Sie eine Website besuchen. Sie helfen uns, Ihre Einstellungen zu merken und Ihre Erfahrung zu verbessern.",
+    "essentialTitle": "Essentielle Cookies",
+    "essentialDesc": "Diese Cookies sind für das ordnungsgemäße Funktionieren der Plattform erforderlich und können nicht deaktiviert werden.",
+    "essentialItem1": "Authentifizierung — hält Sie sicher auf allen Seiten angemeldet.",
+    "essentialItem2": "Sprachpräferenz — merkt sich Ihre gewählte Sprache.",
+    "essentialItem3": "Sicherheit — Schutz gegen CSRF-Angriffe.",
+    "analyticsTitle": "Analyse-Cookies (optional)",
+    "analyticsDesc": "Diese Cookies helfen uns zu verstehen, wie Nutzer die Plattform verwenden, damit wir sie verbessern können. Sie werden nur nach Ihrer Zustimmung gesetzt.",
+    "analyticsItem1": "Google Analytics — verfolgt Seitenaufrufe und Sitzungsdauer. IP-Adressen werden anonymisiert.",
+    "analyticsItem2": "Es werden keine persönlichen Daten zu Werbezwecken an Dritte weitergegeben.",
+    "managingTitle": "Ihre Einstellungen verwalten",
+    "managingDesc": "Sie können Ihre Cookie-Einstellungen jederzeit über die Schaltfläche unten aktualisieren. Sie können Cookies auch in Ihren Browsereinstellungen deaktivieren, aber einige Funktionen funktionieren möglicherweise nicht mehr korrekt.",
+    "manageBtn": "Cookie-Einstellungen verwalten",
     "point1": "Wir verwenden Cookies für Authentifizierung, Sprachpräferenzen und Verkehrsanalyse.",
     "point2": "Cookies enthalten keine persönlich identifizierbaren Informationen.",
     "point3": "Sie können Cookies in Ihren Browsereinstellungen deaktivieren, allerdings können einige Funktionen beeinträchtigt werden.",
@@ -714,5 +728,20 @@
     "created": "Erstellt",
     "updated": "Aktualisiert",
     "noSummariesGenerated": "Keine Zusammenfassungen generiert"
+  },
+  "cookieBanner": {
+    "title": "Wir verwenden Cookies",
+    "description": "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern. Wesentliche Cookies sind immer aktiv. Sie können Analyse-Cookies akzeptieren oder ablehnen.",
+    "learnMore": "Cookie-Richtlinie",
+    "acceptAll": "Alle Akzeptieren",
+    "rejectAll": "Nicht-Wesentliche Ablehnen",
+    "customize": "Anpassen",
+    "essential": "Wesentliche Cookies",
+    "essentialDesc": "Für Authentifizierung, Sicherheit und Spracheinstellungen erforderlich. Kann nicht deaktiviert werden.",
+    "analytics": "Analyse-Cookies",
+    "analyticsDesc": "Helfen uns zu verstehen, wie Sie die Plattform nutzen (Google Analytics). IP-Adressen werden anonymisiert.",
+    "alwaysOn": "Immer Aktiv",
+    "accept": "Akzeptieren",
+    "rejectNonEssential": "Nicht-wesentliche Cookies ablehnen"
   }
 }

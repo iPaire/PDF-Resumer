@@ -496,7 +496,21 @@
   },
   "cookies": {
     "title": "Politique des cookies",
-    "description": "Cette application utilise des cookies pour garantir une expérience utilisateur optimale.",
+    "description": "Cette application utilise des cookies pour garantir une expérience utilisateur optimale. Cette page explique quels cookies nous utilisons et comment vous pouvez les contrôler.",
+    "whatAreCookies": "Que sont les cookies ?",
+    "whatAreCookiesDesc": "Les cookies sont de petits fichiers texte stockés sur votre appareil lorsque vous visitez un site web. Ils nous aident à mémoriser vos préférences et à améliorer votre expérience.",
+    "essentialTitle": "Cookies essentiels",
+    "essentialDesc": "Ces cookies sont nécessaires au bon fonctionnement de la plateforme et ne peuvent pas être désactivés.",
+    "essentialItem1": "Authentification — vous maintient connecté en toute sécurité sur toutes les pages.",
+    "essentialItem2": "Préférence de langue — mémorise la langue sélectionnée.",
+    "essentialItem3": "Sécurité — protection contre les attaques CSRF.",
+    "analyticsTitle": "Cookies d'analyse (optionnels)",
+    "analyticsDesc": "Ces cookies nous aident à comprendre comment les utilisateurs interagissent avec la plateforme afin de l'améliorer. Ils ne sont activés qu'après votre consentement.",
+    "analyticsItem1": "Google Analytics — suit les pages vues et la durée des sessions. Les adresses IP sont anonymisées.",
+    "analyticsItem2": "Aucune donnée personnelle n'est partagée avec des tiers à des fins publicitaires.",
+    "managingTitle": "Gérer vos préférences",
+    "managingDesc": "Vous pouvez mettre à jour vos préférences de cookies à tout moment via le bouton ci-dessous. Vous pouvez également les désactiver dans les paramètres de votre navigateur, mais certaines fonctionnalités peuvent ne plus fonctionner correctement.",
+    "manageBtn": "Gérer les préférences de cookies",
     "point1": "Nous utilisons des cookies pour l'authentification, les préférences linguistiques et l'analyse du trafic.",
     "point2": "Les cookies ne contiennent pas d'informations personnellement identifiables.",
     "point3": "Vous pouvez choisir de désactiver les cookies depuis les paramètres de votre navigateur, mais certaines fonctionnalités peuvent être affectées.",
@@ -709,5 +723,20 @@
     "created": "Créé",
     "updated": "Mis à jour",
     "noSummariesGenerated": "Aucun résumé généré"
+  },
+  "cookieBanner": {
+    "title": "Nous utilisons des cookies",
+    "description": "Nous utilisons des cookies pour améliorer votre expérience. Les cookies essentiels sont toujours actifs. Vous pouvez accepter ou refuser les cookies d'analyse.",
+    "learnMore": "Politique des Cookies",
+    "acceptAll": "Tout Accepter",
+    "rejectAll": "Refuser les Non-Essentiels",
+    "customize": "Personnaliser",
+    "essential": "Cookies Essentiels",
+    "essentialDesc": "Requis pour l'authentification, la sécurité et les préférences de langue. Ne peut pas être désactivé.",
+    "analytics": "Cookies d'Analyse",
+    "analyticsDesc": "Nous aident à comprendre comment vous utilisez la plateforme (Google Analytics). Les adresses IP sont anonymisées.",
+    "alwaysOn": "Toujours Actif",
+    "accept": "Accepter",
+    "rejectNonEssential": "Refuser les cookies non essentiels"
   }
 }

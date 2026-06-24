@@ -501,7 +501,21 @@
   },
   "cookies": {
     "title": "Política de Cookies",
-    "description": "Esta aplicación utiliza cookies para garantizar una experiencia de uso óptima.",
+    "description": "Esta aplicación utiliza cookies para garantizar una experiencia de uso óptima. Esta página explica qué cookies utilizamos y cómo puedes controlarlas.",
+    "whatAreCookies": "¿Qué son las cookies?",
+    "whatAreCookiesDesc": "Las cookies son pequeños archivos de texto almacenados en tu dispositivo cuando visitas un sitio web. Nos ayudan a recordar tus preferencias y mejorar tu experiencia.",
+    "essentialTitle": "Cookies Esenciales",
+    "essentialDesc": "Estas cookies son necesarias para el correcto funcionamiento de la plataforma y no pueden desactivarse.",
+    "essentialItem1": "Autenticación — te mantiene conectado de forma segura en todas las páginas.",
+    "essentialItem2": "Preferencia de idioma — recuerda el idioma seleccionado.",
+    "essentialItem3": "Seguridad — protección contra ataques CSRF.",
+    "analyticsTitle": "Cookies de Análisis (opcionales)",
+    "analyticsDesc": "Estas cookies nos ayudan a entender cómo los usuarios interactúan con la plataforma para poder mejorarla. Solo se activan con tu consentimiento.",
+    "analyticsItem1": "Google Analytics — registra visitas a páginas y duración de sesiones. Las IPs se anonimizan.",
+    "analyticsItem2": "No se comparten datos personales con terceros con fines publicitarios.",
+    "managingTitle": "Gestionar tus preferencias",
+    "managingDesc": "Puedes actualizar tus preferencias de cookies en cualquier momento con el botón de abajo. También puedes desactivarlas desde tu navegador, aunque algunas funciones pueden dejar de funcionar.",
+    "manageBtn": "Gestionar preferencias de cookies",
     "point1": "Utilizamos cookies para autenticación, preferencias de idioma y análisis de tráfico.",
     "point2": "Las cookies no contienen información personal identificable.",
     "point3": "Puedes elegir desactivar las cookies desde la configuración del navegador, aunque algunas funcionalidades pueden verse afectadas.",
@@ -715,5 +729,20 @@
     "created": "Creado",
     "updated": "Actualizado",
     "noSummariesGenerated": "No se han generado resúmenes"
+  },
+  "cookieBanner": {
+    "title": "Usamos cookies",
+    "description": "Usamos cookies para mejorar tu experiencia. Las cookies esenciales siempre están activas. Puedes aceptar o rechazar las cookies de análisis.",
+    "learnMore": "Política de Cookies",
+    "acceptAll": "Aceptar Todo",
+    "rejectAll": "Rechazar No Esenciales",
+    "customize": "Personalizar",
+    "essential": "Cookies Esenciales",
+    "essentialDesc": "Necesarias para autenticación, seguridad y preferencias de idioma. No se pueden desactivar.",
+    "analytics": "Cookies de Análisis",
+    "analyticsDesc": "Nos ayudan a entender cómo usas la plataforma (Google Analytics). Las direcciones IP están anonimizadas.",
+    "alwaysOn": "Siempre Activas",
+    "accept": "Aceptar",
+    "rejectNonEssential": "Rechazar cookies no esenciales"
   }
 }
