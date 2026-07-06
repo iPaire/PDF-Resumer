@@ -7,6 +7,80 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { analyticsEvents } from '@/lib/analytics';
 
+// Kept in sync with the server guard (app/lib/upload-guard.ts). Vercel rejects
+// request bodies over ~4.5MB before the function runs, so we validate here to
+// fail fast with a clear message instead of letting the upload hit that wall.
+const MAX_FILE_BYTES = 4 * 1024 * 1024;
+const MAX_TOTAL_BYTES = 4 * 1024 * 1024;
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'txt'];
+const MAX_MB = Math.floor(MAX_FILE_BYTES / 1024 / 1024);
+
+/** Returns an error message if the selection is invalid, otherwise null. */
+function validateFiles(files: File[]): string | null {
+  const badType = files.filter((f) => {
+    const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
+    return !ALLOWED_EXTENSIONS.includes(ext);
+  });
+  if (badType.length > 0) {
+    return `Unsupported file type: ${badType.map((f) => f.name).join(', ')}. Allowed: JPG, PNG, PDF, TXT.`;
+  }
+
+  const oversize = files.filter((f) => f.size > MAX_FILE_BYTES);
+  if (oversize.length > 0) {
+    return `These files exceed the ${MAX_MB}MB per-file limit: ${oversize.map((f) => f.name).join(', ')}.`;
+  }
+
+  const total = files.reduce((sum, f) => sum + f.size, 0);
+  if (total > MAX_TOTAL_BYTES) {
+    return `Total upload exceeds the ${MAX_MB}MB limit. Please convert fewer or smaller files at a time.`;
+  }
+
+  return null;
+}
+
+type FailedFile = { name: string; reason: string };
+
+/**
+ * Build a user-facing error from a failed response. The body may be our JSON
+ * ({ error, failedFiles }) or a non-JSON platform error (e.g. a 413/504 HTML
+ * page); fall back to a status-based message so the user never sees a raw
+ * "Unexpected token '<'" JSON-parse error.
+ */
+async function readErrorResponse(
+  response: Response
+): Promise<{ message: string; failedFiles: FailedFile[] }> {
+  const byStatus: Record<number, string> = {
+    413: `Your files are too large. Keep the total under ${MAX_MB}MB.`,
+    429: 'Too many requests. Please wait a moment and try again.',
+    502: 'The server had a problem. Please try again.',
+    504: 'The conversion timed out. Try fewer or smaller files.',
+  };
+
+  let raw = '';
+  try {
+    raw = await response.text();
+  } catch {
+    // ignore - fall through to the status-based message
+  }
+
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      return {
+        message: data.error || byStatus[response.status] || 'Conversion failed. Please try again.',
+        failedFiles: Array.isArray(data.failedFiles) ? data.failedFiles : [],
+      };
+    } catch {
+      // Non-JSON body (platform error page) - use the status fallback below.
+    }
+  }
+
+  return {
+    message: byStatus[response.status] || `Conversion failed (error ${response.status}). Please try again.`,
+    failedFiles: [],
+  };
+}
+
 export default function ConvertToPDF() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -18,29 +92,40 @@ export default function ConvertToPDF() {
   const [isConverting, setIsConverting] = useState(false);
   const [convertedFile, setConvertedFile] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [failedFiles, setFailedFiles] = useState<FailedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
       setSelectedFiles(files);
-      setError('');
       setConvertedFile(null);
+      setFailedFiles([]);
+      // Immediate feedback: flag invalid selections before the user clicks convert.
+      setError(validateFiles(files) ?? '');
     }
   };
 
   const handleConvert = async () => {
     if (selectedFiles.length === 0) return;
-    
+
+    // Block doomed uploads (too big / wrong type) before they hit the network.
+    const validationError = validateFiles(selectedFiles);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     // Track file converter usage
     analyticsEvents.fileConverterUsed();
-    
+
     setIsConverting(true);
     setError('');
-    
+    setFailedFiles([]);
+
     try {
       const formData = new FormData();
-      selectedFiles.forEach(file => {
+      selectedFiles.forEach((file) => {
         formData.append('files', file);
       });
 
@@ -50,18 +135,18 @@ export default function ConvertToPDF() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Conversion failed');
+        const { message, failedFiles: ff } = await readErrorResponse(response);
+        setError(message);
+        setFailedFiles(ff);
+        return;
       }
 
-      // Primim PDF-ul ca blob
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      
-      setConvertedFile(url);
-    } catch (err: any) {
-      setError(err.message || t('conversionFailed'));
+      setConvertedFile(URL.createObjectURL(blob));
+    } catch (err) {
+      // fetch() only rejects on network-level failures (offline, aborted, CORS).
       console.error('Conversion error:', err);
+      setError('Could not reach the server. Check your connection and try again.');
     } finally {
       setIsConverting(false);
     }
@@ -172,7 +257,16 @@ export default function ConvertToPDF() {
             
             {error && (
               <div className="bg-red-50 p-4 rounded-lg text-red-700 text-sm border border-red-200">
-                {error}
+                <p>{error}</p>
+                {failedFiles.length > 0 && (
+                  <ul className="mt-2 list-disc list-inside space-y-1">
+                    {failedFiles.map((f, i) => (
+                      <li key={i}>
+                        <span className="font-medium">{f.name}</span>: {f.reason}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
             

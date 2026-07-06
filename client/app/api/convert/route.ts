@@ -9,8 +9,25 @@ import {
   checkContentLength,
   checkFileSize,
   sniffType,
+  looksLikeText,
+  MAX_UPLOAD_BYTES,
   MAX_TOTAL_UPLOAD_BYTES,
 } from '@/lib/upload-guard';
+
+export const maxDuration = 60;
+
+type SupportedType = 'application/pdf' | 'image/jpeg' | 'image/png' | 'text/plain';
+
+/** Resolve a validated, supported type or null. Magic bytes for binaries, an
+ *  extension + content check for text. */
+function resolveType(buffer: Buffer, name: string): SupportedType | null {
+  const sniffed = sniffType(buffer);
+  if (sniffed === 'pdf') return 'application/pdf';
+  if (sniffed === 'jpeg') return 'image/jpeg';
+  if (sniffed === 'png') return 'image/png';
+  if (looksLikeText(buffer, name)) return 'text/plain';
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,59 +50,85 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    // Creăm un PDF nou care va conține toate fișierele
+    // Phase 1: read each file once and enforce the size caps.
+    const items: { name: string; buffer: Buffer }[] = [];
+    const tooLarge: string[] = [];
+    let totalBytes = 0;
+    for (const file of files) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      if (!checkFileSize(buffer.length).ok) {
+        tooLarge.push(file.name);
+        continue;
+      }
+      totalBytes += buffer.length;
+      items.push({ name: file.name, buffer });
+    }
+
+    const perFileMb = Math.floor(MAX_UPLOAD_BYTES / 1024 / 1024);
+    if (tooLarge.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Some files exceed the ${perFileMb}MB per-file limit.`,
+          failedFiles: tooLarge.map((name) => ({ name, reason: `Exceeds the ${perFileMb}MB per-file limit.` })),
+        },
+        { status: 413 }
+      );
+    }
+    if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: `Total upload exceeds the ${Math.floor(MAX_TOTAL_UPLOAD_BYTES / 1024 / 1024)}MB limit.` },
+        { status: 413 }
+      );
+    }
+
+    // Phase 2: validate types up front. Reject the whole batch if any file is
+    // unsupported - no misleading "success" PDF with placeholder pages.
+    const prepared: { name: string; buffer: Buffer; type: SupportedType }[] = [];
+    const unsupported: { name: string; reason: string }[] = [];
+    for (const { name, buffer } of items) {
+      const type = resolveType(buffer, name);
+      if (!type) {
+        unsupported.push({ name, reason: 'Unsupported file type. Allowed: PDF, JPEG, PNG, TXT.' });
+        continue;
+      }
+      prepared.push({ name, buffer, type });
+    }
+    if (unsupported.length > 0) {
+      return NextResponse.json(
+        { error: 'Some files cannot be converted to PDF.', failedFiles: unsupported },
+        { status: 415 }
+      );
+    }
+
+    // Phase 3: convert. Every file here passed validation, so a failure now is a
+    // real processing error (corrupt file / unsupported variant). Report it
+    // instead of embedding a placeholder page and pretending the batch worked.
     const pdfDoc = await PDFDocument.create();
     pdfDoc.registerFontkit(fontkit);
 
-    let totalBytes = 0;
-
-    // Procesăm fiecare fișier
-    for (const file of files) {
-      const fileName = file.name;
-      const fileBuffer = Buffer.from(await file.arrayBuffer());
-
-      // Per-file and cumulative size caps (Content-Length can be spoofed/absent)
-      const sizeCheck = checkFileSize(fileBuffer.length);
-      if (!sizeCheck.ok) {
-        return NextResponse.json({ error: `${fileName}: ${sizeCheck.error}` }, { status: 413 });
-      }
-      totalBytes += fileBuffer.length;
-      if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
-        return NextResponse.json(
-          { error: `Total upload exceeds the ${Math.floor(MAX_TOTAL_UPLOAD_BYTES / 1024 / 1024)}MB limit.` },
-          { status: 413 }
-        );
-      }
-
-      // Trust the magic bytes, not the client-declared MIME type.
-      const sniffed = sniffType(fileBuffer);
-      const fileType =
-        sniffed === 'pdf' ? 'application/pdf' :
-        sniffed === 'jpeg' ? 'image/jpeg' :
-        sniffed === 'png' ? 'image/png' :
-        'application/octet-stream';
-
+    const failed: { name: string; reason: string }[] = [];
+    for (const { name, buffer, type } of prepared) {
       try {
-        // Adăugăm conținutul fișierului ca pagină nouă în PDF
-        await addFileToPdf(pdfDoc, fileBuffer, fileType, fileName);
+        await addFileToPdf(pdfDoc, buffer, type, name);
       } catch (error) {
-        console.error(`Error processing file ${fileName}:`, error);
-        // Adăugăm o pagină cu mesaj de eroare pentru acest fișier
-        await addErrorPage(pdfDoc, fileName, error as Error);
+        console.error(`Error processing file ${name}:`, error);
+        failed.push({ name, reason: 'The file appears to be corrupt or uses an unsupported variant.' });
       }
     }
-
-    // Salvăm PDF-ul final
-    const pdfBytes = await pdfDoc.save();
-    
-    // Determinăm numele fișierului de output
-    let outputFilename = "converted-documents.pdf";
-    if (files.length === 1) {
-      const firstFile = files[0];
-      outputFilename = `${firstFile.name.replace(/\.[^/.]+$/, '')}.pdf`;
+    if (failed.length > 0) {
+      return NextResponse.json(
+        { error: 'Some files could not be processed.', failedFiles: failed },
+        { status: 422 }
+      );
     }
-    
-    // Returnăm PDF-ul generat
+
+    const pdfBytes = await pdfDoc.save();
+
+    const outputFilename =
+      prepared.length === 1
+        ? `${prepared[0].name.replace(/\.[^/.]+$/, '')}.pdf`
+        : 'converted-documents.pdf';
+
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
@@ -96,7 +139,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Conversion error:', error);
     return NextResponse.json(
-      { error: 'Conversion failed. Please try another file.' },
+      { error: 'Conversion failed. Please try again.' },
       { status: 500 }
     );
   }
@@ -147,10 +190,9 @@ async function addFileToPdf(
       break;
     }
 
-    default: {
-      // Pentru alte formate, creăm o pagină cu informația despre fișier
-      await addUnsupportedFilePage(pdfDoc, fileName, fileType);
-    }
+    default:
+      // Types are validated before conversion; this is defensive only.
+      throw new Error(`Unsupported file type reached converter: ${fileType}`);
   }
 }
 
@@ -309,100 +351,4 @@ async function addTextToPdf(pdfDoc: PDFDocument, text: string, fileName: string)
       });
     }
   }
-}
-
-// Funcție pentru fișiere nesuportate
-async function addUnsupportedFilePage(pdfDoc: PDFDocument, fileName: string, fileType: string): Promise<void> {
-  const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
-  const font = await getUnicodeFont(pdfDoc);
-  const fontSize = 12; // Redus fontSize
-  
-  page.drawText('Fișier inclus în PDF', {
-    x: 50, // Redus marginea
-    y: 800,
-    size: fontSize + 4, // Header mai mare
-    font,
-    color: rgb(0, 0, 0.8),
-  });
-  
-  page.drawText(`Nume: ${fileName}`, {
-    x: 50,
-    y: 750, // Redus spațierea
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
-  });
-  
-  page.drawText(`Tip: ${fileType}`, {
-    x: 50,
-    y: 720, // Redus spațierea
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
-  });
-  
-  page.drawText('Acest tip de fișier nu poate fi convertit direct în PDF.', {
-    x: 50,
-    y: 670, // Redus spațierea
-    size: fontSize,
-    font,
-    color: rgb(0.6, 0, 0),
-  });
-  
-  page.drawText('Pentru a vizualiza conținutul, descărcați fișierul original.', {
-    x: 50,
-    y: 640, // Redus spațierea
-    size: fontSize,
-    font,
-    color: rgb(0.6, 0, 0),
-  });
-  
-  // Adăugăm o pictogramă simplă pentru fișier
-  page.drawRectangle({
-    x: 250,
-    y: 400,
-    width: 100,
-    height: 120,
-    borderColor: rgb(0.7, 0.7, 0.7),
-    borderWidth: 2,
-  });
-  
-  page.drawText('FILE', {
-    x: 275,
-    y: 450,
-    size: 16,
-    font,
-    color: rgb(0.5, 0.5, 0.5),
-  });
-}
-
-// Funcție pentru a adăuga o pagină de eroare
-async function addErrorPage(pdfDoc: PDFDocument, fileName: string, error: Error): Promise<void> {
-  const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
-  const font = await getUnicodeFont(pdfDoc);
-  const fontSize = 12; // Redus fontSize
-  
-  page.drawText(`Eroare la procesarea fișierului: ${fileName}`, {
-    x: 50, // Redus marginea
-    y: 800,
-    size: fontSize + 2, // Redus header
-    font,
-    color: rgb(1, 0, 0),
-  });
-  
-  page.drawText(`Eroare: ${error.message}`, {
-    x: 50,
-    y: 770, // Redus spațierea
-    size: fontSize,
-    font,
-    color: rgb(0, 0, 0),
-  });
-  
-  page.drawText('Fișierul a fost inclus în PDF, dar conținutul nu poate fi afișat.', {
-    x: 50,
-    y: 740, // Redus spațierea
-    size: fontSize,
-    font,
-    color: rgb(0.6, 0, 0),
-  });
 }
