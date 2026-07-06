@@ -628,7 +628,16 @@
     "convertToPdfStep": "Convert to PDF",
     "convertToPdfDescription": "Files are combined into a single PDF",
     "backToUpload": "Back to Upload",
-    "howItWorks": "How it works"
+    "howItWorks": "How it works",
+    "seoHeading": "Convert to PDF Online — Free",
+    "seoIntro": "Turn your images, Word documents, and text files into a clean PDF in seconds — right in your browser, for free. Drag and drop JPG, PNG, DOCX, or TXT files and download a ready-to-share PDF. No account, no watermarks, and no software to install.",
+    "faqTitle": "Frequently asked questions",
+    "faq1Q": "Is this PDF converter free?",
+    "faq1A": "Yes — converting to PDF is completely free, with no watermarks or sign-up required.",
+    "faq2Q": "What files can I convert?",
+    "faq2A": "JPG and PNG images, Word documents (.docx), and plain text (.txt). You can combine multiple images into one PDF.",
+    "faq3Q": "Are my files safe?",
+    "faq3A": "Files are processed on demand to generate your PDF and are not stored afterward."
   },
   "courses": {
     "title": "Courses",

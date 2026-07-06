@@ -10,10 +10,12 @@ import TrialModal from '@/components/TrialModal';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import PageViewTracker from '@/components/PageViewTracker';
 import CookieBanner from '@/components/CookieBanner';
+import { SITE_URL } from '@/lib/site';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'SmartPDF Notes',
   description: 'Transform documents into knowledge with AI-powered summaries, quizzes, and personalized learning materials.',
 };

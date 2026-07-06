@@ -551,7 +551,16 @@
     "convertToPdfStep": "Convertește în PDF",
     "convertToPdfDescription": "Fișierele sunt combinate într-un singur PDF",
     "backToUpload": "Înapoi la Încărcare",
-    "howItWorks": "Cum funcționează"
+    "howItWorks": "Cum funcționează",
+    "seoHeading": "Convertește în PDF online — gratuit",
+    "seoIntro": "Transformă imaginile, documentele Word și fișierele text într-un PDF îngrijit în câteva secunde — direct în browser, gratuit. Trage și plasează fișiere JPG, PNG, DOCX sau TXT și descarcă un PDF gata de partajat. Fără cont, fără filigran și fără programe de instalat.",
+    "faqTitle": "Întrebări frecvente",
+    "faq1Q": "Este gratuit acest convertor PDF?",
+    "faq1A": "Da — conversia în PDF este complet gratuită, fără filigran și fără cont.",
+    "faq2Q": "Ce fișiere pot converti?",
+    "faq2A": "Imagini JPG și PNG, documente Word (.docx) și text simplu (.txt). Poți combina mai multe imagini într-un singur PDF.",
+    "faq3Q": "Sunt fișierele mele în siguranță?",
+    "faq3A": "Fișierele sunt procesate la cerere pentru a genera PDF-ul și nu sunt stocate ulterior."
   },
   "courses": {
     "title": "Cursuri",

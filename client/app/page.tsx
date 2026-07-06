@@ -56,6 +56,14 @@ export default function Home() {
               </>
             )}
           </div>
+
+          {/* Free tool - no account required, helps discovery + SEO */}
+          <p className="mt-6 text-sm text-gray-500">
+            <Link href="/convert-to-pdf" className="font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2">
+              {tc('convertToPdf')}
+            </Link>{' '}
+            — {tc('convertToPdfDescription')}
+          </p>
         </div>
       </div>
 

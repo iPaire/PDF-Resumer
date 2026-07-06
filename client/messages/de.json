@@ -552,7 +552,16 @@
     "convertToPdfStep": "In PDF konvertieren",
     "convertToPdfDescription": "Dateien werden in eine einzige PDF zusammengeführt",
     "backToUpload": "Zurück zum Hochladen",
-    "howItWorks": "So funktioniert's"
+    "howItWorks": "So funktioniert's",
+    "seoHeading": "Online in PDF umwandeln — kostenlos",
+    "seoIntro": "Wandle deine Bilder, Word-Dokumente und Textdateien in Sekunden in ein sauberes PDF um — direkt im Browser und kostenlos. Ziehe JPG-, PNG-, DOCX- oder TXT-Dateien per Drag-and-drop hierher und lade ein teilbereites PDF herunter. Ohne Konto, ohne Wasserzeichen und ohne Software-Installation.",
+    "faqTitle": "Häufige Fragen",
+    "faq1Q": "Ist dieser PDF-Konverter kostenlos?",
+    "faq1A": "Ja — die Umwandlung in PDF ist völlig kostenlos, ohne Wasserzeichen und ohne Anmeldung.",
+    "faq2Q": "Welche Dateien kann ich umwandeln?",
+    "faq2A": "JPG- und PNG-Bilder, Word-Dokumente (.docx) und einfachen Text (.txt). Mehrere Bilder lassen sich zu einem PDF zusammenfassen.",
+    "faq3Q": "Sind meine Dateien sicher?",
+    "faq3A": "Dateien werden bei Bedarf zur Erstellung deines PDFs verarbeitet und danach nicht gespeichert."
   },
   "courses": {
     "title": "Kurse",

@@ -54,14 +54,23 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center space-x-2 md:space-x-4">
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           onClick={() => analyticsEvents.navigationClick('home', 'navbar')}
           className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block"
         >
           {t('home')}
         </Link>
-        
+
+        {/* Public free tool - available without an account */}
+        <Link
+          href="/convert-to-pdf"
+          onClick={() => analyticsEvents.navigationClick('convert-to-pdf', 'navbar')}
+          className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block"
+        >
+          {t('convertToPdf')}
+        </Link>
+
         {/* Buton de Upload între Acasă și Prețuri */}
         {session && (
           <Link 

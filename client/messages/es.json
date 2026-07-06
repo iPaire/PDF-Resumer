@@ -553,7 +553,16 @@
     "convertToPdfStep": "Convertir a PDF",
     "convertToPdfDescription": "Los archivos se combinan en un solo PDF",
     "backToUpload": "Volver a Subir",
-    "howItWorks": "Cómo funciona"
+    "howItWorks": "Cómo funciona",
+    "seoHeading": "Convertir a PDF en línea — gratis",
+    "seoIntro": "Convierte tus imágenes, documentos de Word y archivos de texto en un PDF limpio en segundos, directamente en tu navegador y gratis. Arrastra y suelta archivos JPG, PNG, DOCX o TXT y descarga un PDF listo para compartir. Sin cuenta, sin marcas de agua y sin programas que instalar.",
+    "faqTitle": "Preguntas frecuentes",
+    "faq1Q": "¿Este conversor a PDF es gratis?",
+    "faq1A": "Sí — convertir a PDF es completamente gratis, sin marcas de agua ni registro.",
+    "faq2Q": "¿Qué archivos puedo convertir?",
+    "faq2A": "Imágenes JPG y PNG, documentos de Word (.docx) y texto plano (.txt). Puedes combinar varias imágenes en un solo PDF.",
+    "faq3Q": "¿Están seguros mis archivos?",
+    "faq3A": "Los archivos se procesan bajo demanda para generar tu PDF y no se almacenan después."
   },
   "courses": {
     "title": "Cursos",
