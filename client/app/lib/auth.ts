@@ -3,14 +3,15 @@ import crypto from 'crypto';
 
 /**
  * Generează un token numeric (ex. pentru resetare parolă prin cod SMS/email).
- * @param length Numărul de cifre (default: 6)
+ * Uses crypto.randomInt (cryptographically secure, unbiased) instead of
+ * Math.random(), which is predictable and unsuitable for security tokens.
+ * @param length Numărul de cifre (default: 8)
  * @returns Tokenul ca string
  */
-export const generateToken = (length = 6): string => {
-  const digits = '0123456789';
+export const generateToken = (length = 8): string => {
   let token = '';
   for (let i = 0; i < length; i++) {
-    token += digits.charAt(Math.floor(Math.random() * digits.length));
+    token += crypto.randomInt(0, 10).toString();
   }
   return token;
 };

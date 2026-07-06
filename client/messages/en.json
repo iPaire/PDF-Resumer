@@ -576,7 +576,21 @@
   },
   "cookies": {
     "title": "Cookie Policy",
-    "description": "This application uses cookies to ensure an optimal user experience.",
+    "description": "This application uses cookies to ensure an optimal user experience. This page explains what cookies we use and how you can control them.",
+    "whatAreCookies": "What are cookies?",
+    "whatAreCookiesDesc": "Cookies are small text files stored on your device when you visit a website. They help us remember your preferences and improve your experience.",
+    "essentialTitle": "Essential Cookies",
+    "essentialDesc": "These cookies are required for the platform to function correctly. They cannot be disabled.",
+    "essentialItem1": "Authentication — keeps you logged in securely across pages.",
+    "essentialItem2": "Language preference — remembers your selected language.",
+    "essentialItem3": "Security — protects against cross-site request forgery (CSRF).",
+    "analyticsTitle": "Analytics Cookies (optional)",
+    "analyticsDesc": "These cookies help us understand how users interact with the platform so we can improve it. They are only set after you give consent.",
+    "analyticsItem1": "Google Analytics — tracks page views and session duration. IP addresses are anonymized.",
+    "analyticsItem2": "No personal data is shared with third parties for advertising.",
+    "managingTitle": "Managing your preferences",
+    "managingDesc": "You can update your cookie preferences at any time using the button below. You can also disable cookies in your browser settings, but some features may stop working correctly.",
+    "manageBtn": "Manage cookie preferences",
     "point1": "We use cookies for authentication, language preferences and traffic analysis.",
     "point2": "Cookies do not contain personally identifiable information.",
     "point3": "You can choose to disable cookies from your browser settings, but some functionality may be affected.",
@@ -795,5 +809,20 @@
     "created": "Created",
     "updated": "Updated",
     "noSummariesGenerated": "No summaries generated"
+  },
+  "cookieBanner": {
+    "title": "We use cookies",
+    "description": "We use cookies to improve your experience. Essential cookies are always active. You can accept or reject analytics cookies.",
+    "learnMore": "Cookie Policy",
+    "acceptAll": "Accept All",
+    "rejectAll": "Reject Non-Essential",
+    "customize": "Customize",
+    "essential": "Essential Cookies",
+    "essentialDesc": "Required for authentication, security, and language preferences. Cannot be disabled.",
+    "analytics": "Analytics Cookies",
+    "analyticsDesc": "Help us understand how you use the platform (Google Analytics). IP addresses are anonymized.",
+    "alwaysOn": "Always On",
+    "accept": "Accept",
+    "rejectNonEssential": "Reject non-essential cookies"
   }
 }

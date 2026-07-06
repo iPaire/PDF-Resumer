@@ -9,6 +9,7 @@ import { TrialProvider } from '@/context/TrialContext';
 import TrialModal from '@/components/TrialModal';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import PageViewTracker from '@/components/PageViewTracker';
+import CookieBanner from '@/components/CookieBanner';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,13 +24,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} className="h-full">
-      <head>
-        <GoogleAnalytics />
-      </head>
       <body className={`${inter.className} bg-gray-50 text-gray-900 min-h-full flex flex-col`}>
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <TrialProvider>
+              <GoogleAnalytics />
               <PageViewTracker />
               <div className="flex flex-col min-h-screen w-full">
                 <Navbar />
@@ -39,6 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Footer />
                 <TrialModal />
               </div>
+              <CookieBanner />
             </TrialProvider>
           </AuthProvider>
         </NextIntlClientProvider>

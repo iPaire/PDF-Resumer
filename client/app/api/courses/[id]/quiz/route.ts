@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import prisma from '@/lib/prisma';
+import { createChatCompletion } from '@/lib/ai-client';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 type QuizQuestion = {
   question: string;
@@ -18,6 +20,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   
   if (!session?.user) {
     return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
+  }
+
+  // Token-bucket limit on LLM usage, per user
+  const rateLimit = await checkRateLimit('ai', session.user.id);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit) as NextResponse;
   }
 
   const courseId = params.id;
@@ -369,29 +377,18 @@ async function generateAIQuizQuestions(
   const cleanedContent = cleanContentForQuiz(content);
   
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{
-          role: 'user',
-          content: getQuizGenerationPrompt(courseTitle, cleanedContent, totalQuestions, language)
-        }],
-        temperature: 0.3,
-        max_tokens: 3000
-      })
+    // Shared AI client: retries + OpenAI secondary + Claude fallback
+    const result = await createChatCompletion({
+      model: 'gpt-4o-mini',
+      system: 'You are an expert professor who creates high-quality multiple-choice quizzes.',
+      prompt: getQuizGenerationPrompt(courseTitle, cleanedContent, totalQuestions, language),
+      maxTokens: 3000,
+      temperature: 0.3,
     });
 
-    const data = await response.json();
-    const aiResponse = data.choices[0]?.message?.content || '';
-    
     // Parse răspunsul AI și transformă în QuizQuestion[]
-    return parseAIQuizResponse(aiResponse, language);
-    
+    return parseAIQuizResponse(result.content, language);
+
   } catch (error) {
     console.error('Error generating AI quiz:', error);
     // Fallback la generarea manuală dacă AI-ul nu merge

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { generateRelevantFormulas, generateKeyDefinitions, getFormulaGenerationPrompt, getDefinitionsGenerationPrompt, parseFormulasFromAIResponse, parseDefinitionsFromAIResponse } from '@/ai-functions';
 
 // POST - Generate printable cheat sheet
@@ -10,6 +11,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Token-bucket limit on LLM usage, per user (POST fans out to two AI calls)
+  const rateLimit = await checkRateLimit('ai', session.user.id);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit) as NextResponse;
   }
 
   const courseId = params.id;
@@ -670,7 +677,6 @@ function getCheatSheetLabels(language: string) {
       notationExamples: 'f(x) - funcție, Δ - variație, ∑ - sumă',
       units: 'Unități',
       unitExamples: 'm - metri, s - secunde, kg - kilograme',
-      notes: 'Notițe',
       generated: 'Generat automat'
     },
     'en': {
@@ -688,7 +694,6 @@ function getCheatSheetLabels(language: string) {
       notationExamples: 'f(x) - function, Δ - variation, ∑ - sum',
       units: 'Units',
       unitExamples: 'm - meters, s - seconds, kg - kilograms',
-      notes: 'Notes',
       generated: 'Auto-generated'
     },
     'fr': {
@@ -706,7 +711,6 @@ function getCheatSheetLabels(language: string) {
       notationExamples: 'f(x) - fonction, Δ - variation, ∑ - somme',
       units: 'Unités',
       unitExamples: 'm - mètres, s - secondes, kg - kilogrammes',
-      notes: 'Notes',
       generated: 'Généré automatiquement'
     },
     'de': {
@@ -724,7 +728,6 @@ function getCheatSheetLabels(language: string) {
       notationExamples: 'f(x) - Funktion, Δ - Variation, ∑ - Summe',
       units: 'Einheiten',
       unitExamples: 'm - Meter, s - Sekunden, kg - Kilogramm',
-      notes: 'Notizen',
       generated: 'Automatisch generiert'
     },
     'es': {
@@ -742,7 +745,6 @@ function getCheatSheetLabels(language: string) {
       notationExamples: 'f(x) - función, Δ - variación, ∑ - suma',
       units: 'Unidades',
       unitExamples: 'm - metros, s - segundos, kg - kilogramos',
-      notes: 'Notas',
       generated: 'Generado automáticamente'
     }
   };

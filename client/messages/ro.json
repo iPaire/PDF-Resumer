@@ -499,7 +499,21 @@
   },
   "cookies": {
     "title": "Politica de Cookie-uri",
-    "description": "Această aplicație folosește cookie-uri pentru a asigura o experiență optimă de utilizare.",
+    "description": "Această aplicație folosește cookie-uri pentru a asigura o experiență optimă de utilizare. Această pagină explică ce cookie-uri folosim și cum le poți controla.",
+    "whatAreCookies": "Ce sunt cookie-urile?",
+    "whatAreCookiesDesc": "Cookie-urile sunt fișiere text mici stocate pe dispozitivul tău când vizitezi un site web. Ne ajută să îți reținem preferințele și să îmbunătățim experiența.",
+    "essentialTitle": "Cookie-uri Esențiale",
+    "essentialDesc": "Aceste cookie-uri sunt necesare pentru funcționarea corectă a platformei. Nu pot fi dezactivate.",
+    "essentialItem1": "Autentificare — te menține conectat în mod sigur pe toate paginile.",
+    "essentialItem2": "Preferință de limbă — reține limba selectată.",
+    "essentialItem3": "Securitate — protecție împotriva atacurilor CSRF.",
+    "analyticsTitle": "Cookie-uri de Analiză (opționale)",
+    "analyticsDesc": "Aceste cookie-uri ne ajută să înțelegem cum interacționează utilizatorii cu platforma, astfel încât să o putem îmbunătăți. Sunt setate doar după acordul tău.",
+    "analyticsItem1": "Google Analytics — urmărește vizualizările de pagini și durata sesiunii. Adresele IP sunt anonimizate.",
+    "analyticsItem2": "Nicio dată personală nu este partajată cu terți în scop publicitar.",
+    "managingTitle": "Gestionarea preferințelor",
+    "managingDesc": "Îți poți actualiza preferințele de cookie-uri oricând folosind butonul de mai jos. Poți dezactiva cookie-urile și din setările browserului, dar unele funcții pot fi afectate.",
+    "manageBtn": "Gestionează preferințele de cookie-uri",
     "point1": "Folosim cookie-uri pentru autentificare, preferințe de limbă și analiză a traficului.",
     "point2": "Cookie-urile nu conțin informații personale identificabile.",
     "point3": "Puteți alege să dezactivați cookie-urile din setările browserului, însă unele funcționalități pot fi afectate.",
@@ -714,5 +728,20 @@
     "created": "Creat",
     "updated": "Actualizat",
     "noSummariesGenerated": "Nu s-au generat rezumate"
+  },
+  "cookieBanner": {
+    "title": "Folosim cookie-uri",
+    "description": "Folosim cookie-uri pentru a-ți îmbunătăți experiența. Cookie-urile esențiale sunt întotdeauna active. Poți accepta sau refuza cookie-urile de analiză.",
+    "learnMore": "Politica de Cookie-uri",
+    "acceptAll": "Acceptă Toate",
+    "rejectAll": "Refuză Non-Esențiale",
+    "customize": "Personalizează",
+    "essential": "Cookie-uri Esențiale",
+    "essentialDesc": "Necesare pentru autentificare, securitate și preferințe de limbă. Nu pot fi dezactivate.",
+    "analytics": "Cookie-uri de Analiză",
+    "analyticsDesc": "Ne ajută să înțelegem cum folosești platforma (Google Analytics). Adresele IP sunt anonimizate.",
+    "alwaysOn": "Mereu Active",
+    "accept": "Acceptă",
+    "rejectNonEssential": "Refuză cookie-urile non-esențiale"
   }
 }

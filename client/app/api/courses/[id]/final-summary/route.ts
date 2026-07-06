@@ -2,13 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
+import { createChatCompletion } from "@/lib/ai-client";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 // ===================== POST - Generează rezumatul final =====================
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
-  
+
   if (!session?.user) {
     return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
+  }
+
+  // Token-bucket limit on LLM usage, per user (POST generates; GET only reads)
+  const rateLimit = await checkRateLimit('ai', session.user.id);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit) as NextResponse;
   }
 
   const courseId = params.id;
@@ -178,21 +186,21 @@ ${conclusions}
 ${languageConfig.requirements}
 `;
 
-  const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
+  try {
+    // Shared AI client: retries + OpenAI secondary + Claude fallback,
+    // instead of a raw fetch with no error handling.
+    const result = await createChatCompletion({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3
-    })
-  });
-
-  const data = await aiResponse.json();
-  return data.choices?.[0]?.message?.content || "Eroare la generarea rezumatului.";
+      system: "You are an expert educational assistant that produces well-structured course summaries.",
+      prompt,
+      maxTokens: 3000,
+      temperature: 0.3,
+    });
+    return result.content;
+  } catch (error) {
+    console.error("Final summary generation failed on all providers:", error);
+    return "Eroare la generarea rezumatului.";
+  }
 }
 
 // ===================== Funcții helper =====================

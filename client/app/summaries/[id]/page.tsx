@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+// Sanitizes the HTML that rehypeRaw parses out of AI-generated summary text,
+// which is derived from user-uploaded PDFs (prompt-injection -> stored XSS).
+import rehypeSanitize from 'rehype-sanitize';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { useTranslations, useLocale } from 'next-intl';
@@ -431,7 +434,7 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                       <h2 className="text-2xl font-bold mb-4 border-b pb-2">{title}</h2>
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm]} 
-                        rehypePlugins={title.includes("Dezvoltare") ? [rehypeRaw] : undefined}
+                        rehypePlugins={title.includes("Dezvoltare") ? [rehypeRaw, rehypeSanitize] : undefined}
                         components={{
                           table({ node, children, ...props }) {
                             return (
@@ -649,8 +652,8 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
                 </>
               ) : (
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm]} 
-                  rehypePlugins={[rehypeRaw]}
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw, rehypeSanitize]}
                   components={{
                     h1({ node, children, ...props }) {
                       const text = String(children);

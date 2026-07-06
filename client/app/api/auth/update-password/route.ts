@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
+import { checkResetRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
     const { email, token, password } = await request.json();
-    
+
+    // This endpoint re-verifies the token and sets the password, so it is
+    // directly brute-forceable on its own - throttle it the same way.
+    const rateLimit = await checkResetRateLimit(request, email);
+    if (!rateLimit.success) {
+      return rateLimitResponse(rateLimit, 'Prea multe încercări. Încearcă din nou mai târziu.') as NextResponse;
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
     
     if (!user) {

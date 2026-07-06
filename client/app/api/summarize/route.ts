@@ -1,18 +1,30 @@
 import { NextRequest } from 'next/server';
-import OpenAI from 'openai';
+
+export const maxDuration = 60; // seconds - Vercel Pro supports up to 300
 import pdf from 'pdf-parse';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
-import crypto from 'crypto';
+import { Prisma } from "@prisma/client";
+import { createChatCompletion } from "@/lib/ai-client";
+import { cacheGet, cacheSet, cacheKey } from "@/lib/cache";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+// Distributed (Redis) cache for identical documents - survives cold starts
+// and is shared across serverless instances, unlike the old in-memory Map.
+// The cache is content-addressed (hash of the full document text + settings),
+// so entries can never be "wrong" for their inputs - the TTL only bounds how
+// long an outdated prompt style survives a deploy, and Redis storage size.
+const CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
-// Simple in-memory cache for similar documents (expires in 1 hour)
-const summaryCache = new Map<string, { summary: string, quiz: QuizQuestion[], timestamp: number }>();
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+// Bump whenever the summary/quiz prompts change materially, so stale-format
+// entries are not served after a deploy.
+const PROMPT_VERSION = 'v1';
+
+interface CachedSummary {
+  summary: string;
+  quiz: QuizQuestion[];
+}
 
 interface QuizQuestion {
   question: string;
@@ -28,6 +40,13 @@ export async function POST(request: NextRequest) {
       JSON.stringify({ error: 'Trebuie să fii autentificat pentru a utiliza acest serviciu' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     );
+  }
+
+  // Request-level rate limit (per user) on top of the monthly usage quota,
+  // so a single user can't hammer the expensive LLM pipeline.
+  const rateLimit = await checkRateLimit('ai', session.user.id);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit, 'Prea multe solicitări. Te rugăm să aștepți un minut înainte de a încerca din nou.');
   }
 
   try {
@@ -227,15 +246,21 @@ export async function POST(request: NextRequest) {
 
     const targetLanguage = languageMap[documentLanguage] || 'engleză';
 
-    // Generate cache key based on content and settings
-    const cacheKey = crypto
-      .createHash('md5')
-      .update(`${text.substring(0, 1000)}-${user.subscription}-${summaryLength}-${documentLanguage}`)
-      .digest('hex');
+    // Cache key over the FULL document text (the old md5-of-first-1000-chars
+    // key collided for documents sharing a title page), plus every setting
+    // that changes the output.
+    const summaryCacheKey = cacheKey(
+      'summary',
+      PROMPT_VERSION,
+      text,
+      user.subscription || 'free',
+      summaryLength,
+      documentLanguage
+    );
 
-    // Check cache first
-    const cached = summaryCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    // Check the distributed cache first
+    const cached = await cacheGet<CachedSummary>(summaryCacheKey);
+    if (cached) {
       console.log('Cache hit - returning cached summary and quiz');
 
       // Still record usage and create records
@@ -249,7 +274,7 @@ export async function POST(request: NextRequest) {
             pages: numpages,
             characters: text.length,
             summary: cached.summary,
-            quiz: cached.quiz,
+            quiz: cached.quiz as unknown as Prisma.InputJsonValue,
             language: documentLanguage
           }
         }),
@@ -763,19 +788,18 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
             ? `You are a technical expert specialized in creating educational materials. Create a ${summaryLength === 'short' ? 'concise and efficient' : 'detailed but structured'} summary. IMPORTANT: You must respond with the ACTUAL SUMMARY CONTENT in ${targetLanguage} language, NOT the template instructions. Extract and summarize the provided text content.`
             : `Ești un expert tehnic specializat în generarea de materiale educaționale. Creează un rezumat ${summaryLength === 'short' ? 'concis și eficient' : 'detaliat dar structurat'}. Folosește limba ${targetLanguage}.`;
 
-          const sectionCompletion = await openai.chat.completions.create({
+          // Fallback chain: primary OpenAI model -> secondary OpenAI model -> Claude
+          const sectionCompletion = await createChatCompletion({
             model: summaryModel,
-            messages: [
-              { role: 'system', content: systemMessage },
-              { role: 'user', content: chunkPrompt },
-            ],
-            max_tokens: Math.floor(maxTokens * 0.85), // Use 85% of available tokens for response
+            system: systemMessage,
+            prompt: chunkPrompt,
+            maxTokens: Math.floor(maxTokens * 0.85), // Use 85% of available tokens for response
             temperature,
           });
 
-          const chunkContent = sectionCompletion.choices[0]?.message?.content?.trim() || '';
-          if (chunkContent) {
-            summaryContent = chunkContent;
+          if (sectionCompletion.content) {
+            summaryContent = sectionCompletion.content;
+            console.log(`Summary generated by ${sectionCompletion.provider}/${sectionCompletion.model}`);
           }
 
         } catch (error) {
@@ -812,17 +836,6 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
     }
 
     summaryContent = cleanSummaryContent(summaryContent);
-
-    // Clean old cache entries (simple cleanup)
-    if (summaryCache.size > 100) {
-      const entries = Array.from(summaryCache.entries());
-      const now = Date.now();
-      entries.forEach(([key, value]) => {
-        if (now - value.timestamp > CACHE_DURATION) {
-          summaryCache.delete(key);
-        }
-      });
-    }
 
     let quiz: QuizQuestion[] = [];
 
@@ -996,26 +1009,20 @@ Format JSON:
 
       const systemMessage = systemMessageTemplates[documentLanguage] || systemMessageTemplates.en;
 
-      const requestOptions: any = {
-        model: quizModel,
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: quizPrompt },
-        ],
-        max_tokens: quizMaxTokens,
-        temperature: 0.5,
-      };
-
-      // Only add response_format for models that support it
-      if (supportsJsonMode) {
-        requestOptions.response_format = { type: "json_object" };
-      }
-      
       try {
         console.log(`Attempting quiz generation for ${user.subscription} user with ${numQuestions} questions`);
-        const quizCompletion = await openai.chat.completions.create(requestOptions);
+        // Same fallback chain as the summary; jsonMode adds response_format
+        // on OpenAI models that support it and a strict-JSON instruction otherwise.
+        const quizCompletion = await createChatCompletion({
+          model: quizModel,
+          system: systemMessage,
+          prompt: quizPrompt,
+          maxTokens: quizMaxTokens,
+          temperature: 0.5,
+          jsonMode: true,
+        });
 
-        const rawContent = quizCompletion.choices[0]?.message?.content?.trim() || '{}';
+        const rawContent = quizCompletion.content || '{}';
         console.log(`Quiz API response received, length: ${rawContent.length}`);
 
         // Try to extract JSON if it's wrapped in markdown code blocks
@@ -1059,11 +1066,7 @@ Format JSON:
     }
 
     // Cache the result for future use (after quiz generation)
-    summaryCache.set(cacheKey, {
-      summary: summaryContent,
-      quiz: quiz,
-      timestamp: Date.now()
-    });
+    await cacheSet(summaryCacheKey, { summary: summaryContent, quiz } satisfies CachedSummary, CACHE_TTL_SECONDS);
 
     // Parallel database operations for better performance
     const titlePrefixes: Record<string, string> = {
@@ -1093,7 +1096,7 @@ Format JSON:
           pages: numpages,
           characters: text.length,
           summary: summaryContent,
-          quiz: quiz,
+          quiz: quiz as unknown as Prisma.InputJsonValue,
           language: documentLanguage
         }
       }),

@@ -6,6 +6,9 @@ import { useSession } from 'next-auth/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+// Sanitizes the HTML that rehypeRaw parses out of AI-generated summary text,
+// which is derived from user-uploaded PDFs (prompt-injection -> stored XSS).
+import rehypeSanitize from 'rehype-sanitize';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import FeedbackPopup from './FeedbackPopup';
@@ -588,8 +591,8 @@ export default function PDFProcessor() {
                 <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
                   <div className="prose max-w-none">
                     <ReactMarkdown
-                      remarkPlugins={[remarkGfm]} 
-                      rehypePlugins={[rehypeRaw]}
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw, rehypeSanitize]}
                       components={{
                         h1({ node, children, ...props }) {
                           const text = String(children);

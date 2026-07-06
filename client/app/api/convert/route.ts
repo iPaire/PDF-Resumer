@@ -4,9 +4,28 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+import {
+  checkContentLength,
+  checkFileSize,
+  sniffType,
+  MAX_TOTAL_UPLOAD_BYTES,
+} from '@/lib/upload-guard';
 
 export async function POST(request: NextRequest) {
   try {
+    // Per-IP rate limit - this route is unauthenticated and CPU heavy
+    const rateLimit = await checkRateLimit('convert', getClientIp(request));
+    if (!rateLimit.success) {
+      return rateLimitResponse(rateLimit);
+    }
+
+    // Reject oversized requests before buffering the body into memory
+    const lengthCheck = checkContentLength(request);
+    if (!lengthCheck.ok) {
+      return NextResponse.json({ error: lengthCheck.error }, { status: 413 });
+    }
+
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
 
@@ -17,12 +36,34 @@ export async function POST(request: NextRequest) {
     // Creăm un PDF nou care va conține toate fișierele
     const pdfDoc = await PDFDocument.create();
     pdfDoc.registerFontkit(fontkit);
-    
+
+    let totalBytes = 0;
+
     // Procesăm fiecare fișier
     for (const file of files) {
-      const fileType = file.type;
       const fileName = file.name;
       const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+      // Per-file and cumulative size caps (Content-Length can be spoofed/absent)
+      const sizeCheck = checkFileSize(fileBuffer.length);
+      if (!sizeCheck.ok) {
+        return NextResponse.json({ error: `${fileName}: ${sizeCheck.error}` }, { status: 413 });
+      }
+      totalBytes += fileBuffer.length;
+      if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: `Total upload exceeds the ${Math.floor(MAX_TOTAL_UPLOAD_BYTES / 1024 / 1024)}MB limit.` },
+          { status: 413 }
+        );
+      }
+
+      // Trust the magic bytes, not the client-declared MIME type.
+      const sniffed = sniffType(fileBuffer);
+      const fileType =
+        sniffed === 'pdf' ? 'application/pdf' :
+        sniffed === 'jpeg' ? 'image/jpeg' :
+        sniffed === 'png' ? 'image/png' :
+        'application/octet-stream';
 
       try {
         // Adăugăm conținutul fișierului ca pagină nouă în PDF
