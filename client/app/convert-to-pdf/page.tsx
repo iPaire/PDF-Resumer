@@ -12,7 +12,7 @@ import { analyticsEvents } from '@/lib/analytics';
 // fail fast with a clear message instead of letting the upload hit that wall.
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 4 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'txt'];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'txt', 'docx'];
 const MAX_MB = Math.floor(MAX_FILE_BYTES / 1024 / 1024);
 
 /** Returns an error message if the selection is invalid, otherwise null. */
@@ -22,7 +22,14 @@ function validateFiles(files: File[]): string | null {
     return !ALLOWED_EXTENSIONS.includes(ext);
   });
   if (badType.length > 0) {
-    return `Unsupported file type: ${badType.map((f) => f.name).join(', ')}. Allowed: JPG, PNG, PDF, TXT.`;
+    return `Unsupported file type: ${badType.map((f) => f.name).join(', ')}. Allowed: JPG, PNG, PDF, TXT, DOCX.`;
+  }
+
+  // Word docs are rendered individually by the Chromium route, so they can't be
+  // combined with other files in one batch.
+  const docxCount = files.filter((f) => /\.docx$/i.test(f.name)).length;
+  if (docxCount > 0 && files.length > 1) {
+    return 'Word documents must be converted one at a time. Please select a single .docx file.';
   }
 
   const oversize = files.filter((f) => f.size > MAX_FILE_BYTES);
@@ -124,12 +131,17 @@ export default function ConvertToPDF() {
     setFailedFiles([]);
 
     try {
+      // Word docs go to the Chromium-backed route (one at a time, field "file");
+      // everything else is combined by the pdf-lib route (field "files").
+      const isDocx = /\.docx$/i.test(selectedFiles[0].name);
       const formData = new FormData();
-      selectedFiles.forEach((file) => {
-        formData.append('files', file);
-      });
+      if (isDocx) {
+        formData.append('file', selectedFiles[0]);
+      } else {
+        selectedFiles.forEach((file) => formData.append('files', file));
+      }
 
-      const response = await fetch('/api/convert', {
+      const response = await fetch(isDocx ? '/api/convert/docx' : '/api/convert', {
         method: 'POST',
         body: formData,
       });
@@ -209,7 +221,7 @@ export default function ConvertToPDF() {
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileSelect}
-                accept=".jpg,.jpeg,.png,.pdf,.txt"
+                accept=".jpg,.jpeg,.png,.pdf,.txt,.docx"
                 multiple
                 className="hidden"
               />
