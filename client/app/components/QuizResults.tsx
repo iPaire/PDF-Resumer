@@ -102,7 +102,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
       case 'easy': return 'bg-green-100 text-green-700';
       case 'medium': return 'bg-yellow-100 text-yellow-700';
       case 'hard': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-sunken text-ink-soft';
     }
   };
 
@@ -118,9 +118,9 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
   if (quiz.length === 0) {
     return (
       <div className="text-center py-12">
-        <CheckSquare className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-4 text-lg font-bold text-gray-900">Niciun test disponibil</h3>
-        <p className="mt-2 text-gray-600">
+        <CheckSquare className="mx-auto h-12 w-12 text-ink-faint" />
+        <h3 className="mt-4 text-lg font-bold text-ink">Niciun test disponibil</h3>
+        <p className="mt-2 text-ink-soft">
           Nu există întrebări în acest test.
         </p>
       </div>
@@ -145,13 +145,13 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
               </span>
             </div>
             
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Rezultatul testului</h2>
-            <p className="text-lg text-gray-600 mb-4">
+            <h2 className="text-2xl font-bold text-ink mb-2">Rezultatul testului</h2>
+            <p className="text-lg text-ink-soft mb-4">
               {summary.correctAnswers} din {summary.totalQuestions} răspunsuri corecte ({summary.percentage}%)
             </p>
             
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="text-gray-700">{summary.feedback}</p>
+            <div className="bg-sunken rounded-lg p-4 mb-6">
+              <p className="text-ink-soft">{summary.feedback}</p>
             </div>
 
             <div className="flex justify-center gap-4">
@@ -164,7 +164,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
               </button>
               <button
                 onClick={() => setShowResults(false)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="px-6 py-2 border border-line-strong text-ink-soft rounded-lg hover:bg-sunken"
               >
                 Închide rezultatele
               </button>
@@ -174,7 +174,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
 
         {/* Detailed Results */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Rezultate detaliate</h3>
+          <h3 className="text-xl font-bold text-ink mb-6">Rezultate detaliate</h3>
           
           <div className="space-y-6">
             {results.map((result, index) => (
@@ -185,7 +185,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <h4 className="font-semibold text-ink flex items-center gap-2">
                     <span className={`rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold text-white ${
                       result.isCorrect ? 'bg-green-500' : 'bg-red-500'
                     }`}>
@@ -198,7 +198,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
                   </span>
                 </div>
                 
-                <p className="text-gray-800 mb-3 ml-8">{result.question}</p>
+                <p className="text-ink mb-3 ml-8">{result.question}</p>
                 
                 <div className="ml-8 space-y-2">
                   {quiz[index].options.map((option, optIndex) => (
@@ -209,7 +209,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
                           ? 'border-green-300 bg-green-100' 
                           : optIndex === result.userAnswer && !result.isCorrect
                           ? 'border-red-300 bg-red-100'
-                          : 'border-gray-200 bg-white'
+                          : 'border-line bg-white'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -251,7 +251,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
     <div>
       <div className="flex items-center gap-3 mb-6">
         <CheckSquare className="h-6 w-6 text-purple-600" />
-        <h3 className="text-lg font-bold text-gray-900">
+        <h3 className="text-lg font-bold text-ink">
           Test de Evaluare ({quiz.length} întrebări)
         </h3>
       </div>
@@ -280,7 +280,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
                   className={`flex items-start bg-white p-3 rounded-lg border cursor-pointer transition-colors ${
                     userAnswers[questionIndex] === optionIndex
                       ? 'border-purple-300 bg-purple-50'
-                      : 'border-gray-200 hover:bg-gray-50'
+                      : 'border-line hover:bg-sunken'
                   }`}
                   onClick={() => handleAnswerSelect(questionIndex, optionIndex)}
                 >
@@ -295,7 +295,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
                   />
                   <label 
                     htmlFor={`q${questionIndex}-opt${optionIndex}`} 
-                    className="text-gray-700 cursor-pointer flex-1"
+                    className="text-ink-soft cursor-pointer flex-1"
                   >
                     <span className="font-medium text-purple-600 mr-2">
                       {String.fromCharCode(65 + optionIndex)}.
@@ -310,7 +310,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
         
         <div className="mt-8 pt-6 border-t border-purple-200">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-ink-soft">
               Răspunsuri completate: {userAnswers.filter(a => a !== -1).length} / {quiz.length}
             </div>
             <button
@@ -318,7 +318,7 @@ export default function QuizComponent({ quiz, courseId, onRetake }: QuizComponen
               disabled={isSubmitting || userAnswers.includes(-1)}
               className={`px-6 py-3 rounded-lg font-medium shadow-md transition-colors flex items-center gap-2 ${
                 isSubmitting || userAnswers.includes(-1)
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  ? 'bg-gray-200 text-ink-faint cursor-not-allowed'
                   : 'bg-purple-600 text-white hover:bg-purple-700'
               }`}
             >

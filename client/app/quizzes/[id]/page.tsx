@@ -111,10 +111,10 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('loadingQuiz')}</p>
+          <p className="mt-4 text-ink-soft">{t('loadingQuiz')}</p>
         </div>
       </div>
     );
@@ -122,8 +122,8 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
 
   if (quiz.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md p-6 bg-white rounded-lg shadow">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="text-center max-w-md p-6 bg-surface border border-line rounded-card shadow-card">
           <div className="text-red-500 font-medium mb-4">{t('quizNotFound')}</div>
           <button
             onClick={() => router.push('/quizzes')}
@@ -138,7 +138,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <Link 
@@ -151,8 +151,8 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
           
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{t('quiz')} {fileName}</h1>
-              <p className="mt-1 text-gray-600">
+              <h1 className="text-2xl font-bold text-ink">{t('quiz')} {fileName}</h1>
+              <p className="mt-1 text-ink-soft">
                 {quiz.length} {t('questionsCount')} • {t('completeQuizToVerify')}
               </p>
             </div>
@@ -193,11 +193,11 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
           {quiz.map((question, qIndex) => (
             <div 
               key={qIndex} 
-              className="bg-white rounded-xl shadow-md overflow-hidden"
+              className="bg-surface border border-line rounded-card shadow-card-md overflow-hidden"
             >
               <div className="p-6">
                 {/* Improved readability: Larger text and better spacing */}
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-start">
+                <h2 className="text-xl font-semibold text-ink mb-4 flex items-start">
                   <span className="bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
                     {qIndex + 1}
                   </span>
@@ -216,7 +216,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                           !submitted && isSelected 
                             ? 'border-blue-600 bg-blue-50' 
-                            : 'border-gray-200 hover:border-blue-300'
+                            : 'border-line hover:border-blue-300'
                         } ${
                           showFeedback 
                             ? isCorrect 
@@ -230,7 +230,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 ${
                             isSelected 
                               ? (submitted && !isCorrect ? 'border-red-500' : 'border-blue-500') 
-                              : 'border-gray-300'
+                              : 'border-line-strong'
                           }`}>
                             {isSelected && (
                               <div className={`w-3 h-3 rounded-full ${
@@ -239,7 +239,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
                             )}
                           </div>
                           {/* Improved readability: Larger text size */}
-                          <span className="text-gray-800 text-base">{option}</span>
+                          <span className="text-ink text-base">{option}</span>
                           
                           {showFeedback && (
                             <span className="ml-auto">
@@ -271,16 +271,16 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
             >
               {t('checkAnswersButton')}
             </button>
-            <p className="mt-3 text-gray-500">
+            <p className="mt-3 text-ink-faint">
               {selectedOptions.length} {t('outOf')} {quiz.length} {t('questionsCompleted')}
             </p>
           </div>
         ) : (
-          <div className="mt-8 bg-white rounded-xl shadow-md p-6 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="mt-8 bg-surface border border-line rounded-card shadow-card-md p-6 text-center">
+            <h2 className="text-2xl font-bold text-ink mb-2">
               {t('yourResult')} {score}/{quiz.length}
             </h2>
-            <p className="text-lg text-gray-600 mb-6">
+            <p className="text-lg text-ink-soft mb-6">
               {t('answeredCorrectlyPercent', { percent: Math.round((score / quiz.length) * 100) })}
             </p>
             <div className="flex justify-center gap-4">
@@ -292,7 +292,7 @@ export default function QuizPage({ params }: { params: Promise<{ id: string }> }
               </button>
               <Link
                 href="/quizzes"
-                className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300"
+                className="px-6 py-3 bg-gray-200 text-ink rounded-lg font-medium hover:bg-gray-300"
               >
                 {t('otherQuizzes')}
               </Link>

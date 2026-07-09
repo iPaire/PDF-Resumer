@@ -263,8 +263,9 @@ export async function POST(request: NextRequest) {
     if (cached) {
       console.log('Cache hit - returning cached summary and quiz');
 
-      // Still record usage and create records
-      const [usageRecord, fileRecord, summaryRecord] = await Promise.all([
+      // Still record usage and create records. File first so the Summary can
+      // link to it (fileId powers the learning workspace).
+      const [, fileRecord] = await Promise.all([
         prisma.usage.create({ data: { userId: user.id } }),
         prisma.file.create({
           data: {
@@ -275,24 +276,27 @@ export async function POST(request: NextRequest) {
             characters: text.length,
             summary: cached.summary,
             quiz: cached.quiz as unknown as Prisma.InputJsonValue,
-            language: documentLanguage
-          }
-        }),
-        prisma.summary.create({
-          data: {
-            title: `${languageMap[documentLanguage] || 'Summary'} ${filename.substring(0, 30)}`,
-            content: cached.summary,
             language: documentLanguage,
-            userId: user.id,
+            extractedText: text.slice(0, 1_500_000)
           }
         })
       ]);
+      const summaryRecord = await prisma.summary.create({
+        data: {
+          title: `${languageMap[documentLanguage] || 'Summary'} ${filename.substring(0, 30)}`,
+          content: cached.summary,
+          language: documentLanguage,
+          userId: user.id,
+          fileId: fileRecord.id,
+        }
+      });
 
       return new Response(
         JSON.stringify({
           summary: cached.summary,
           quiz: cached.quiz,
           fileID: fileRecord.id,
+          summaryId: summaryRecord.id,
           meta: { filename, pages: numpages, size: file.size, characters: text.length, language: targetLanguage }
         }),
         { headers: { 'Content-Type': 'application/json' } }
@@ -1081,8 +1085,8 @@ Format JSON:
     const titlePrefix = titlePrefixes[documentLanguage] || 'Summary';
     const summaryTitle = `${titlePrefix} ${filename.substring(0, 30)}`;
 
-    // Execute all database operations in parallel
-    const [usageRecord, fileRecord, summaryRecord] = await Promise.all([
+    // File first so the Summary can link to it (fileId powers the learning workspace)
+    const [, fileRecord] = await Promise.all([
       prisma.usage.create({
         data: {
           userId: user.id
@@ -1097,24 +1101,27 @@ Format JSON:
           characters: text.length,
           summary: summaryContent,
           quiz: quiz as unknown as Prisma.InputJsonValue,
-          language: documentLanguage
-        }
-      }),
-      prisma.summary.create({
-        data: {
-          title: summaryTitle,
-          content: summaryContent,
           language: documentLanguage,
-          userId: user.id,
+          extractedText: text.slice(0, 1_500_000)
         }
       })
     ]);
+    const summaryRecord = await prisma.summary.create({
+      data: {
+        title: summaryTitle,
+        content: summaryContent,
+        language: documentLanguage,
+        userId: user.id,
+        fileId: fileRecord.id,
+      }
+    });
 
     return new Response(
       JSON.stringify({
         summary: summaryContent,
         quiz,
         fileID: fileRecord.id,
+        summaryId: summaryRecord.id,
         meta: {
           filename,
           pages: numpages,

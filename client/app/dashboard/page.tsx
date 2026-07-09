@@ -1,12 +1,14 @@
-//app/dashboard/page.tsx
+//app/dashboard/page.tsx - Learning-first dashboard: greeting, continue
+// learning row, quick actions, stats, courses and recent activity.
 'use client';
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { FileText, BarChart2, User, Book, Plus, Download, Trash2, Lock, ChevronRight, Folder } from 'react-feather';
+import { FileText, BarChart2, User, Book, Plus, Trash2, Folder, ArrowRight } from 'react-feather';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Button, Card, CardBody, CardHeader, Badge, EmptyState, Spinner } from '@/components/ui';
 
 type FileType = {
   id: string;
@@ -45,6 +47,7 @@ export default function DashboardPage() {
   const [redirecting, setRedirecting] = useState(false);
   const t = useTranslations('dashboard');
   const tc = useTranslations('common');
+  const tWorkspace = useTranslations('workspace');
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -53,7 +56,7 @@ export default function DashboardPage() {
         router.push('/summaries');
         return;
       }
-      
+
       fetchDashboardData();
     }
   }, [session, status, router]);
@@ -66,19 +69,19 @@ export default function DashboardPage() {
         fetch('/api/dashboard/stats'),
         fetch('/api/courses')
       ]);
-      
+
       if (!filesRes.ok) throw new Error('Failed to fetch files');
       if (!statsRes.ok) throw new Error('Failed to fetch stats');
       if (!coursesRes.ok) throw new Error('Failed to fetch courses');
-      
+
       const filesData = await filesRes.json();
       const statsData = await statsRes.json();
       const coursesData = await coursesRes.json();
-      
+
       setFiles(filesData);
       setStats(statsData);
       setCourses(coursesData);
-      
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -100,7 +103,7 @@ export default function DashboardPage() {
         fetchDashboardData();
       } else {
         const errorData = await response.json();
-        alert(t('deleteError', {error: errorData.error}));
+        alert(t('deleteError', { error: errorData.error }));
       }
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -108,33 +111,33 @@ export default function DashboardPage() {
     }
   };
 
-  const statusColor = (status: string) => {
+  const statusTone = (status: string): 'success' | 'warn' | 'danger' | 'neutral' => {
     switch (status) {
-      case 'Procesat': 
+      case 'Procesat':
       case 'Processed':
-      case t('processed'): return 'bg-green-100 text-green-800';
-      case 'În așteptare': 
+      case t('processed'): return 'success';
+      case 'În așteptare':
       case 'Pending':
-      case t('pending'): return 'bg-yellow-100 text-yellow-800';
-      case 'Eroare': 
+      case t('pending'): return 'warn';
+      case 'Eroare':
       case 'Error':
-      case t('error'): return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case t('error'): return 'danger';
+      default: return 'neutral';
     }
   };
 
   const storageColor = (percentage: number) => {
-    if (percentage > 90) return 'bg-red-500';
-    if (percentage > 75) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (percentage > 90) return 'bg-danger';
+    if (percentage > 75) return 'bg-warn';
+    return 'bg-success';
   };
 
   if (isLoading || redirecting) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">
+          <Spinner size="lg" className="mx-auto" />
+          <p className="mt-4 text-ink-soft">
             {redirecting ? t('redirecting') : t('loadingDashboard')}
           </p>
         </div>
@@ -142,176 +145,194 @@ export default function DashboardPage() {
     );
   }
 
-  /* {stats?.tokens !== undefined && (
-            <div className="mt-4 bg-indigo-50 p-3 rounded-lg inline-block">
-              <span className="font-medium text-indigo-800">Tokenuri disponibile: </span>   // asta vine dupa istoricul de activitati
-              <span className="font-bold text-indigo-900">{stats.tokens}</span>
-            </div>
-          )}*/ 
+  const recentSummaries = files.filter((f) => f.type === 'summary').slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Dashboard Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t('welcomeUser', {name: session?.user?.name || 'Utilizator'})}</h1>
-          <p className="mt-2 text-gray-600">{t('activityDescription')}</p>
+    <div className="min-h-screen bg-canvas">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Header */}
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-ink">{t('welcomeUser', { name: session?.user?.name || 'Utilizator' })}</h1>
+            <p className="mt-2 text-ink-soft">{t('activityDescription')}</p>
+          </div>
+          <Button href="/upload">+ {tc('newDocument')}</Button>
         </div>
+
+        {/* Continue learning */}
+        {recentSummaries.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-xl font-semibold text-ink mb-4">{t('continueLearning')}</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {recentSummaries.map((file) => (
+                <Link key={file.id} href={`/workspace/${file.id}`}>
+                  <Card hoverable className="h-full">
+                    <CardBody className="flex flex-col h-full">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-accent-soft flex items-center justify-center shrink-0">
+                          <Book className="w-5 h-5 text-accent" />
+                        </div>
+                        <h3 className="font-semibold text-ink leading-snug line-clamp-2">{file.name}</h3>
+                      </div>
+                      <div className="mt-auto pt-4 flex items-center justify-between text-sm">
+                        <span className="text-ink-faint">{file.date}</span>
+                        <span className="inline-flex items-center gap-1 text-accent font-medium">
+                          {tWorkspace('openWorkspace')}
+                          <ArrowRight size={14} />
+                        </span>
+                      </div>
+                    </CardBody>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-            <StatCard 
-              icon={<FileText className="w-6 h-6" />}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
+            <StatCard
+              icon={<FileText className="w-5 h-5" />}
               title={t('filesProcessed')}
               value={stats.filesProcessed}
-              color="bg-blue-100 text-blue-800"
             />
-            
-            <StatCard 
-              icon={<Book className="w-6 h-6" />}
+
+            <StatCard
+              icon={<Book className="w-5 h-5" />}
               title={t('summariesCreated')}
               value={stats.summariesCreated}
-              color="bg-green-100 text-green-800"
             />
-            
-            <StatCard 
-              icon={<BarChart2 className="w-6 h-6" />}
+
+            <StatCard
+              icon={<BarChart2 className="w-5 h-5" />}
               title={t('quizzesGenerated')}
               value={stats.quizzesGenerated}
-              color="bg-purple-100 text-purple-800"
             />
-            
-            <StatCard 
-              icon={<Folder className="w-6 h-6" />}
+
+            <StatCard
+              icon={<Folder className="w-5 h-5" />}
               title={t('coursesCreated')}
               value={stats.coursesCreated}
-              color="bg-indigo-100 text-indigo-800"
             />
-            
+
             {/* Storage Card with Percentage */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="p-5">
+            <Card>
+              <CardBody>
                 <div className="flex items-center">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                    <div className="text-yellow-800">
-                      <User className="w-6 w-6" />
-                    </div>
+                  <div className="flex-shrink-0 w-11 h-11 rounded-full bg-accent-soft flex items-center justify-center text-accent">
+                    <User className="w-5 h-5" />
                   </div>
-                  <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">{t('storageUsed')}</h3>
-                    <p className="text-2xl font-semibold text-gray-900">
+                  <div className="ml-4 flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-ink-soft">{t('storageUsed')}</h3>
+                    <p className="text-2xl font-semibold text-ink">
                       {stats.storagePercentage}%
                     </p>
-                    <div className="mt-1 text-sm text-gray-500">
+                    <div className="mt-1 text-xs text-ink-faint">
                       {stats.storageUsed} / {stats.storageLimit}
                     </div>
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${storageColor(stats.storagePercentage)}`}
+                    <div className="mt-2 w-full bg-sunken rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full ${storageColor(stats.storagePercentage)}`}
                         style={{ width: `${stats.storagePercentage}%` }}
                       ></div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardBody>
+            </Card>
           </div>
         )}
 
-        {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <ActionCard 
+        {/* Quick actions */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+          <ActionCard
             title={t('uploadNewPdf')}
             description={t('uploadNewPdfDescription')}
-            icon={<Plus className="w-8 h-8" />}
+            icon={<Plus className="w-6 h-6" />}
             buttonText={t('uploadFile')}
-            buttonLink="/"
-            color="bg-blue-500"
+            buttonLink="/upload"
           />
-          
-          <ActionCard 
+
+          <ActionCard
             title={t('viewSummaries')}
             description={t('viewSummariesDescription')}
-            icon={<Book className="w-8 h-8" />}
+            icon={<Book className="w-6 h-6" />}
             buttonText={t('viewSummariesButton')}
             buttonLink="/summaries"
-            color="bg-green-500"
           />
-          
-          <ActionCard 
+
+          <ActionCard
             title={t('quizTests')}
             description={t('quizTestsDescription')}
-            icon={<BarChart2 className="w-8 h-8" />}
+            icon={<BarChart2 className="w-6 h-6" />}
             buttonText={t('accessQuizzes')}
             buttonLink="/quizzes"
-            color="bg-purple-500"
           />
-          
-          <ActionCard 
+
+          <ActionCard
             title={t('manageCourses')}
             description={t('manageCoursesDescription')}
-            icon={<Folder className="w-8 h-8" />}
+            icon={<Folder className="w-6 h-6" />}
             buttonText={t('accessCourses')}
             buttonLink="/courses"
-            color="bg-indigo-500"
           />
         </div>
 
         {/* Recent Courses Section */}
-        <div className="bg-white shadow rounded-lg overflow-hidden mb-8">
-          <div className="px-6 py-5 border-b border-gray-200">
+        <Card className="overflow-hidden mb-8">
+          <CardHeader>
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">{t('recentCourses')}</h2>
-              <Link 
-                href="/courses" 
-                className="text-sm text-blue-600 hover:text-blue-800"
+              <h2 className="text-lg font-semibold text-ink">{t('recentCourses')}</h2>
+              <Link
+                href="/courses"
+                className="text-sm text-accent hover:text-accent-strong font-medium"
               >
                 {t('viewAllCourses')}
               </Link>
             </div>
-          </div>
-          
+          </CardHeader>
+
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-line">
+              <thead className="bg-sunken">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('title')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('description')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('files')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('date')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('actions')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-surface divide-y divide-line">
                 {courses.map((course) => (
-                  <tr key={course.id} className="hover:bg-gray-50">
+                  <tr key={course.id} className="hover:bg-sunken transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{course.title}</div>
+                      <div className="text-sm font-medium text-ink">{course.title}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-6 py-4 text-sm text-ink-soft">
                       {course.description || t('noDescription')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-ink-soft">
                       {course.fileCount}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-ink-soft">
                       {course.createdAt}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link 
+                      <Link
                         href={`/courses/${course.id}`}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
+                        className="text-accent hover:text-accent-strong"
                       >
                         {t('open')}
                       </Link>
@@ -320,92 +341,85 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
-            
+
             {courses.length === 0 && (
-              <div className="text-center py-12">
-                <Folder className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noCourses')}</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {t('createFirstCourse')}
-                </p>
-                <div className="mt-6">
-                  <Link
-                    href="/courses/new"
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              <EmptyState
+                icon={<Folder size={22} />}
+                title={t('noCourses')}
+                description={t('createFirstCourse')}
+                action={
+                  <Button href="/courses/new">
+                    <Plus className="h-4 w-4" />
                     {t('createCourse')}
-                  </Link>
-                </div>
-              </div>
+                  </Button>
+                }
+              />
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Recent Activity Section */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
+        <Card className="overflow-hidden">
+          <CardHeader>
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">{t('recentActivity')}</h2>
-              <Link 
-                href="/history" 
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                {t('viewAllHistory')}
-              </Link>
+              <h2 className="text-lg font-semibold text-ink">{t('recentActivity')}</h2>
             </div>
-          </div>
-          
+          </CardHeader>
+
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-line">
+              <thead className="bg-sunken">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('activity')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('details')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('date')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('status')}
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-ink-faint uppercase tracking-wider">
                     {t('actions')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-surface divide-y divide-line">
                 {files.map((file) => (
-                  <tr key={file.id} className="hover:bg-gray-50">
+                  <tr key={file.id} className="hover:bg-sunken transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {file.type === 'summary' ? (
-                          <Book className="flex-shrink-0 h-5 w-5 text-green-400 mr-2" />
+                          <Book className="flex-shrink-0 h-4 w-4 text-success mr-2" />
                         ) : (
-                          <BarChart2 className="flex-shrink-0 h-5 w-5 text-purple-400 mr-2" />
+                          <BarChart2 className="flex-shrink-0 h-4 w-4 text-accent mr-2" />
                         )}
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-ink">
                           {file.type === 'summary' ? t('summary') : t('quiz')}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {file.name}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-ink-soft">
+                      {file.type === 'summary' ? (
+                        <Link href={`/workspace/${file.id}`} className="hover:text-accent transition-colors">
+                          {file.name}
+                        </Link>
+                      ) : (
+                        file.name
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-ink-soft">
                       {file.date}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor(file.status)}`}>
-                        {file.status}
-                      </span>
+                      <Badge tone={statusTone(file.status)}>{file.status}</Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        className="text-red-600 hover:text-red-900"
+                        className="p-1.5 rounded-btn text-ink-faint hover:bg-danger-soft hover:text-danger transition-colors cursor-pointer"
                         onClick={() => handleDelete(file.id, file.type)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -415,136 +429,78 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
-            
-            {files.length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noRecentActivity')}</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {t('uploadFirstDocument')}
-                </p>
-                <div className="mt-6">
-                  <Link
-                    href="/"
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                    {t('uploadPdf')}
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Activity Feed */}
-        <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">{t('activityHistory')}</h2>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {files.slice(0, 4).map((file, index) => (
-              <ActivityItem 
-                key={file.id}
-                action={index === 0 ? t('generatedSummary') : t('uploadedFile')}
-                file={file.name}
-                time={file.date}
-                icon={index === 0 ? 
-                  <Book className="w-5 h-5 text-green-500" /> : 
-                  <Plus className="w-5 h-5 text-blue-500" />
+            {files.length === 0 && (
+              <EmptyState
+                icon={<FileText size={22} />}
+                title={t('noRecentActivity')}
+                description={t('uploadFirstDocument')}
+                action={
+                  <Button href="/upload">
+                    <Plus className="h-4 w-4" />
+                    {t('uploadPdf')}
+                  </Button>
                 }
               />
-            ))}
+            )}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
 }
 
 // Stat Card Component
-function StatCard({ icon, title, value, color }: { 
-  icon: React.ReactNode; 
-  title: string; 
+function StatCard({ icon, title, value }: {
+  icon: React.ReactNode;
+  title: string;
   value: number | string;
-  color: string;
 }) {
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="p-5">
+    <Card>
+      <CardBody>
         <div className="flex items-center">
-          <div className={`flex-shrink-0 w-12 h-12 rounded-full ${color.split(' ')[0]} flex items-center justify-center`}>
-            <div className={color.split(' ')[1]}>
-              {icon}
-            </div>
+          <div className="flex-shrink-0 w-11 h-11 rounded-full bg-accent-soft flex items-center justify-center text-accent">
+            {icon}
           </div>
           <div className="ml-4">
-            <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-            <p className="text-2xl font-semibold text-gray-900">{value}</p>
+            <h3 className="text-sm font-medium text-ink-soft">{title}</h3>
+            <p className="text-2xl font-semibold text-ink">{value}</p>
           </div>
         </div>
-      </div>
-    </div>
+      </CardBody>
+    </Card>
   );
 }
 
 // Action Card Component
-function ActionCard({ 
-  title, 
-  description, 
-  icon, 
-  buttonText, 
+function ActionCard({
+  title,
+  description,
+  icon,
+  buttonText,
   buttonLink,
-  color
-}: { 
-  title: string; 
-  description: string; 
-  icon: React.ReactNode; 
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
   buttonText: string;
   buttonLink: string;
-  color: string;
 }) {
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col">
-      <div className="p-5 flex-1">
-        <div className={`${color} w-12 h-12 rounded-md flex items-center justify-center text-white mb-4`}>
+    <Card hoverable className="flex flex-col">
+      <CardBody className="flex-1">
+        <div className="bg-accent-soft text-accent w-11 h-11 rounded-btn flex items-center justify-center mb-4">
           {icon}
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-500 text-sm">{description}</p>
-      </div>
-      <div className="bg-gray-50 px-5 py-4">
-        <Link 
-          href={buttonLink}
-          className={`w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${color} hover:${color.replace('500', '600')} focus:outline-none focus:ring-2 focus:ring-offset-2 ${color.replace('500', '700')}`}
-        >
+        <h3 className="text-base font-semibold text-ink mb-1.5">{title}</h3>
+        <p className="text-ink-soft text-sm">{description}</p>
+      </CardBody>
+      <div className="px-5 pb-5">
+        <Button href={buttonLink} variant="secondary" className="w-full">
           {buttonText}
-        </Link>
+        </Button>
       </div>
-    </div>
-  );
-}
-
-// Activity Item Component
-function ActivityItem({ action, file, time, icon }: { 
-  action: string; 
-  file: string; 
-  time: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="px-6 py-4">
-      <div className="flex items-start">
-        <div className="flex-shrink-0 pt-0.5">
-          {icon}
-        </div>
-        <div className="ml-3 flex-1">
-          <p className="text-sm text-gray-800">
-            <span className="font-medium">{action}</span> - {file}
-          </p>
-          <p className="mt-1 text-sm text-gray-500">{time}</p>
-        </div>
-      </div>
-    </div>
+    </Card>
   );
 }

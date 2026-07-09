@@ -1,34 +1,69 @@
 @import "tailwindcss";
 
+/*
+ * SmartPDFNotes design tokens — warm consumer evolution of the
+ * convert-to-pdf palette. Tailwind v4 generates utilities from these:
+ * bg-canvas, text-ink-soft, border-line, bg-accent-soft, rounded-card,
+ * shadow-card, font-sans, etc.
+ */
+@theme {
+  /* surfaces */
+  --color-canvas: #FAF9F7;
+  --color-surface: #FFFFFF;
+  --color-sunken: #F4F2EF;
+
+  /* ink */
+  --color-ink: #191817;
+  --color-ink-soft: #57534E;
+  --color-ink-faint: #A8A29E;
+
+  /* lines */
+  --color-line: #ECEAE6;
+  --color-line-strong: #DDD9D3;
+
+  /* accent */
+  --color-accent: #2563EB;
+  --color-accent-strong: #1D4ED8;
+  --color-accent-soft: #EFF4FF;
+
+  /* semantic */
+  --color-success: #16A34A;
+  --color-success-soft: #F0FDF4;
+  --color-warn: #D97706;
+  --color-warn-soft: #FFFBEB;
+  --color-danger: #DC2626;
+  --color-danger-soft: #FEF2F2;
+
+  /* shape */
+  --radius-card: 1rem;
+  --radius-btn: 0.625rem;
+  --radius-pill: 9999px;
+
+  /* elevation */
+  --shadow-card: 0 1px 2px rgb(25 24 23 / 0.04), 0 4px 12px rgb(25 24 23 / 0.05);
+  --shadow-pop: 0 4px 6px rgb(25 24 23 / 0.05), 0 12px 32px rgb(25 24 23 / 0.10);
+
+  /* type */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* kept for pages still referencing the legacy vars */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #FAF9F7;
+  --foreground: #191817;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }
 .prose {
   max-width: 100%;
   line-height: 1.6;
   font-size: 1rem;
-  color: #374151;
+  color: var(--color-ink-soft);
 }
 
 .prose p {
@@ -40,7 +75,7 @@ body {
   font-weight: 600;
   margin-top: 1.5em;
   margin-bottom: 0.75em;
-  color: #1e40af;
+  color: var(--color-ink);
 }
 
 .prose h3 {
@@ -48,7 +83,7 @@ body {
   font-weight: 600;
   margin-top: 1.25em;
   margin-bottom: 0.5em;
-  color: #1e40af;
+  color: var(--color-ink);
 }
 
 .prose ul {
@@ -81,4 +116,24 @@ body {
 
 .animate-slide-up {
   animation: slide-up 0.3s ease-out forwards;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-sunken) 25%,
+    var(--color-line) 50%,
+    var(--color-sunken) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }

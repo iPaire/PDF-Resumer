@@ -44,7 +44,7 @@ export default function NewCoursePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <Link 
@@ -56,16 +56,16 @@ export default function NewCoursePage() {
           </Link>
         </div>
         
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">{t('newCourseTitle')}</h1>
-            <p className="mt-1 text-gray-600">{t('newCourseSubtitle')}</p>
+        <div className="bg-surface border border-line shadow-card rounded-card overflow-hidden">
+          <div className="px-6 py-5 border-b border-line">
+            <h1 className="text-2xl font-bold text-ink">{t('newCourseTitle')}</h1>
+            <p className="mt-1 text-ink-soft">{t('newCourseSubtitle')}</p>
           </div>
           
           <div className="p-6">
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="title" className="block text-sm font-medium text-ink-soft mb-1">
                   {t('courseTitleLabel')}
                 </label>
                 <input
@@ -74,13 +74,13 @@ export default function NewCoursePage() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-line-strong rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder={t('courseTitlePlaceholder')}
                 />
               </div>
               
               <div className="mb-6">
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="description" className="block text-sm font-medium text-ink-soft mb-1">
                   {t('courseDescriptionLabel')}
                 </label>
                 <textarea
@@ -88,7 +88,7 @@ export default function NewCoursePage() {
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-line-strong rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder={t('courseDescriptionPlaceholder')}
                 />
               </div>

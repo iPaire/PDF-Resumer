@@ -5,12 +5,19 @@ import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { ChevronDown, Plus } from 'react-feather';
+import { Badge } from '@/components/ui';
 import { analyticsEvents } from '@/lib/analytics';
+
+const navLinkClass =
+  'text-ink-soft px-3 py-2 rounded-btn text-sm font-medium hover:bg-sunken hover:text-ink transition-colors';
 
 export default function Navbar() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const t = useTranslations('common');
 
@@ -18,6 +25,9 @@ export default function Navbar() {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpen(false);
+      }
+      if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
+        setToolsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -38,65 +48,124 @@ export default function Navbar() {
   // Loading state
   if (status === 'loading') {
     return (
-      <nav className="bg-white shadow-md py-4 px-6 flex justify-between items-center w-full">
-        <Link href="/" className="text-xl font-bold text-blue-600 hover:text-blue-800">
-          SmartPDF Notes
+      <nav className="bg-surface border-b border-line py-3 px-4 sm:px-6 flex justify-between items-center w-full">
+        <Link href="/" className="text-lg font-bold text-ink">
+          SmartPDF<span className="text-accent"> Notes</span>
         </Link>
-        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse" />
+        <div className="w-9 h-9 bg-sunken rounded-full animate-pulse" />
       </nav>
     );
   }
 
+  const planTone =
+    session?.user.subscription === 'free'
+      ? 'neutral'
+      : session?.user.subscription === 'standard'
+        ? 'accent'
+        : 'premium';
+
+  const planLabel =
+    session?.user.subscription === 'free'
+      ? t('free')
+      : session?.user.subscription === 'standard'
+        ? t('standard')
+        : session?.user.subscription === 'trial'
+          ? `${t('premium')} Trial`
+          : t('premium');
+
   return (
-    <nav className="bg-white shadow-md py-4 px-6 flex justify-between items-center w-full">
-      <Link href="/" className="text-xl font-bold text-blue-600 hover:text-blue-800">
-        SmartPDF Notes
+    <nav className="bg-surface border-b border-line py-3 px-4 sm:px-6 flex justify-between items-center w-full sticky top-0 z-40">
+      <Link href="/" className="text-lg font-bold text-ink shrink-0">
+        SmartPDF<span className="text-accent"> Notes</span>
       </Link>
 
-      <div className="flex items-center space-x-2 md:space-x-4">
-        <Link
-          href="/"
-          onClick={() => analyticsEvents.navigationClick('home', 'navbar')}
-          className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block"
-        >
-          {t('home')}
-        </Link>
-
-        {/* Public free tool - available without an account */}
-        <Link
-          href="/convert-to-pdf"
-          onClick={() => analyticsEvents.navigationClick('convert-to-pdf', 'navbar')}
-          className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block"
-        >
-          {t('convertToPdf')}
-        </Link>
-
-        {/* Buton de Upload între Acasă și Prețuri */}
-        {session && (
-          <Link 
-            href="/upload" 
-            onClick={() => analyticsEvents.navigationClick('upload', 'navbar')}
-            className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition flex items-center"
+      <div className="flex items-center gap-1 md:gap-2">
+        {session ? (
+          <>
+            <Link
+              href="/summaries"
+              onClick={() => analyticsEvents.navigationClick('library', 'navbar')}
+              className={`${navLinkClass} hidden sm:block`}
+            >
+              {t('library')}
+            </Link>
+            <Link
+              href="/courses"
+              onClick={() => analyticsEvents.navigationClick('courses', 'navbar')}
+              className={`${navLinkClass} hidden sm:block`}
+            >
+              {t('courses')}
+            </Link>
+          </>
+        ) : (
+          <Link
+            href="/"
+            onClick={() => analyticsEvents.navigationClick('home', 'navbar')}
+            className={`${navLinkClass} hidden sm:block`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-            <span className="hidden sm:inline">{t('upload')}</span>
+            {t('home')}
           </Link>
         )}
 
-        <Link 
-          href="/pricing" 
+        {/* Free tools (public) */}
+        <div ref={toolsRef} className="relative hidden sm:block">
+          <button
+            onClick={() => setToolsOpen(!toolsOpen)}
+            className={`${navLinkClass} flex items-center gap-1 cursor-pointer`}
+            aria-expanded={toolsOpen}
+          >
+            {t('tools')}
+            <ChevronDown size={14} />
+          </button>
+          {toolsOpen && (
+            <div className="absolute right-0 mt-2 w-52 bg-surface rounded-card shadow-pop border border-line z-50 py-1.5">
+              <Link
+                href="/convert-to-pdf"
+                onClick={() => {
+                  setToolsOpen(false);
+                  analyticsEvents.navigationClick('convert-to-pdf', 'navbar');
+                }}
+                className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+              >
+                {t('convertToPdf')}
+              </Link>
+              <Link
+                href="/translate"
+                onClick={() => {
+                  setToolsOpen(false);
+                  analyticsEvents.navigationClick('translate', 'navbar');
+                }}
+                className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+              >
+                {t('translatePdf')}
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <Link
+          href="/pricing"
           onClick={() => analyticsEvents.navigationClick('pricing', 'navbar')}
-          className="text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition hidden sm:block"
+          className={`${navLinkClass} hidden sm:block`}
         >
           {t('pricing')}
         </Link>
 
+        {session && (
+          <Link
+            href="/upload"
+            onClick={() => analyticsEvents.navigationClick('upload', 'navbar')}
+            className="inline-flex items-center gap-1.5 bg-accent text-white text-sm font-semibold px-3.5 py-2 rounded-btn hover:bg-accent-strong transition-colors ml-1"
+          >
+            <Plus size={16} />
+            <span className="hidden sm:inline">{t('newDocument')}</span>
+          </Link>
+        )}
+
         {session ? (
           <div ref={menuRef} className="relative">
-            <button 
-              onClick={() => setOpen(!open)} 
+            <button
+              onClick={() => setOpen(!open)}
               className="cursor-pointer focus:outline-none flex items-center hover:opacity-90 ml-2"
               aria-label="Profile menu"
             >
@@ -106,57 +175,40 @@ export default function Navbar() {
                   alt="Profil"
                   width={36}
                   height={36}
-                  className="rounded-full border"
+                  className="rounded-full border border-line"
                   style={{ maxWidth: '100%', height: 'auto' }}
                 />
               ) : (
-                <div className="w-9 h-9 bg-gray-300 rounded-full flex items-center justify-center text-gray-700">
-                  {session.user?.name?.[0]?.toUpperCase() ?? "?"}
+                <div className="w-9 h-9 bg-accent-soft rounded-full flex items-center justify-center text-accent-strong font-semibold">
+                  {session.user?.name?.[0]?.toUpperCase() ?? '?'}
                 </div>
               )}
             </button>
 
             {open && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border z-50 max-w-[90vw]">
-                <div className="px-4 py-3 text-sm text-gray-700 border-b">
+              <div className="absolute right-0 mt-2 w-60 bg-surface rounded-card shadow-pop border border-line z-50 max-w-[90vw] py-1.5">
+                <div className="px-4 py-3 text-sm text-ink border-b border-line">
                   <p className="font-medium truncate">{session.user?.name}</p>
-                  <p className="text-xs truncate mt-1">{session.user?.email}</p>
-                  
-                  {/* Afișează abonamentul curent */}
-                  <div className="mt-2 flex items-center">
-                    <span className="font-medium mr-2">Plan:</span>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      session.user.subscription === 'free' 
-                        ? 'bg-gray-200 text-gray-800' 
-                        : session.user.subscription === 'standard' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-purple-100 text-purple-800'
-                    }`}>
-                      {session.user.subscription === 'free' 
-                        ? t('free')
-                        : session.user.subscription === 'standard' 
-                          ? t('standard')
-                          : session.user.subscription === 'trial'
-                          ? `${t('premium')} Trial`
-                          : t('premium')}
-                    </span>
+                  <p className="text-xs text-ink-faint truncate mt-1">{session.user?.email}</p>
+
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <span className="text-xs font-medium text-ink-soft">Plan:</span>
+                    <Badge tone={planTone as any}>{planLabel}</Badge>
                   </div>
-                  
-                  {/* Afișează zilele rămase pentru trial */}
+
                   {session.user.subscription === 'trial' && daysLeft !== null && (
-                    <div className="mt-1 text-xs text-purple-600">
-                      {daysLeft > 0 
+                    <div className="mt-1.5 text-xs text-warn">
+                      {daysLeft > 0
                         ? `Expires in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`
                         : 'Trial expired'}
                     </div>
                   )}
                 </div>
-                
-                {/* Buton Upgrade pentru utilizatorii Free */}
+
                 {(session.user.subscription === 'free' || session.user.subscription === 'trial') && (
                   <Link
                     href="/pricing"
-                    className="block text-center mx-2 my-2 px-3 py-2 text-sm font-medium bg-yellow-500 text-white hover:bg-yellow-600 rounded transition"
+                    className="block text-center mx-2 my-2 px-3 py-2 text-sm font-semibold bg-accent text-white hover:bg-accent-strong rounded-btn transition-colors"
                     onClick={() => {
                       setOpen(false);
                       analyticsEvents.buttonClick('upgrade_plan', 'navbar');
@@ -166,16 +218,43 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                <Link
-                  href={session.user.subscription === 'free' ? "/summaries" : "/dashboard"}
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setOpen(false)}
-                >
-                  {session.user.subscription === 'free' ? t('summaries') : t('dashboard')}
-                </Link>
+                {/* Mobile-only shortcuts (hidden in the top bar on small screens) */}
+                <div className="sm:hidden border-b border-line pb-1.5 mb-1.5">
+                  <Link
+                    href="/summaries"
+                    className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t('library')}
+                  </Link>
+                  <Link
+                    href="/courses"
+                    className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t('courses')}
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t('pricing')}
+                  </Link>
+                </div>
+
+                {session.user.subscription !== 'free' && (
+                  <Link
+                    href="/dashboard"
+                    className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t('dashboard')}
+                  </Link>
+                )}
                 <Link
                   href="/settings"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
                   onClick={() => setOpen(false)}
                 >
                   {t('settings')}
@@ -183,14 +262,14 @@ export default function Navbar() {
                 <button
                   onClick={async () => {
                     analyticsEvents.userLogout();
-                    await signOut({ 
+                    await signOut({
                       callbackUrl: '/',
-                      redirect: true 
+                      redirect: true,
                     });
                     // Forțează refresh pentru clear cache complet
                     window.location.href = '/';
                   }}
-                  className="cursor-pointer w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  className="cursor-pointer w-full text-left px-4 py-2 text-sm text-danger hover:bg-sunken"
                 >
                   {t('logout')}
                 </button>
@@ -200,11 +279,12 @@ export default function Navbar() {
         ) : (
           <Link
             href="/login"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition text-sm md:text-base"
+            className="bg-accent text-white px-4 py-2 rounded-btn hover:bg-accent-strong transition-colors text-sm font-semibold ml-1"
           >
             {t('login')}
           </Link>
         )}
       </div>
     </nav>
-  );}
+  );
+}

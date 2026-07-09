@@ -1,11 +1,13 @@
-// app/summaries/page.tsx
+// app/summaries/page.tsx - The Library: every document as a learning
+// workspace card. Keeps search, bulk delete, download and course assignment.
 'use client';
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { FileText, Download, Trash2, Search, Eye, ArrowLeft, FolderPlus } from 'react-feather';
+import { FileText, Download, Trash2, Search, FolderPlus, Printer } from 'react-feather';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { Button, Card, CardBody, Badge, EmptyState, Spinner } from '@/components/ui';
 
 type Summary = {
   id: string;
@@ -33,6 +35,7 @@ type Course = {
 export default function SummariesPage() {
   const t = useTranslations('summaries');
   const tCommon = useTranslations('common');
+  const tWorkspace = useTranslations('workspace');
   const { data: session } = useSession();
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -54,7 +57,7 @@ export default function SummariesPage() {
         fetch('/api/summaries'),
         fetch('/api/courses')
       ]);
-      
+
       if (summariesRes.ok) {
         const summariesData = await summariesRes.json();
         setSummaries(Array.isArray(summariesData.summaries) ? summariesData.summaries : []);
@@ -62,7 +65,7 @@ export default function SummariesPage() {
         console.error('Failed to fetch summaries');
         setSummaries([]);
       }
-      
+
       if (coursesRes.ok) {
         const coursesData = await coursesRes.json();
         setCourses(Array.isArray(coursesData) ? coursesData : []);
@@ -88,7 +91,7 @@ export default function SummariesPage() {
         return;
       }
       if (!response.ok) throw new Error('Failed to download summary');
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -179,16 +182,12 @@ export default function SummariesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ courseId })
       });
-      
+
       if (response.ok) {
-        setSummaries(prev => prev.map(s => 
-          s.id === summaryId ? {...s, courseId} : s
+        setSummaries(prev => prev.map(s =>
+          s.id === summaryId ? { ...s, courseId } : s
         ));
-        
-        if (selectedSummary?.id === summaryId) {
-          setSelectedSummary(prev => prev ? {...prev, courseId} : null);
-        }
-        
+
         setShowCourseModal(false);
         alert(t('assignmentSuccess'));
       } else {
@@ -204,14 +203,14 @@ export default function SummariesPage() {
   const createQuickCourse = async () => {
     const title = prompt(t('enterCourseTitle'));
     if (!title) return null;
-    
+
     try {
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title })
       });
-      
+
       if (response.ok) {
         const newCourse = await response.json();
         setCourses([...courses, newCourse]);
@@ -229,7 +228,7 @@ export default function SummariesPage() {
     setShowCourseModal(true);
   };
 
-  const filteredSummaries = Array.isArray(summaries) ? summaries.filter(summary => 
+  const filteredSummaries = Array.isArray(summaries) ? summaries.filter(summary =>
     (summary.title || summary.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   ) : [];
 
@@ -237,310 +236,163 @@ export default function SummariesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('loadingSummaries')}</p>
+          <Spinner size="lg" className="mx-auto" />
+          <p className="mt-4 text-ink-soft">{t('loadingSummaries')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-4">
-          <Link 
-            href="/dashboard" 
-            className="inline-flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            {t('backToDashboard')}
-          </Link>
-        </div>
-        
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="mt-2 text-gray-600">{t('subtitle')}</p>
+    <div className="min-h-screen bg-canvas">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-ink">{t('libraryTitle')}</h1>
+            <p className="mt-2 text-ink-soft">{t('librarySubtitle')}</p>
+          </div>
+          <Button href="/upload">+ {tCommon('newDocument')}</Button>
         </div>
 
-        <div className="bg-white shadow rounded-lg mb-8">
-          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center flex-wrap gap-4">
-            <div className="relative w-full max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder={t('searchPlaceholder')}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        {/* Toolbar */}
+        <div className="mb-6 flex flex-wrap items-center gap-4">
+          <div className="relative w-full max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-ink-faint" />
             </div>
-            <div className="flex items-center gap-4">
-              {filteredSummaries.length > 0 && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedSummaries.size === filteredSummaries.length && filteredSummaries.length > 0}
-                    onChange={handleSelectAll}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    {t('selectAll') || 'Selectează toate'}
-                  </span>
-                </label>
-              )}
-              {selectedSummaries.size > 0 && (
-                <button
-                  onClick={handleBulkDelete}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  {t('deleteSelected') || 'Șterge'} ({selectedSummaries.size})
-                </button>
-              )}
-              <span className="text-sm text-gray-500">
-                {filteredSummaries.length} {filteredSummaries.length === 1 ? t('result') : t('results')}
-              </span>
-            </div>
+            <input
+              type="text"
+              placeholder={t('searchPlaceholder')}
+              className="block w-full pl-9 pr-3 py-2.5 border border-line rounded-btn bg-surface text-sm text-ink placeholder:text-ink-faint focus:outline-2 focus:outline-accent"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-4 ml-auto">
+            {filteredSummaries.length > 0 && (
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={selectedSummaries.size === filteredSummaries.length && filteredSummaries.length > 0}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 accent-blue-600 rounded"
+                />
+                {t('selectAll')}
+              </label>
+            )}
+            {selectedSummaries.size > 0 && (
+              <Button variant="danger" size="sm" onClick={handleBulkDelete}>
+                {t('deleteSelected')} ({selectedSummaries.size})
+              </Button>
+            )}
+            <span className="text-sm text-ink-faint">
+              {filteredSummaries.length} {filteredSummaries.length === 1 ? t('result') : t('results')}
+            </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">{t('allSummaries')}</h2>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <input
-                          type="checkbox"
-                          checked={selectedSummaries.size === filteredSummaries.length && filteredSummaries.length > 0}
-                          onChange={handleSelectAll}
-                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('titleColumn')}
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('createdDateColumn')}
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('coursesColumn')}
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('actionsColumn')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredSummaries.map((summary) => (
-                      <tr
-                        key={summary.id}
-                        className={`hover:bg-gray-50 cursor-pointer ${selectedSummary?.id === summary.id ? 'bg-blue-50' : ''} ${selectedSummaries.has(summary.id) ? 'bg-blue-50' : ''}`}
-                        onClick={() => setSelectedSummary(summary)}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={selectedSummaries.has(summary.id)}
-                            onChange={() => handleSelectSummary(summary.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <FileText className="flex-shrink-0 h-5 w-5 text-gray-400 mr-2" />
-                            <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                              {summary.title || summary.name || 'Untitled'}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(summary.createdAt).toLocaleDateString('ro-RO')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {summary.coursesCount ? `${summary.coursesCount} ${tCommon('courses')}` : t('noCourses')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <Link
-                            href={`/summaries/${summary.id}`}
-                            className="text-blue-600 hover:text-blue-900 mr-3 inline-block"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Link>
-
-                          {!isFreeUser && (
-                            <button
-                              className="text-blue-600 hover:text-blue-900 mr-3"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownload(summary.id, summary.title || summary.name || 'summary');
-                              }}
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                          )}
-
-                          <button
-                            className="text-indigo-600 hover:text-indigo-900 mr-3"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openAssignModal(summary);
-                            }}
-                          >
-                            <FolderPlus className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            className="text-red-600 hover:text-red-900"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(summary.id);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-                {filteredSummaries.length === 0 && (
-                  <div className="text-center py-12">
-                    <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noSummariesTitle')}</h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {t('noSummariesDescription')}
-                    </p>
-                    <div className="mt-6">
-                      <Link
-                        href="/"
-                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        {t('uploadPdf')}
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="lg:col-span-1">
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {selectedSummary ? t('selectedSummary') : t('summaryPreview')}
-                </h2>
-              </div>
-              
-              <div className="p-6">
-                {selectedSummary ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 truncate">
-                        {selectedSummary.title || selectedSummary.name || 'Untitled'}
+        {/* Document grid */}
+        {filteredSummaries.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={<FileText size={22} />}
+              title={t('noSummariesTitle')}
+              description={t('noSummariesDescription')}
+              action={<Button href="/upload">{t('uploadPdf')}</Button>}
+            />
+          </Card>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredSummaries.map((summary) => (
+              <Card key={summary.id} hoverable className="flex flex-col">
+                <CardBody className="flex flex-col flex-1">
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedSummaries.has(summary.id)}
+                      onChange={() => handleSelectSummary(summary.id)}
+                      className="mt-1 w-4 h-4 accent-blue-600 rounded shrink-0"
+                      aria-label={summary.title || summary.name || 'Untitled'}
+                    />
+                    <Link href={`/workspace/${summary.id}`} className="flex-1 min-w-0 group">
+                      <h3 className="font-semibold text-ink leading-snug line-clamp-2 group-hover:text-accent transition-colors">
+                        {summary.title || summary.name || 'Untitled'}
                       </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {t('createdOn')} {new Date(selectedSummary.createdAt).toLocaleString('ro-RO')}
-                      </p>
-                      
-                      {selectedSummary.coursesCount > 0 && (
-                        <p className="text-sm text-gray-500">
-                          {t('assignedTo')} {selectedSummary.coursesCount} {tCommon('courses')}: {' '}
-                          {selectedSummary.courses.map(course => course.title).join(', ')}
-                        </p>
-                      )}
-                      
-                      {selectedSummary.pages && selectedSummary.characters && (
-                        <p className="text-sm text-gray-500">
-                          {selectedSummary.pages} {t('pages')}, {selectedSummary.characters.toLocaleString()} {t('characters')}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-col gap-3 pt-4">
+                    </Link>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    <Badge>{new Date(summary.createdAt).toLocaleDateString()}</Badge>
+                    {summary.pages ? <Badge>{summary.pages} {t('pages')}</Badge> : null}
+                    {summary.coursesCount > 0 && (
+                      <Badge tone="accent">{summary.coursesCount} {tCommon('courses')}</Badge>
+                    )}
+                  </div>
+
+                  <div className="mt-auto pt-4 flex items-center justify-between gap-2">
+                    <Button href={`/workspace/${summary.id}`} size="sm">
+                      ✨ {t('openLearn')}
+                    </Button>
+                    <div className="flex items-center gap-0.5">
                       <Link
-                        href={`/summaries/${selectedSummary.id}`}
-                        className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        href={`/summaries/${summary.id}`}
+                        title={tWorkspace('printView')}
+                        className="p-2 rounded-btn text-ink-faint hover:bg-sunken hover:text-ink transition-colors"
                       >
-                        <Eye className="mr-2 h-5 w-5" />
-                        {t('viewFullSummary')}
+                        <Printer className="w-4 h-4" />
                       </Link>
-                      
                       {!isFreeUser && (
                         <button
-                          onClick={() => handleDownload(
-                            selectedSummary.id, 
-                            selectedSummary.title || selectedSummary.name || 'summary'
-                          )}
-                          className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          title={t('downloadTxt')}
+                          className="p-2 rounded-btn text-ink-faint hover:bg-sunken hover:text-ink transition-colors cursor-pointer"
+                          onClick={() => handleDownload(summary.id, summary.title || summary.name || 'summary')}
                         >
-                          <Download className="mr-2 h-5 w-5" />
-                          {t('downloadTxt')}
+                          <Download className="w-4 h-4" />
                         </button>
                       )}
-                      
                       <button
-                        onClick={() => openAssignModal(selectedSummary)}
-                        className="inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        title={t('assignToCourse')}
+                        className="p-2 rounded-btn text-ink-faint hover:bg-sunken hover:text-ink transition-colors cursor-pointer"
+                        onClick={() => openAssignModal(summary)}
                       >
-                        <FolderPlus className="mr-2 h-5 w-5" />
-                        {t('assignToCourse')}
+                        <FolderPlus className="w-4 h-4" />
                       </button>
-                      
                       <button
-                        onClick={() => handleDelete(selectedSummary.id)}
-                        className="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        title={t('deleteSummary')}
+                        className="p-2 rounded-btn text-ink-faint hover:bg-danger-soft hover:text-danger transition-colors cursor-pointer"
+                        onClick={() => handleDelete(summary.id)}
                       >
-                        <Trash2 className="mr-2 h-5 w-5" />
-                        {t('deleteSummary')}
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center py-8">
-                    <FileText className="mx-auto h-16 w-16 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">{t('selectSummary')}</h3>
-                    <p className="mt-2 text-sm text-gray-500">
-                      {t('selectSummaryDescription')}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
+                </CardBody>
+              </Card>
+            ))}
           </div>
-        </div>
+        )}
       </div>
 
       {showCourseModal && selectedSummary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-nunito">
-          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md">
-            <h3 className="text-2xl font-semibold text-gray-800 mb-5">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-card shadow-pop p-6 sm:p-8 w-full max-w-md">
+            <h3 className="text-xl font-semibold text-ink mb-4">
               {t('assignSummaryToCourse')}
             </h3>
 
-            <p className="text-base text-gray-700 mb-5">
-              <span className="font-semibold">{t('summaryLabel')}</span> {selectedSummary.title || selectedSummary.name || 'Untitled'}
+            <p className="text-sm text-ink-soft mb-5">
+              <span className="font-semibold text-ink">{t('summaryLabel')}</span>{' '}
+              {selectedSummary.title || selectedSummary.name || 'Untitled'}
             </p>
 
             <div className="mb-6">
-              <label className="block text-base font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-ink mb-2">
                 {t('selectCourse')}
               </label>
               <select
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-150"
+                className="w-full px-4 py-2.5 border border-line rounded-btn text-sm text-ink bg-surface focus:outline-2 focus:outline-accent"
                 onChange={(e) => {
                   if (e.target.value === 'new') {
                     createQuickCourse().then((newCourseId) => {
@@ -564,12 +416,9 @@ export default function SummariesPage() {
             </div>
 
             <div className="flex justify-end">
-              <button
-                onClick={() => setShowCourseModal(false)}
-                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors duration-150 text-base"
-              >
+              <Button variant="secondary" onClick={() => setShowCourseModal(false)}>
                 {tCommon('cancel')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

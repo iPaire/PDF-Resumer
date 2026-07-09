@@ -43,7 +43,11 @@
     "settings": "Setări",
     "selectFiles": "Selectează Fișiere",
     "filesSelected": "fișiere selectate",
-    "conversionFailed": "Conversia a eșuat"
+    "conversionFailed": "Conversia a eșuat",
+    "library": "Bibliotecă",
+    "newDocument": "Document nou",
+    "tools": "Instrumente",
+    "translatePdf": "Traduce PDF"
   },
   "terms": {
     "title": "Termeni și Condiții",
@@ -91,7 +95,6 @@
     "passwordsDontMatch": "Parolele nu coincid",
     "passwordTooShort": "Parola trebuie să aibă minim 6 caractere",
     "invalidEmail": "Adresa de email nu este validă",
-    "registrationError": "Eroare la înregistrare",
     "alreadyHaveAccountLogin": "Ai deja cont?",
     "authenticate": "Autentifică-te",
     "resetPasswordTitle": "Resetează Parola",
@@ -114,7 +117,6 @@
     "resendCode": "Retrimite codul",
     "verifyCode": "Verifică Codul",
     "newPassword": "Parolă Nouă",
-    "confirmPassword": "Confirmă Parola",
     "minimumCharacters": "Minim 6 caractere",
     "backToAuthentication": "Înapoi la autentificare"
   },
@@ -127,7 +129,7 @@
     "welcomeUser": "Bun venit, {name}!",
     "activityDescription": "Aici poți gestiona istoricul tău de activități.",
     "filesProcessed": "Fișiere Procesate",
-    "quizzesGenerated": "Teste Generate", 
+    "quizzesGenerated": "Teste Generate",
     "summariesCreated": "Rezumate Create",
     "coursesCreated": "Cursuri Create",
     "storageUsed": "Spațiu Utilizat",
@@ -155,7 +157,6 @@
     "viewSummariesDescription": "Accesează toate rezumatele create",
     "quizTests": "Teste Grilă",
     "quizTestsDescription": "Exersează cu testele generate",
-    "manageCourses": "Gestionează Cursuri",
     "manageCoursesDescription": "Creează și administrează cursurile tale",
     "recentCourses": "Cursuri Recente",
     "viewAllCourses": "Vezi toate cursurile",
@@ -168,7 +169,6 @@
     "open": "Deschide",
     "noCourses": "Niciun curs creat",
     "createFirstCourse": "Începe prin a crea primul tău curs.",
-    "createCourse": "Creează Curs",
     "recentActivity": "Activitate Recentă",
     "viewAllHistory": "Vezi tot istoricul",
     "activity": "Activitate",
@@ -187,7 +187,8 @@
     "summary": "Rezumat",
     "quiz": "Test",
     "summariesSelected": "rezumate selectate",
-    "quizzesSelected": "teste selectate"
+    "quizzesSelected": "teste selectate",
+    "continueLearning": "Continuă să înveți"
   },
   "upload": {
     "dragAndDrop": "Trage și plasează fișierele aici sau click pentru a selecta",
@@ -200,21 +201,32 @@
     "converting": "Se convertește..."
   },
   "homepage": {
-    "heroTitle": "Transformă documentele în",
-    "heroHighlight": "cunoștințe",
-    "heroSubtitle": "SmartPDF Notes extrage automat rezumate, teste și lecții personalizate din materialele tale educaționale",
-    "loginBtn": "Conectare",
-    "registerBtn": "Înregistrare",
+    "heroTitle": "Transformă orice PDF în",
+    "heroHighlight": "tutorele tău personal AI",
+    "heroSubtitle": "Încarcă un document și primești rezumat, tutore de chat, flashcarduri, quizuri, concepte cheie și notițe de studiu — tot ce ai nevoie ca să înveți cu adevărat.",
+    "loginBtn": "Autentificare",
+    "registerBtn": "Începe să înveți gratuit",
     "dashboardBtn": "Dashboard",
-    "uploadBtn": "Rezumat PDF",
+    "uploadBtn": "Încarcă un PDF",
     "howItWorks": "Cum funcționează",
-    "howItWorksSubtitle": "Doar 3 pași simpli pentru a transforma documentele în materiale de învățare",
-    "step1Title": "Încarcă PDF",
-    "step1Description": "Încarcă materialele didactice, cursurile sau prezentările",
-    "step2Title": "AI procesează",
-    "step2Description": "Sistemul nostru extrage conceptele cheie și le structurează",
-    "step3Title": "Obții rezultate",
-    "step3Description": "Primești rezumat, teste și materiale de studiu personalizate"
+    "howItWorksSubtitle": "De la document la înțelegere în trei pași",
+    "step1Title": "Încarci PDF-ul",
+    "step1Description": "Cursuri, manuale, lucrări, rapoarte — orice PDF funcționează.",
+    "step2Title": "AI-ul îl înțelege",
+    "step2Description": "AI-ul citește întregul document și îți construiește spațiul personal de învățare.",
+    "step3Title": "Înveți cu AI",
+    "step3Description": "Discută cu documentul, întoarce flashcarduri, dă quizuri și studiază notițe inteligente.",
+    "featuresTitle": "O încărcare. Șapte moduri de a învăța.",
+    "featuresSubtitle": "Fiecare document devine un spațiu de învățare complet",
+    "featureSummaryDesc": "Un rezumat clar și structurat al întregului document.",
+    "featureChatDesc": "Întreabă orice — AI-ul răspunde din documentul tău, ca un tutore.",
+    "featureConceptsDesc": "Termenii și ideile esențiale, explicate simplu.",
+    "featureQuizDesc": "Întrebări grilă cu explicații ca să te testezi.",
+    "featureFlashcardsDesc": "Carduri pentru repetiție activă și rapidă.",
+    "featureQuestionsDesc": "Întrebările de examen pe care le-ar pune un profesor, cu răspunsuri model.",
+    "featureNotesDesc": "O fișă de recapitulare condensată din întregul document.",
+    "pricingTeaser": "Începe gratuit cu 3 documente pe lună. Fă upgrade când ai nevoie de mai mult.",
+    "pricingCta": "Vezi prețurile"
   },
   "settings": {
     "title": "Setări cont",
@@ -265,9 +277,24 @@
     "currentPlan": "Plan Curent",
     "upgrade": "Upgrade",
     "getStarted": "Începe",
-    "freeFeatures": ["Procesare PDF de bază", "Rezumate limitate", "Suport comunitate"],
-    "standardFeatures": ["Procesare PDF avansată", "Rezumate nelimitate", "Generare teste", "Suport prin email"],
-    "premiumFeatures": ["Tot din Standard", "Creare cursuri", "Analiză avansată", "Suport prioritar", "Acces API"],
+    "freeFeatures": [
+      "Procesare PDF de bază",
+      "Rezumate limitate",
+      "Suport comunitate"
+    ],
+    "standardFeatures": [
+      "Procesare PDF avansată",
+      "Rezumate nelimitate",
+      "Generare teste",
+      "Suport prin email"
+    ],
+    "premiumFeatures": [
+      "Tot din Standard",
+      "Creare cursuri",
+      "Analiză avansată",
+      "Suport prioritar",
+      "Acces API"
+    ],
     "mostPopular": "Cel Mai Popular",
     "unlimited": "Nelimitat",
     "perMonth": "pe lună",
@@ -304,7 +331,8 @@
     "year": "an",
     "selfAssessmentQuestions": "Întrebări de autoevaluare",
     "questions": "întrebări",
-    "aiAdvancedAnswers": "Răspunsuri și rezumate AI avansate"
+    "aiAdvancedAnswers": "Răspunsuri și rezumate AI avansate",
+    "free": "Gratuit"
   },
   "pdfProcessor": {
     "title": "Sumarizator PDF",
@@ -344,7 +372,10 @@
     "academicSummaryDescription": "Rezumat Academic Premium - Include structură detaliată cu glosar tehnic, formule corectate și întrebări de autoevaluare",
     "shortSummary": "Rezumat Scurt",
     "longSummary": "Rezumat Detaliat",
-    "dropHere": "Eliberează aici pentru a încărca"
+    "dropHere": "Eliberează aici pentru a încărca",
+    "heroTitle": "Încarcă un PDF. Primești un tutore personal.",
+    "heroSubtitle": "AI-ul îți citește documentul și îl transformă în rezumat, tutore de chat, flashcarduri, quizuri și altele.",
+    "whatYouGet": "Spațiul tău de învățare va include:"
   },
   "summaries": {
     "title": "Rezumatele Tale",
@@ -395,7 +426,13 @@
     "noSummariesSelected": "Selectează cel puțin un rezumat pentru ștergere",
     "confirmBulkDelete": "Sigur vrei să ștergi {count} rezumate?",
     "bulkDeleteSuccess": "Rezumatele au fost șterse cu succes",
-    "bulkDeleteError": "Unele rezumate nu au putut fi șterse"
+    "bulkDeleteError": "Unele rezumate nu au putut fi șterse",
+    "libraryTitle": "Bibliotecă",
+    "librarySubtitle": "Fiecare document încărcat devine un spațiu de învățare",
+    "openLearn": "Învață",
+    "noCoursesText": "Fără cursuri",
+    "coursesText": "cursuri",
+    "selected": "selectate"
   },
   "summaryDetail": {
     "backToSummaries": "Înapoi la rezumate",
@@ -440,7 +477,23 @@
     "noQuizzesSelected": "Selectează cel puțin un quiz pentru ștergere",
     "confirmBulkDelete": "Sigur vrei să ștergi {count} quiz-uri?",
     "bulkDeleteSuccess": "Quiz-urile au fost șterse cu succes",
-    "bulkDeleteError": "Unele quiz-uri nu au putut fi șterse"
+    "bulkDeleteError": "Unele quiz-uri nu au putut fi șterse",
+    "loadingTest": "Se încarcă testul...",
+    "testNotFound": "Testul nu a fost găsit",
+    "testTitle": "Test:",
+    "questionsCount": "întrebări",
+    "completeTestMessage": "Completează testul pentru a-ți verifica cunoștințele",
+    "shuffleQuestions": "Amestecă întrebările",
+    "generateOtherTest": "Generează alt test",
+    "checkAnswers": "Verifică răspunsurile",
+    "questionsCompleted": "întrebări completate",
+    "outOf": "din",
+    "yourResult": "Rezultatul tău:",
+    "answeredCorrectly": "Ai răspuns corect la",
+    "ofQuestions": "din întrebări",
+    "retakeTest": "Reia testul",
+    "otherTests": "Alte teste",
+    "backToTests": "Înapoi la teste"
   },
   "quizDetail": {
     "backToQuizzes": "Înapoi la teste",
@@ -605,7 +658,6 @@
     "fileCount": "fișier",
     "noCourses": "Nu ai niciun curs",
     "createFirstCourse": "Începe prin a crea primul tău curs pentru a organiza rezumatele.",
-    "loadingCourses": "Se încarcă cursurile...",
     "deleteCourseConfirm": "Sigur doriți să ștergeți acest curs? Această acțiune este permanentă.",
     "backToCourses": "Înapoi la Cursuri",
     "newCourseTitle": "Creează un curs nou",
@@ -658,7 +710,7 @@
     "updatedAt": "Actualizat la",
     "back": "Înapoi",
     "edit": "Editează",
-    "noSummariesInCourse": "Nu ai rezumate în acest curs.",
+    "noSummariesInCourse": "Niciun rezumat în acest curs",
     "addFirstSummary": "Adaugă primul rezumat",
     "noFinalSummaryGenerated": "Niciun rezumat final generat",
     "generateFinalSummaryDescription": "Generează un rezumat final combinând toate rezumatele cursului.",
@@ -709,7 +761,6 @@
     "deleteCheatSheetConfirm": "Sigur doriți să ștergeți această copiuță?",
     "deleteQuizConfirm": "Sigur doriți să ștergeți acest test?",
     "titleRequired": "Titlul este obligatoriu",
-    "noSummariesInCourse": "Niciun rezumat în acest curs",
     "errorLoadingCourse": "Eroare la încărcarea cursului",
     "unknownError": "Eroare necunoscută",
     "tryAgain": "Încearcă din nou",
@@ -752,5 +803,96 @@
     "alwaysOn": "Mereu Active",
     "accept": "Acceptă",
     "rejectNonEssential": "Refuză cookie-urile non-esențiale"
+  },
+  "workspace": {
+    "backToLibrary": "Înapoi la Bibliotecă",
+    "printView": "Vizualizare pentru tipărire",
+    "addToCourse": "Adaugă la curs",
+    "pages": "pagini",
+    "generatedFromSummary": "Generat din rezumat (textul original al documentului nu este disponibil)",
+    "readyTitle": "Spațiul tău de învățare este gata",
+    "openWorkspace": "Deschide Spațiul de Învățare",
+    "notFound": "Documentul nu a fost găsit",
+    "sections": {
+      "summary": "Rezumat",
+      "chat": "Discută cu Documentul",
+      "concepts": "Concepte Cheie",
+      "quiz": "Quiz",
+      "flashcards": "Flashcarduri",
+      "questions": "Întrebări Importante",
+      "notes": "Notițe de Studiu"
+    },
+    "empty": {
+      "conceptsTitle": "Descoperă conceptele cheie",
+      "conceptsDescription": "Lasă AI-ul să extragă cei mai importanți termeni și idei din acest document, cu definiții clare și exemple.",
+      "flashcardsTitle": "Exersează cu flashcarduri",
+      "flashcardsDescription": "Transformă acest document în carduri pentru repetiție activă și rapidă.",
+      "questionsTitle": "Pregătește-te pentru examen",
+      "questionsDescription": "Primește întrebările deschise pe care un profesor le-ar pune cel mai probabil, cu răspunsuri model.",
+      "notesTitle": "Obține notițe de studiu condensate",
+      "notesDescription": "O fișă de recapitulare bine structurată, construită din întregul document.",
+      "quizTitle": "Testează-te",
+      "quizDescription": "Un quiz grilă generat din acest document, cu explicații."
+    },
+    "generate": "Generează",
+    "regenerate": "Regenerează",
+    "generating": "Se generează...",
+    "generatingHint": "Durează de obicei 10-20 de secunde",
+    "generationError": "A apărut o eroare la generare. Te rugăm să încerci din nou.",
+    "retry": "Încearcă din nou",
+    "rateLimited": "Prea multe solicitări. Încearcă din nou în {seconds}s.",
+    "locked": {
+      "title": "Deblochează {feature}",
+      "description": "Acest instrument este disponibil în planurile plătite. Fă upgrade pentru a debloca întregul spațiu de învățare.",
+      "cta": "Vezi planurile"
+    },
+    "chat": {
+      "placeholder": "Întreabă orice despre acest document...",
+      "send": "Trimite",
+      "starterHint": "Încearcă să întrebi:",
+      "starter1": "Explică ideea principală în cuvinte simple",
+      "starter2": "Ce ar trebui să memorez din acest document?",
+      "starter3": "Dă-mi un exemplu real pentru aceste concepte",
+      "starter4": "Care este partea cea mai greu de înțeles?",
+      "remaining": "{count} mesaje gratuite rămase pentru acest document",
+      "limitReached": "Ți-ai folosit mesajele gratuite pentru acest document. Fă upgrade pentru chat nelimitat.",
+      "error": "Tutorele nu a putut răspunde. Te rugăm să încerci din nou.",
+      "thinking": "Se gândește..."
+    },
+    "flashcardsUi": {
+      "flip": "Apasă pentru a întoarce",
+      "know": "O știu",
+      "review": "Mai repet",
+      "shuffle": "Amestecă",
+      "restart": "Ia de la capăt",
+      "progress": "{current} din {total}",
+      "knownPile": "Știute",
+      "reviewPile": "De repetat",
+      "doneTitle": "Pachet terminat!",
+      "doneDescription": "Ai marcat {known} din {total} carduri ca știute."
+    },
+    "quizUi": {
+      "check": "Verifică răspunsurile",
+      "score": "Ai obținut {score} din {total}",
+      "explanation": "Explicație",
+      "retake": "Reia quizul",
+      "newQuiz": "Generează quiz nou"
+    },
+    "conceptsUi": {
+      "whyItMatters": "De ce contează",
+      "example": "Exemplu"
+    },
+    "questionsUi": {
+      "showAnswer": "Arată răspunsul model",
+      "hideAnswer": "Ascunde răspunsul",
+      "basic": "De bază",
+      "intermediate": "Intermediar",
+      "advanced": "Avansat"
+    },
+    "notesUi": {
+      "copy": "Copiază",
+      "copied": "Copiat!",
+      "print": "Tipărește"
+    }
   }
 }

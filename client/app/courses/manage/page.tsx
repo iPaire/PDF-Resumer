@@ -77,35 +77,35 @@ export default function ManageCoursesPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Se încarcă...</p>
+          <p className="mt-4 text-ink-soft">Se încarcă...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-canvas py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+          <h1 className="text-3xl font-extrabold text-ink sm:text-4xl">
             Gestionează Cursurile
           </h1>
-          <p className="mt-3 text-lg text-gray-600">
+          <p className="mt-3 text-lg text-ink-soft">
             Asignează rezumate la cursuri pentru a le organiza
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Courses List */}
-          <div className="bg-white rounded-lg shadow overflow-hidden md:col-span-1">
-            <div className="px-6 py-5 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Cursurile Tale</h2>
+          <div className="bg-surface border border-line rounded-card shadow-card overflow-hidden md:col-span-1">
+            <div className="px-6 py-5 border-b border-line">
+              <h2 className="text-lg font-medium text-ink">Cursurile Tale</h2>
             </div>
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-line">
               {courses.map(course => (
                 <button
                   key={course.id}
-                  className={`w-full text-left p-4 hover:bg-gray-50 flex justify-between items-center ${
+                  className={`w-full text-left p-4 hover:bg-sunken flex justify-between items-center ${
                     selectedCourse === course.id ? 'bg-blue-50' : ''
                   }`}
                   onClick={() => setSelectedCourse(course.id)}
@@ -115,17 +115,17 @@ export default function ManageCoursesPage() {
                     <span className="font-medium">{course.title}</span>
                   </div>
                   {selectedCourse === course.id && (
-                    <ChevronRight className="h-5 w-5 text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-ink-faint" />
                   )}
                 </button>
               ))}
               {courses.length === 0 && (
-                <div className="p-6 text-center text-gray-500">
+                <div className="p-6 text-center text-ink-faint">
                   Nu ai niciun curs creat
                 </div>
               )}
             </div>
-            <div className="bg-gray-50 px-6 py-4">
+            <div className="bg-sunken px-6 py-4">
               <button
                 onClick={() => router.push('/courses/new')}
                 className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -137,15 +137,15 @@ export default function ManageCoursesPage() {
           </div>
           
           {/* Summaries List */}
-          <div className="bg-white rounded-lg shadow overflow-hidden md:col-span-2">
-            <div className="px-6 py-5 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">
+          <div className="bg-surface border border-line rounded-card shadow-card overflow-hidden md:col-span-2">
+            <div className="px-6 py-5 border-b border-line">
+              <h2 className="text-lg font-medium text-ink">
                 {selectedCourse 
                   ? `Rezumate pentru ${courses.find(c => c.id === selectedCourse)?.title || ''}` 
                   : 'Toate rezumatele'}
               </h2>
             </div>
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-line">
               {summaries.map(summary => (
                 <div key={summary.id} className="p-4 flex justify-between items-center">
                   <div className="flex items-center">
@@ -159,7 +159,7 @@ export default function ManageCoursesPage() {
                       className={`p-2 rounded ${
                         summary.courseId === selectedCourse
                           ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 hover:bg-gray-200'
+                          : 'bg-sunken hover:bg-gray-200'
                       }`}
                     >
                       {summary.courseId === selectedCourse ? (
@@ -173,8 +173,8 @@ export default function ManageCoursesPage() {
                       disabled={!summary.courseId}
                       className={`p-2 rounded ${
                         !summary.courseId
-                          ? 'bg-gray-100 text-gray-500'
-                          : 'bg-gray-100 hover:bg-gray-200'
+                          ? 'bg-sunken text-ink-faint'
+                          : 'bg-sunken hover:bg-gray-200'
                       }`}
                     >
                       Elimină
@@ -183,7 +183,7 @@ export default function ManageCoursesPage() {
                 </div>
               ))}
               {summaries.length === 0 && (
-                <div className="p-6 text-center text-gray-500">
+                <div className="p-6 text-center text-ink-faint">
                   Nu ai niciun rezumat creat
                 </div>
               )}

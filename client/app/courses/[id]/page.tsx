@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { 
   Folder, Plus, FileText, Copy, BookOpen, File, CheckSquare, Clipboard, 
@@ -57,6 +58,7 @@ type Quiz = {
 export default function CoursePage() {
   const t = useTranslations('courseDetail');
   const tCommon = useTranslations('common');
+  const tWorkspace = useTranslations('workspace');
   const locale = useLocale();
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -646,7 +648,7 @@ export default function CoursePage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('loadingCourse')}</p>
+          <p className="mt-4 text-ink-soft">{t('loadingCourse')}</p>
         </div>
       </div>
     );
@@ -655,10 +657,10 @@ export default function CoursePage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
+        <div className="text-center max-w-md p-8 bg-surface border border-line rounded-card shadow-card">
           <Folder className="mx-auto h-16 w-16 text-red-500" />
-          <h3 className="mt-4 text-xl font-bold text-gray-900">{tCommon('error')}</h3>
-          <p className="mt-2 text-gray-600">{error}</p>
+          <h3 className="mt-4 text-xl font-bold text-ink">{tCommon('error')}</h3>
+          <p className="mt-2 text-ink-soft">{error}</p>
           <button
             onClick={() => {
               setError(null);
@@ -676,10 +678,10 @@ export default function CoursePage() {
   if (!course) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
-          <Folder className="mx-auto h-16 w-16 text-gray-400" />
-          <h3 className="mt-4 text-xl font-bold text-gray-900">{t('courseNotFound')}</h3>
-          <p className="mt-2 text-gray-600">
+        <div className="text-center max-w-md p-8 bg-surface border border-line rounded-card shadow-card">
+          <Folder className="mx-auto h-16 w-16 text-ink-faint" />
+          <h3 className="mt-4 text-xl font-bold text-ink">{t('courseNotFound')}</h3>
+          <p className="mt-2 text-ink-soft">
             {t('authRequired')}
           </p>
           <button
@@ -717,11 +719,11 @@ export default function CoursePage() {
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
+              <h1 className="text-3xl font-bold text-ink">{course.title}</h1>
               {course.description && (
-                <p className="mt-2 text-gray-600 max-w-3xl">{course.description}</p>
+                <p className="mt-2 text-ink-soft max-w-3xl">{course.description}</p>
               )}
-              <div className="mt-3 text-sm text-gray-500">
+              <div className="mt-3 text-sm text-ink-faint">
                 {t('createdAt')}: {new Date(course.createdAt).toLocaleDateString(locale)}
                 {course.updatedAt !== course.createdAt && (
                   <span className="ml-3">
@@ -733,14 +735,14 @@ export default function CoursePage() {
             <div className="flex space-x-2">
               <button
                 onClick={() => setShowEditCourse(true)}
-                className="px-4 py-2 flex items-center gap-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 flex items-center gap-2 bg-white border border-line-strong rounded-lg text-ink-soft hover:bg-sunken"
               >
                 <Edit className="h-4 w-4" />
                 {tCommon('edit')}
               </button>
               <button
                 onClick={() => router.push('/courses')}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-line-strong rounded-lg text-ink-soft hover:bg-sunken"
               >
                 {t('back')}
               </button>
@@ -753,7 +755,7 @@ export default function CoursePage() {
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <BookOpen className="h-6 w-6 text-indigo-600" />
-              <h2 className="text-xl font-bold text-gray-900">{t('courseSummaries')}</h2>
+              <h2 className="text-xl font-bold text-ink">{t('courseSummaries')}</h2>
             </div>
             <div className="flex space-x-2">
               {course.summaries.length > 1 && (
@@ -762,7 +764,7 @@ export default function CoursePage() {
                   disabled={generating.summary}
                   className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
                     generating.summary
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      ? 'bg-gray-200 text-ink-faint cursor-not-allowed'
                       : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
                   }`}
                 >
@@ -790,7 +792,7 @@ export default function CoursePage() {
           </div>
           
           <div className="mb-6">
-            <h3 className="font-medium text-gray-700 mb-3">{t('addedSummaries', { count: course.summaries.length })}</h3>
+            <h3 className="font-medium text-ink-soft mb-3">{t('addedSummaries', { count: course.summaries.length })}</h3>
             {course.summaries.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {course.summaries.map(summary => {
@@ -806,10 +808,10 @@ export default function CoursePage() {
                             <BookOpen className="h-5 w-5 text-indigo-600" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900">
+                            <h3 className="font-semibold text-ink">
                               {getSummaryName(summary)}
                             </h3>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-ink-faint">
                               {t('createdAt')}: {new Date(summary.createdAt).toLocaleDateString(locale)}
                               {summary.addedAt && (
                                 <span className="ml-2">
@@ -819,10 +821,16 @@ export default function CoursePage() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button 
+                        <div className="flex gap-2 items-center">
+                          <Link
+                            href={`/workspace/${summary.id}`}
+                            className="text-xs font-semibold text-accent hover:text-accent-strong whitespace-nowrap"
+                          >
+                            ✨ {tWorkspace('openWorkspace')}
+                          </Link>
+                          <button
                             onClick={() => copySummary(summary.content, summary.id)}
-                            className="text-gray-500 hover:text-indigo-600"
+                            className="text-ink-faint hover:text-indigo-600"
                           >
                             {copiedSummaryId === summary.id ? (
                               <span className="text-sm text-indigo-600 font-medium">{t('copied')}</span>
@@ -832,13 +840,13 @@ export default function CoursePage() {
                           </button>
                           <button 
                             onClick={() => toggleSummary(summary.id)}
-                            className="text-gray-500 hover:text-indigo-600"
+                            className="text-ink-faint hover:text-indigo-600"
                           >
                             {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                           </button>
                           <button 
                             onClick={() => removeSummaryFromCourse(summary.id)}
-                            className="text-gray-500 hover:text-red-600"
+                            className="text-ink-faint hover:text-red-600"
                           >
                             <Trash2 className="h-5 w-5" />
                           </button>
@@ -847,8 +855,8 @@ export default function CoursePage() {
                       
                       {isExpanded && (
                         <div className="mt-4">
-                          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto">
-                            <p className="whitespace-pre-line text-gray-700">{summary.content}</p>
+                          <div className="bg-sunken border border-line rounded-xl p-5 max-h-[500px] overflow-y-auto">
+                            <p className="whitespace-pre-line text-ink-soft">{summary.content}</p>
                           </div>
                         </div>
                       )}
@@ -857,7 +865,7 @@ export default function CoursePage() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-ink-faint">
                 <p>{t('noSummariesInCourse')}</p>
                 <button
                   onClick={() => setShowAddSummaries(true)}
@@ -874,17 +882,17 @@ export default function CoursePage() {
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-6">
             <Folder className="h-6 w-6 text-indigo-600" />
-            <h2 className="text-xl font-bold text-gray-900">{t('courseMaterials')}</h2>
+            <h2 className="text-xl font-bold text-ink">{t('courseMaterials')}</h2>
           </div>
 
           {/* Material Tabs */}
-          <div className="flex border-b border-gray-200 mb-6">
+          <div className="flex border-b border-line mb-6">
             <button
               onClick={() => setActiveMaterialTab('summary')}
               className={`px-4 py-2 font-medium ${
                 activeMaterialTab === 'summary'
                   ? 'text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-ink-faint hover:text-ink-soft'
               }`}
             >
               {t('finalSummary')}
@@ -894,7 +902,7 @@ export default function CoursePage() {
               className={`px-4 py-2 font-medium ${
                 activeMaterialTab === 'cheatsheet'
                   ? 'text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-ink-faint hover:text-ink-soft'
               }`}
             >
               {t('cheatSheet')}
@@ -904,7 +912,7 @@ export default function CoursePage() {
               className={`px-4 py-2 font-medium ${
                 activeMaterialTab === 'quiz'
                   ? 'text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-ink-faint hover:text-ink-soft'
               }`}
             >
               {t('quiz')}
@@ -922,8 +930,8 @@ export default function CoursePage() {
                       <div className="flex items-center gap-3">
                         <BookOpen className="h-6 w-6 text-indigo-600" />
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900">{t('finalSummaryGenerated')}</h3>
-                          <p className="text-sm text-gray-500">
+                          <h3 className="text-lg font-bold text-ink">{t('finalSummaryGenerated')}</h3>
+                          <p className="text-sm text-ink-faint">
                             {t('createdAt')}: {new Date(finalSummary.createdAt).toLocaleDateString(locale)}
                           </p>
                         </div>
@@ -936,15 +944,15 @@ export default function CoursePage() {
                         {copied.fullSummary ? t('copied') : t('copy')}
                       </button>
                     </div>
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 max-h-[500px] overflow-y-auto">
-                      <p className="whitespace-pre-line text-gray-700">{fullSummary}</p>
+                    <div className="bg-sunken border border-line rounded-xl p-5 max-h-[500px] overflow-y-auto">
+                      <p className="whitespace-pre-line text-ink-soft">{fullSummary}</p>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-bold text-gray-900">{t('noFinalSummaryGenerated')}</h3>
-                    <p className="mt-2 text-gray-600">
+                    <BookOpen className="mx-auto h-12 w-12 text-ink-faint" />
+                    <h3 className="mt-4 text-lg font-bold text-ink">{t('noFinalSummaryGenerated')}</h3>
+                    <p className="mt-2 text-ink-soft">
                       {t('generateFinalSummaryDescription')}
                     </p>
                     <button
@@ -952,7 +960,7 @@ export default function CoursePage() {
                       disabled={!hasSummaries || generating.summary}
                       className={`mt-4 px-4 py-2 rounded-lg font-medium flex items-center gap-2 mx-auto ${
                         !hasSummaries || generating.summary
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          ? 'bg-gray-200 text-ink-faint cursor-not-allowed'
                           : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
                       }`}
                     >
@@ -1012,8 +1020,8 @@ export default function CoursePage() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                           <div className="flex items-center gap-3">
                             <File className="h-6 w-6 text-green-600" />
-                            <h3 className="text-lg font-bold text-gray-900">{t('synthesisSheet')}</h3>
-                            <span className="text-sm text-gray-500">
+                            <h3 className="text-lg font-bold text-ink">{t('synthesisSheet')}</h3>
+                            <span className="text-sm text-ink-faint">
                               {new Date(
                                 cheatSheets.find(cs => cs.id === activeCheatSheet)?.createdAt || ''
                               ).toLocaleDateString(locale)}
@@ -1060,9 +1068,9 @@ export default function CoursePage() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <File className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-bold text-gray-900">{t('noCheatSheetGenerated')}</h3>
-                    <p className="mt-2 text-gray-600">
+                    <File className="mx-auto h-12 w-12 text-ink-faint" />
+                    <h3 className="mt-4 text-lg font-bold text-ink">{t('noCheatSheetGenerated')}</h3>
+                    <p className="mt-2 text-ink-soft">
                       {t('generateCheatSheetDescription')}
                     </p>
                     <button
@@ -1070,7 +1078,7 @@ export default function CoursePage() {
                       disabled={!hasSummaries || generating.cheatSheet}
                       className={`mt-4 px-4 py-2 rounded-lg font-medium flex items-center gap-2 mx-auto ${
                         !hasSummaries || generating.cheatSheet
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          ? 'bg-gray-200 text-ink-faint cursor-not-allowed'
                           : 'bg-green-600 hover:bg-green-700 text-white shadow-md'
                       }`}
                     >
@@ -1134,7 +1142,7 @@ export default function CoursePage() {
                           disabled={generating.quiz}
                           className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
                             generating.quiz
-                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                              ? 'bg-gray-200 text-ink-faint cursor-not-allowed'
                               : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
                           }`}
                         >
@@ -1164,7 +1172,7 @@ export default function CoursePage() {
                               </div>
                               <div className="text-xl mb-1">{quizResults.summary.percentage}%</div>
                               <div className="text-lg font-medium mb-4">{t('grade')}: {quizResults.summary.grade}</div>
-                              <p className="text-gray-700">{quizResults.summary.feedback}</p>
+                              <p className="text-ink-soft">{quizResults.summary.feedback}</p>
                             </div>
 
                             <div className="space-y-6">
@@ -1222,7 +1230,7 @@ export default function CoursePage() {
                           <>
                             <div className="flex items-center gap-3 mb-5">
                               <CheckSquare className="h-6 w-6 text-purple-600" />
-                              <h3 className="text-lg font-bold text-gray-900">{t('testEvaluation')}</h3>
+                              <h3 className="text-lg font-bold text-ink">{t('testEvaluation')}</h3>
                               <span className="text-sm text-black-500">
                                 {new Date(
                                   quizzes.find(q => q.id === activeQuiz)?.createdAt || ''
@@ -1248,14 +1256,14 @@ export default function CoursePage() {
                                           className={`p-3 rounded-lg border cursor-pointer transition-all ${
                                             isSelected
                                               ? 'bg-purple-100 border-purple-500 ring-2 ring-purple-200'
-                                              : 'bg-white border-black hover:bg-gray-50'
+                                              : 'bg-white border-black hover:bg-sunken'
                                           }`}
                                         >
                                           <div className="flex items-start">
                                             <div className={`flex-shrink-0 mt-1 h-4 w-4 rounded-full border mr-3 ${
-                                              isSelected ? 'bg-purple-600 border-purple-600' : 'border-gray-300'
+                                              isSelected ? 'bg-purple-600 border-purple-600' : 'border-line-strong'
                                             }`} />
-                                            <span className="text-gray-700">{option}</span>
+                                            <span className="text-ink-soft">{option}</span>
                                           </div>
                                         </div>
                                       );
@@ -1285,9 +1293,9 @@ export default function CoursePage() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <CheckSquare className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-bold text-gray-900">{t('noQuizGenerated')}</h3>
-                    <p className="mt-2 text-gray-600">
+                    <CheckSquare className="mx-auto h-12 w-12 text-ink-faint" />
+                    <h3 className="mt-4 text-lg font-bold text-ink">{t('noQuizGenerated')}</h3>
+                    <p className="mt-2 text-ink-soft">
                       {t('generateQuizDescription')}
                     </p>
                     <button
@@ -1295,7 +1303,7 @@ export default function CoursePage() {
                       disabled={!hasSummaries || generating.quiz}
                       className={`mt-4 px-4 py-2 rounded-lg font-medium flex items-center gap-2 mx-auto ${
                         !hasSummaries || generating.quiz
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          ? 'bg-gray-200 text-ink-faint cursor-not-allowed'
                           : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
                       }`}
                     >
@@ -1323,16 +1331,16 @@ export default function CoursePage() {
           <div className="mb-8 bg-white rounded-2xl shadow-lg p-6">
             <div className="flex items-center gap-3 mb-5">
               <FileText className="h-6 w-6 text-indigo-600" />
-              <h2 className="text-xl font-bold text-gray-900">{t('coursesFiles')}</h2>
+              <h2 className="text-xl font-bold text-ink">{t('coursesFiles')}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {course.files.map((file) => (
-                <div key={file.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gray-50">
+                <div key={file.id} className="border border-line rounded-xl p-4 hover:shadow-md transition-shadow bg-sunken">
                   <div className="flex items-center">
                     <FileText className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
                     <h3 className="font-medium truncate">{file.name}</h3>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-ink-faint mt-2">
                     {t('addedOn')} {new Date(file.createdAt).toLocaleDateString(locale)}
                   </p>
                 </div>
@@ -1345,9 +1353,9 @@ export default function CoursePage() {
         {!hasContent && (
           <div className="text-center py-12 bg-white rounded-2xl shadow-lg">
             <div className="max-w-md mx-auto">
-              <Folder className="mx-auto h-16 w-16 text-gray-400" />
-              <h3 className="mt-4 text-xl font-bold text-gray-900">{t('emptyCourse')}</h3>
-              <p className="mt-2 text-gray-600">
+              <Folder className="mx-auto h-16 w-16 text-ink-faint" />
+              <h3 className="mt-4 text-xl font-bold text-ink">{t('emptyCourse')}</h3>
+              <p className="mt-2 text-ink-soft">
                 {t('startByAddingSummaries')}
               </p>
             </div>
@@ -1364,7 +1372,7 @@ export default function CoursePage() {
                 <h3 className="text-xl text-black font-bold">{t('addSummariesToCourse')}</h3>
                 <button 
                   onClick={() => setShowAddSummaries(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-ink-faint hover:text-ink-soft"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1373,10 +1381,10 @@ export default function CoursePage() {
               {isLoadingSummaries ? (
                 <div className="text-center py-8">
                   <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="mt-4 text-gray-600">{t('loadingSummaries')}</p>
+                  <p className="mt-4 text-ink-soft">{t('loadingSummaries')}</p>
                 </div>
               ) : availableSummaries.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-ink-faint">
                   {t('noAvailableSummaries')}
                 </div>
               ) : (
@@ -1385,10 +1393,10 @@ export default function CoursePage() {
                     {availableSummaries.map((summary) => (
                       <div 
                         key={summary.id}
-                        className={`p-3 border-b border-gray-200 flex items-center justify-between ${
+                        className={`p-3 border-b border-line flex items-center justify-between ${
                           selectedSummaryIds.includes(summary.id) 
                             ? 'bg-indigo-50' 
-                            : 'hover:bg-gray-50'
+                            : 'hover:bg-sunken'
                         }`}
                       >
                         <div className="flex items-center">
@@ -1405,28 +1413,28 @@ export default function CoursePage() {
                             className="mr-3 h-4 w-4 text-indigo-600 rounded"
                           />
                           <div>
-                            <p className="text-gray-800 font-medium">
+                            <p className="text-ink font-medium">
                               {getSummaryName(summary)}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-ink-faint mt-1">
                               {t('createdAt')}: {new Date(summary.createdAt).toLocaleDateString(locale)}
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-ink-faint">
                           {summary.courses?.length || 0} {tCommon('courses')}
                         </span>
                       </div>
                     ))}
                   </div>
                   
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                  <div className="flex justify-end gap-3 pt-4 border-t border-line">
                     <button
                       onClick={() => {
                         setShowAddSummaries(false);
                         setSelectedSummaryIds([]);
                       }}
-                      className="px-5 py-2.5 rounded-xl font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      className="px-5 py-2.5 rounded-xl font-medium border border-line-strong text-ink-soft hover:bg-sunken"
                     >
                       {tCommon('cancel')}
                     </button>
@@ -1435,7 +1443,7 @@ export default function CoursePage() {
                       disabled={selectedSummaryIds.length === 0}
                       className={`px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 ${
                         selectedSummaryIds.length === 0
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          ? 'bg-gray-200 text-ink-faint cursor-not-allowed'
                           : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md'
                       }`}
                     >
@@ -1459,7 +1467,7 @@ export default function CoursePage() {
                 <h3 className="text-xl text-black font-bold">{t('editCourse')}</h3>
                 <button 
                   onClick={() => setShowEditCourse(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-ink-faint hover:text-ink-soft"
                 >
                   ✕
                 </button>
@@ -1472,7 +1480,7 @@ export default function CoursePage() {
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full p-3 border text-black border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border text-black border-line-strong rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder={t('courseTitlePlaceholder')}
                   />
                 </div>
@@ -1482,17 +1490,17 @@ export default function CoursePage() {
                   <textarea
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
-                    className="w-full p-3 border text-black border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border text-black border-line-strong rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     rows={3}
                     placeholder={t('courseDescriptionPlaceholder')}
                   />
                 </div>
               </div>
               
-              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
+              <div className="flex justify-end gap-3 pt-6 border-t border-line mt-6">
                 <button
                   onClick={() => setShowEditCourse(false)}
-                  className="px-5 py-2.5 rounded-xl font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="px-5 py-2.5 rounded-xl font-medium border border-line-strong text-ink-soft hover:bg-sunken"
                 >
                   {tCommon('cancel')}
                 </button>

@@ -261,26 +261,26 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-canvas py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-ink">{t('title')}</h1>
+          <p className="mt-2 text-ink-soft">
             {t('subtitle')}
           </p>
         </div>
 
-        <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
+        <div className="bg-surface border border-line shadow-card rounded-card divide-y divide-line">
           {/* Profile Section */}
           <div className="px-6 py-5">
-            <h2 className="text-xl font-semibold text-gray-900">{t('profile')}</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-xl font-semibold text-ink">{t('profile')}</h2>
+            <p className="mt-1 text-sm text-ink-faint">
               {t('profileSubtitle')}
             </p>
             
             <form onSubmit={handleProfileSubmit} className="mt-6 space-y-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="name" className="block text-sm font-medium text-ink-soft">
                   {t('name')}
                 </label>
                 <input
@@ -289,12 +289,12 @@ export default function SettingsPage() {
                   id="name"
                   value={formData.name}
                   onChange={handleProfileChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-line-strong rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
               
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="block text-sm font-medium text-ink-soft">
                   {t('email')}
                 </label>
                 <input
@@ -304,12 +304,12 @@ export default function SettingsPage() {
                   value={formData.email}
                   onChange={handleProfileChange}
                   disabled={hasPassword}
-                  className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                    hasPassword ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''
+                  className={`mt-1 block w-full px-3 py-2 border border-line-strong rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    hasPassword ? 'bg-sunken cursor-not-allowed text-ink-faint' : ''
                   }`}
                 />
                 {hasPassword && (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-ink-faint">
                     {t('emailCannotBeChanged')}
                   </p>
                 )}
@@ -337,14 +337,14 @@ export default function SettingsPage() {
           
           {/* Password Section */}
           <div className="px-6 py-5">
-            <h2 className="text-xl font-semibold text-gray-900">{t('changePassword')}</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-xl font-semibold text-ink">{t('changePassword')}</h2>
+            <p className="mt-1 text-sm text-ink-faint">
               {t('passwordSubtitle')}
             </p>
             
             <form onSubmit={handlePasswordSubmit} className="mt-6 space-y-6">
               <div>
-                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="currentPassword" className="block text-sm font-medium text-ink-soft">
                   {t('currentPassword')}
                 </label>
                 <input
@@ -353,13 +353,13 @@ export default function SettingsPage() {
                   id="currentPassword"
                   value={passwordData.currentPassword}
                   onChange={handlePasswordChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-line-strong rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   required
                 />
               </div>
               
               <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="newPassword" className="block text-sm font-medium text-ink-soft">
                   {t('newPassword')}
                 </label>
                 <input
@@ -368,13 +368,13 @@ export default function SettingsPage() {
                   id="newPassword"
                   value={passwordData.newPassword}
                   onChange={handlePasswordChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-line-strong rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   required
                 />
               </div>
               
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-ink-soft">
                   {t('confirmNewPassword')}
                 </label>
                 <input
@@ -383,7 +383,7 @@ export default function SettingsPage() {
                   id="confirmPassword"
                   value={passwordData.confirmPassword}
                   onChange={handlePasswordChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-line-strong rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   required
                 />
               </div>
@@ -410,23 +410,23 @@ export default function SettingsPage() {
           
           {/* Billing Section */}
           <div className="px-6 py-5">
-            <h2 className="text-xl font-semibold text-gray-900">{t('subscription')}</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-xl font-semibold text-ink">{t('subscription')}</h2>
+            <p className="mt-1 text-sm text-ink-faint">
               {t('subscriptionSubtitle')}
             </p>
             
             <div className="mt-6 space-y-6">
-              <div className="border-b border-gray-200 pb-4">
-                <h3 className="text-lg font-medium text-gray-900">{t('currentPlan')}</h3>
-                <p className="mt-1 text-sm text-gray-600">
+              <div className="border-b border-line pb-4">
+                <h3 className="text-lg font-medium text-ink">{t('currentPlan')}</h3>
+                <p className="mt-1 text-sm text-ink-soft">
                   {getPlanName(currentPlan)}
                 </p>
               </div>
               
               {subscriptionDetails && (
-                <div className="border-b border-gray-200 pb-4">
-                  <h3 className="text-lg font-medium text-gray-900">{t('renewalDate')}</h3>
-                  <p className="mt-1 text-sm text-gray-600">
+                <div className="border-b border-line pb-4">
+                  <h3 className="text-lg font-medium text-ink">{t('renewalDate')}</h3>
+                  <p className="mt-1 text-sm text-ink-soft">
                     {subscriptionDetails.current_period_end 
                       ? format(new Date(subscriptionDetails.current_period_end * 1000), 'dd MMMM yyyy', { locale: ro })
                       : 'N/A'}
@@ -435,12 +435,12 @@ export default function SettingsPage() {
               )}
               
               <div>
-                <h3 className="text-lg font-medium text-gray-900">{t('invoiceHistory')}</h3>
+                <h3 className="text-lg font-medium text-ink">{t('invoiceHistory')}</h3>
                 {invoices.length > 0 ? (
                   <ul className="mt-2 space-y-2">
                     {invoices.map((invoice) => (
                       <li key={invoice.id} className="flex justify-between text-sm">
-                        <span className="text-gray-600">
+                        <span className="text-ink-soft">
                           {format(new Date(invoice.created * 1000), 'dd MMM yyyy', { locale: ro })} - 
                           {(invoice.amount_paid / 100).toFixed(2)} {invoice.currency.toUpperCase()}
                         </span>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-1 text-sm text-gray-600">{t('noInvoices')}</p>
+                  <p className="mt-1 text-sm text-ink-soft">{t('noInvoices')}</p>
                 )}
               </div>
               
@@ -471,7 +471,7 @@ export default function SettingsPage() {
                 
                 <button
                   onClick={handleChangePlan}
-                  className="cursor-pointer px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="cursor-pointer px-4 py-2 border border-line-strong rounded-md shadow-sm text-sm font-medium text-ink-soft bg-white hover:bg-sunken focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   {t('changePlan')}
                 </button>

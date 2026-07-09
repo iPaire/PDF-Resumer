@@ -10,7 +10,7 @@
     "about": "Acerca de",
     "contact": "Contacto",
     "privacy": "Política de Privacidad",
-    "terms": "Términos de Servicio", 
+    "terms": "Términos de Servicio",
     "cookies": "Política de Cookies",
     "upload": "Subir",
     "download": "Descargar",
@@ -43,7 +43,11 @@
     "settings": "Configuración",
     "selectFiles": "Seleccionar Archivos",
     "filesSelected": "archivos seleccionados",
-    "conversionFailed": "La conversión falló"
+    "conversionFailed": "La conversión falló",
+    "library": "Biblioteca",
+    "newDocument": "Nuevo documento",
+    "tools": "Herramientas",
+    "translatePdf": "Traducir PDF"
   },
   "terms": {
     "title": "Términos y Condiciones",
@@ -91,7 +95,6 @@
     "passwordsDontMatch": "Las contraseñas no coinciden",
     "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
     "invalidEmail": "La dirección de email no es válida",
-    "registrationError": "Error de registro",
     "alreadyHaveAccountLogin": "¿Ya tienes una cuenta?",
     "authenticate": "Iniciar Sesión",
     "resetPasswordTitle": "Restablecer Contraseña",
@@ -114,7 +117,6 @@
     "resendCode": "Reenviar código",
     "verifyCode": "Verificar Código",
     "newPassword": "Nueva Contraseña",
-    "confirmPassword": "Confirmar Contraseña",
     "minimumCharacters": "Mínimo 6 caracteres",
     "backToAuthentication": "Volver a la autenticación"
   },
@@ -128,7 +130,7 @@
     "activityDescription": "Aquí puedes gestionar tu historial de actividades.",
     "filesProcessed": "Archivos Procesados",
     "quizzesGenerated": "Cuestionarios Generados",
-    "summariesCreated": "Resúmenes Creados", 
+    "summariesCreated": "Resúmenes Creados",
     "coursesCreated": "Cursos Creados",
     "storageUsed": "Almacenamiento Usado",
     "storageLimit": "Límite de Almacenamiento",
@@ -155,7 +157,6 @@
     "viewSummariesDescription": "Accede a todos los resúmenes creados",
     "quizTests": "Pruebas de examen",
     "quizTestsDescription": "Practica con las pruebas generadas",
-    "manageCourses": "Gestionar Cursos",
     "manageCoursesDescription": "Crea y gestiona tus cursos",
     "recentCourses": "Cursos recientes",
     "viewAllCourses": "Ver todos los cursos",
@@ -168,7 +169,6 @@
     "open": "Abrir",
     "noCourses": "No se han creado cursos",
     "createFirstCourse": "Comienza creando tu primer curso.",
-    "createCourse": "Crear Curso",
     "recentActivity": "Actividad reciente",
     "viewAllHistory": "Ver todo el historial",
     "activity": "Actividad",
@@ -187,7 +187,8 @@
     "summary": "Resumen",
     "quiz": "Quiz",
     "summariesSelected": "resúmenes seleccionados",
-    "quizzesSelected": "quizzes seleccionados"
+    "quizzesSelected": "quizzes seleccionados",
+    "continueLearning": "Continúa aprendiendo"
   },
   "upload": {
     "dragAndDrop": "Arrastra y suelta archivos aquí o haz clic para seleccionar",
@@ -200,21 +201,32 @@
     "converting": "Convirtiendo..."
   },
   "homepage": {
-    "heroTitle": "Transforma documentos en",
-    "heroHighlight": "conocimiento",
-    "heroSubtitle": "SmartPDF Notes extrae automáticamente resúmenes, pruebas y lecciones personalizadas de tus materiales educativos",
-    "loginBtn": "Iniciar Sesión",
-    "registerBtn": "Registrarse",
-    "dashboardBtn": "Panel de Control",
-    "uploadBtn": "Resumir PDF",
+    "heroTitle": "Convierte cualquier PDF en",
+    "heroHighlight": "tu tutor personal de IA",
+    "heroSubtitle": "Sube un documento y obtén un resumen, un tutor de chat, tarjetas, quizzes, conceptos clave y apuntes — todo lo que necesitas para aprenderlo de verdad.",
+    "loginBtn": "Iniciar sesión",
+    "registerBtn": "Empieza a aprender gratis",
+    "dashboardBtn": "Panel",
+    "uploadBtn": "Subir un PDF",
     "howItWorks": "Cómo funciona",
-    "howItWorksSubtitle": "Solo 3 pasos simples para transformar documentos en materiales de aprendizaje",
-    "step1Title": "Subir PDF",
-    "step1Description": "Sube materiales educativos, cursos o presentaciones",
-    "step2Title": "IA procesa",
-    "step2Description": "Nuestro sistema extrae conceptos clave y los estructura",
-    "step3Title": "Obtener resultados",
-    "step3Description": "Recibe resumen, pruebas y materiales de estudio personalizados"
+    "howItWorksSubtitle": "Del documento a la comprensión en tres pasos",
+    "step1Title": "Sube tu PDF",
+    "step1Description": "Apuntes, libros de texto, artículos, informes — cualquier PDF funciona.",
+    "step2Title": "La IA lo entiende",
+    "step2Description": "La IA lee todo el documento y construye tu espacio de aprendizaje personal.",
+    "step3Title": "Aprende con IA",
+    "step3Description": "Chatea con el documento, gira tarjetas, haz quizzes y estudia apuntes inteligentes.",
+    "featuresTitle": "Una subida. Siete formas de aprender.",
+    "featuresSubtitle": "Cada documento se convierte en un espacio de aprendizaje completo",
+    "featureSummaryDesc": "Un resumen claro y estructurado de todo el documento.",
+    "featureChatDesc": "Pregunta lo que sea — la IA responde desde tu documento, como un tutor.",
+    "featureConceptsDesc": "Los términos e ideas imprescindibles, explicados de forma sencilla.",
+    "featureQuizDesc": "Preguntas de opción múltiple con explicaciones para ponerte a prueba.",
+    "featureFlashcardsDesc": "Tarjetas para practicar el repaso activo.",
+    "featureQuestionsDesc": "Las preguntas de examen que haría un profesor, con respuestas modelo.",
+    "featureNotesDesc": "Una hoja de repaso condensada de todo el documento.",
+    "pricingTeaser": "Empieza gratis con 3 documentos al mes. Mejora cuando necesites más.",
+    "pricingCta": "Ver precios"
   },
   "settings": {
     "title": "Configuración de la Cuenta",
@@ -265,9 +277,24 @@
     "currentPlan": "Plan Actual",
     "upgrade": "Actualizar",
     "getStarted": "Comenzar",
-    "freeFeatures": ["Procesamiento básico de PDF", "Resúmenes limitados", "Soporte de la comunidad"],
-    "standardFeatures": ["Procesamiento avanzado de PDF", "Resúmenes ilimitados", "Generación de cuestionarios", "Soporte por correo"],
-    "premiumFeatures": ["Todo lo de Estándar", "Creación de cursos", "Análisis avanzados", "Soporte prioritario", "Acceso a API"],
+    "freeFeatures": [
+      "Procesamiento básico de PDF",
+      "Resúmenes limitados",
+      "Soporte de la comunidad"
+    ],
+    "standardFeatures": [
+      "Procesamiento avanzado de PDF",
+      "Resúmenes ilimitados",
+      "Generación de cuestionarios",
+      "Soporte por correo"
+    ],
+    "premiumFeatures": [
+      "Todo lo de Estándar",
+      "Creación de cursos",
+      "Análisis avanzados",
+      "Soporte prioritario",
+      "Acceso a API"
+    ],
     "mostPopular": "Más Popular",
     "unlimited": "Ilimitado",
     "perMonth": "por mes",
@@ -345,7 +372,10 @@
     "academicSummaryDescription": "Resumen Académico Premium - Incluye estructura detallada con glosario técnico, fórmulas corregidas y preguntas de autoevaluación",
     "shortSummary": "Resumen Corto",
     "longSummary": "Resumen Largo",
-    "dropHere": "Suelta tu PDF aquí"
+    "dropHere": "Suelta tu PDF aquí",
+    "heroTitle": "Sube un PDF. Consigue un tutor personal.",
+    "heroSubtitle": "La IA lee tu documento y lo convierte en resumen, tutor de chat, tarjetas, quizzes y más.",
+    "whatYouGet": "Tu espacio de aprendizaje incluirá:"
   },
   "summaries": {
     "title": "Tus Resúmenes",
@@ -397,7 +427,12 @@
     "noSummariesSelected": "Selecciona al menos un resumen para eliminar",
     "confirmBulkDelete": "¿Estás seguro de que quieres eliminar {count} resúmenes?",
     "bulkDeleteSuccess": "Resúmenes eliminados con éxito",
-    "bulkDeleteError": "Algunos resúmenes no pudieron ser eliminados"
+    "bulkDeleteError": "Algunos resúmenes no pudieron ser eliminados",
+    "libraryTitle": "Biblioteca",
+    "librarySubtitle": "Cada documento que subes se convierte en un espacio de aprendizaje",
+    "openLearn": "Aprender",
+    "noCoursesText": "Sin cursos",
+    "coursesText": "cursos"
   },
   "summaryDetail": {
     "backToSummaries": "Volver a resúmenes",
@@ -442,7 +477,23 @@
     "noQuizzesSelected": "Selecciona al menos un quiz para eliminar",
     "confirmBulkDelete": "¿Estás seguro de que quieres eliminar {count} quizzes?",
     "bulkDeleteSuccess": "Quizzes eliminados con éxito",
-    "bulkDeleteError": "Algunos quizzes no pudieron ser eliminados"
+    "bulkDeleteError": "Algunos quizzes no pudieron ser eliminados",
+    "loadingTest": "Cargando test...",
+    "testNotFound": "Test no encontrado",
+    "testTitle": "Test:",
+    "questionsCount": "preguntas",
+    "completeTestMessage": "Completa el test para verificar tus conocimientos",
+    "shuffleQuestions": "Mezclar preguntas",
+    "generateOtherTest": "Generar otro test",
+    "checkAnswers": "Comprobar respuestas",
+    "questionsCompleted": "preguntas completadas",
+    "outOf": "de",
+    "yourResult": "Tu resultado:",
+    "answeredCorrectly": "Respondiste correctamente",
+    "ofQuestions": "de las preguntas",
+    "retakeTest": "Repetir test",
+    "otherTests": "Otros tests",
+    "backToTests": "Volver a los tests"
   },
   "quizDetail": {
     "backToQuizzes": "Volver a pruebas",
@@ -602,12 +653,11 @@
     "manageOrganizeCourses": "Gestiona y organiza tus resúmenes en cursos",
     "createNewCourseButton": "Crear Nuevo Curso",
     "summariesCount": "resúmenes",
-    "summaryCount": "resumen", 
+    "summaryCount": "resumen",
     "filesCount": "archivos",
     "fileCount": "archivo",
     "noCourses": "No tienes cursos",
     "createFirstCourse": "Comienza creando tu primer curso para organizar resúmenes.",
-    "loadingCourses": "Cargando cursos...",
     "deleteCourseConfirm": "¿Estás seguro de que quieres eliminar este curso? Esta acción es permanente.",
     "backToCourses": "Volver a Cursos",
     "newCourseTitle": "Crear un nuevo curso",
@@ -753,5 +803,96 @@
     "alwaysOn": "Siempre Activas",
     "accept": "Aceptar",
     "rejectNonEssential": "Rechazar cookies no esenciales"
+  },
+  "workspace": {
+    "backToLibrary": "Volver a la Biblioteca",
+    "printView": "Vista de impresión",
+    "addToCourse": "Añadir al curso",
+    "pages": "páginas",
+    "generatedFromSummary": "Generado a partir del resumen (el texto original del documento no está disponible)",
+    "readyTitle": "Tu espacio de aprendizaje está listo",
+    "openWorkspace": "Abrir Espacio de Aprendizaje",
+    "notFound": "Documento no encontrado",
+    "sections": {
+      "summary": "Resumen",
+      "chat": "Chatea con el Documento",
+      "concepts": "Conceptos Clave",
+      "quiz": "Quiz",
+      "flashcards": "Tarjetas",
+      "questions": "Preguntas Importantes",
+      "notes": "Apuntes de Estudio"
+    },
+    "empty": {
+      "conceptsTitle": "Descubre los conceptos clave",
+      "conceptsDescription": "Deja que la IA extraiga los términos e ideas más importantes de este documento, con definiciones claras y ejemplos.",
+      "flashcardsTitle": "Practica con tarjetas",
+      "flashcardsDescription": "Convierte este documento en tarjetas para practicar el repaso activo.",
+      "questionsTitle": "Prepárate para el examen",
+      "questionsDescription": "Obtén las preguntas abiertas que un profesor haría con más probabilidad, con respuestas modelo.",
+      "notesTitle": "Obtén apuntes condensados",
+      "notesDescription": "Una hoja de repaso bien estructurada, construida a partir de todo el documento.",
+      "quizTitle": "Ponte a prueba",
+      "quizDescription": "Un quiz de opción múltiple generado a partir de este documento, con explicaciones."
+    },
+    "generate": "Generar",
+    "regenerate": "Regenerar",
+    "generating": "Generando...",
+    "generatingHint": "Suele tardar entre 10 y 20 segundos",
+    "generationError": "Algo salió mal al generar. Por favor, inténtalo de nuevo.",
+    "retry": "Intentar de nuevo",
+    "rateLimited": "Demasiadas solicitudes. Inténtalo de nuevo en {seconds}s.",
+    "locked": {
+      "title": "Desbloquea {feature}",
+      "description": "Esta herramienta está disponible en los planes de pago. Mejora tu plan para desbloquear todo el espacio de aprendizaje.",
+      "cta": "Ver planes"
+    },
+    "chat": {
+      "placeholder": "Pregunta lo que quieras sobre este documento...",
+      "send": "Enviar",
+      "starterHint": "Prueba a preguntar:",
+      "starter1": "Explica la idea principal con palabras sencillas",
+      "starter2": "¿Qué debería memorizar de este documento?",
+      "starter3": "Dame un ejemplo real de estos conceptos",
+      "starter4": "¿Cuál es la parte más difícil de entender?",
+      "remaining": "{count} mensajes gratuitos restantes para este documento",
+      "limitReached": "Has usado tus mensajes gratuitos para este documento. Mejora tu plan para chat ilimitado.",
+      "error": "El tutor no pudo responder. Por favor, inténtalo de nuevo.",
+      "thinking": "Pensando..."
+    },
+    "flashcardsUi": {
+      "flip": "Haz clic para girar",
+      "know": "La sé",
+      "review": "Repasar de nuevo",
+      "shuffle": "Barajar",
+      "restart": "Empezar de nuevo",
+      "progress": "{current} de {total}",
+      "knownPile": "Sabidas",
+      "reviewPile": "Por repasar",
+      "doneTitle": "¡Mazo terminado!",
+      "doneDescription": "Marcaste {known} de {total} tarjetas como sabidas."
+    },
+    "quizUi": {
+      "check": "Comprobar respuestas",
+      "score": "Obtuviste {score} de {total}",
+      "explanation": "Explicación",
+      "retake": "Repetir quiz",
+      "newQuiz": "Generar nuevo quiz"
+    },
+    "conceptsUi": {
+      "whyItMatters": "Por qué importa",
+      "example": "Ejemplo"
+    },
+    "questionsUi": {
+      "showAnswer": "Mostrar respuesta modelo",
+      "hideAnswer": "Ocultar respuesta",
+      "basic": "Básico",
+      "intermediate": "Intermedio",
+      "advanced": "Avanzado"
+    },
+    "notesUi": {
+      "copy": "Copiar",
+      "copied": "¡Copiado!",
+      "print": "Imprimir"
+    }
   }
 }

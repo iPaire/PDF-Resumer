@@ -26,6 +26,11 @@ const OPENAI_SECONDARY_MODEL = process.env.OPENAI_SECONDARY_MODEL || 'gpt-4o-min
 const RETRIES_PER_MODEL = 2;
 const BASE_BACKOFF_MS = 500;
 
+export interface ChatMessageTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface ChatCompletionRequest {
   /** Primary OpenAI model, e.g. 'gpt-4o-mini' or 'gpt-3.5-turbo'. */
   model: string;
@@ -35,6 +40,11 @@ export interface ChatCompletionRequest {
   temperature?: number;
   /** Ask the provider for a JSON object response where supported. */
   jsonMode?: boolean;
+  /**
+   * Optional multi-turn history inserted between the system prompt and the
+   * final user prompt. Single-prompt callers are unaffected when omitted.
+   */
+  messages?: ChatMessageTurn[];
 }
 
 export interface ChatCompletionResult {
@@ -64,6 +74,7 @@ async function callOpenAI(req: ChatCompletionRequest, model: string): Promise<st
     model,
     messages: [
       { role: 'system', content: req.system },
+      ...(req.messages ?? []),
       { role: 'user', content: req.prompt },
     ],
     max_tokens: req.maxTokens,
@@ -90,7 +101,10 @@ async function callAnthropic(req: ChatCompletionRequest): Promise<string> {
     model: ANTHROPIC_FALLBACK_MODEL,
     max_tokens: req.maxTokens,
     system,
-    messages: [{ role: 'user', content: req.prompt }],
+    messages: [
+      ...(req.messages ?? []),
+      { role: 'user' as const, content: req.prompt },
+    ],
   });
 
   const text = message.content
@@ -150,4 +164,40 @@ export async function createChatCompletion(req: ChatCompletionRequest): Promise<
   }
 
   throw new Error(`All AI providers failed: ${errors.join(' | ')}`);
+}
+
+/**
+ * Streaming variant used by the workspace chat. Tries OpenAI with
+ * stream: true; if the request fails BEFORE the first token, falls back to
+ * the non-streaming chain (secondary model -> Anthropic) and yields its full
+ * answer as a single chunk. A mid-stream failure propagates to the caller,
+ * which should surface a retry to the user.
+ */
+export async function* createChatCompletionStream(
+  req: ChatCompletionRequest
+): AsyncGenerator<string, void, undefined> {
+  let stream: AsyncIterable<any> | null = null;
+  try {
+    stream = await openai.chat.completions.create({
+      model: req.model,
+      messages: [
+        { role: 'system', content: req.system },
+        ...(req.messages ?? []),
+        { role: 'user', content: req.prompt },
+      ],
+      max_tokens: req.maxTokens,
+      temperature: req.temperature,
+      stream: true,
+    });
+  } catch (error) {
+    console.warn('[ai-client] streaming request failed before first token, falling back', error);
+    const result = await createChatCompletion(req);
+    yield result.content;
+    return;
+  }
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices?.[0]?.delta?.content;
+    if (delta) yield delta;
+  }
 }

@@ -30,6 +30,8 @@ model User {
   quizzes       Quiz[]
   cheatSheets   CheatSheet[]
   feedback      Feedback[]
+  workspaceArtifacts WorkspaceArtifact[]
+  chatMessages  ChatMessage[]
   passwordResetTokens PasswordResetToken[] @relation("PasswordResetTokens")
 
   trialOffered  Boolean?  @default(false)
@@ -65,7 +67,41 @@ model Summary {
   userId    String   @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   courses   CourseSummary[] // Relație prin tabelă de joncțiune
+  fileId    String?  @unique @db.Uuid
+  file      File?    @relation("SummaryFile", fields: [fileId], references: [id], onDelete: SetNull)
+  artifacts    WorkspaceArtifact[]
+  chatMessages ChatMessage[]
   createdAt DateTime @default(now()) @db.Timestamp(6)
+}
+
+// Artefacte de învățare generate la cerere pentru workspace (concepte, flashcards etc.)
+model WorkspaceArtifact {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  summaryId String   @db.Uuid
+  summary   Summary  @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // 'concepts' | 'flashcards' | 'questions' | 'notes' | 'quiz'
+  content   Json
+  language  String   @default("en")
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([summaryId, type])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  summaryId String   @db.Uuid
+  summary   Summary  @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   // 'user' | 'assistant'
+  content   String
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([summaryId, createdAt])
 }
 
 // Tabelă de joncțiune explicită pentru many-to-many
@@ -116,6 +152,8 @@ model File {
   updatedAt   DateTime @default(now()) @db.Timestamp(6)
   courseId    String?  @db.Uuid
   course      Course?  @relation("CourseFiles", fields: [courseId], references: [id], onDelete: Cascade)
+  extractedText String?
+  summaryRec    Summary? @relation("SummaryFile")
 }
 
 model Account {

@@ -43,7 +43,11 @@
     "settings": "Paramètres",
     "selectFiles": "Sélectionner les fichiers",
     "filesSelected": "fichiers sélectionnés",
-    "conversionFailed": "Échec de la conversion"
+    "conversionFailed": "Échec de la conversion",
+    "library": "Bibliothèque",
+    "newDocument": "Nouveau document",
+    "tools": "Outils",
+    "translatePdf": "Traduire un PDF"
   },
   "terms": {
     "title": "Conditions générales",
@@ -183,7 +187,8 @@
     "summary": "Résumé",
     "quiz": "Quiz",
     "summariesSelected": "résumés sélectionnés",
-    "quizzesSelected": "quiz sélectionnés"
+    "quizzesSelected": "quiz sélectionnés",
+    "continueLearning": "Continuez à apprendre"
   },
   "upload": {
     "dragAndDrop": "Glissez-déposez les fichiers ici ou cliquez pour sélectionner",
@@ -196,21 +201,32 @@
     "converting": "Conversion..."
   },
   "homepage": {
-    "heroTitle": "Transformez les documents en",
-    "heroHighlight": "connaissances",
-    "heroSubtitle": "SmartPDF Notes extrait automatiquement les résumés, tests et leçons personnalisées de vos matériels éducatifs",
+    "heroTitle": "Transformez n'importe quel PDF en",
+    "heroHighlight": "votre tuteur IA personnel",
+    "heroSubtitle": "Importez un document et obtenez un résumé, un tuteur de chat, des cartes mémoire, des quiz, des concepts clés et des notes d'étude — tout ce qu'il faut pour vraiment apprendre.",
     "loginBtn": "Se connecter",
-    "registerBtn": "S'inscrire",
+    "registerBtn": "Apprendre gratuitement",
     "dashboardBtn": "Tableau de bord",
-    "uploadBtn": "Résumer PDF",
+    "uploadBtn": "Importer un PDF",
     "howItWorks": "Comment ça marche",
-    "howItWorksSubtitle": "Seulement 3 étapes simples pour transformer les documents en matériels d'apprentissage",
-    "step1Title": "Téléchargez PDF",
-    "step1Description": "Téléchargez des matériels éducatifs, cours ou présentations",
-    "step2Title": "L'IA traite",
-    "step2Description": "Notre système extrait les concepts clés et les structure",
-    "step3Title": "Obtenez les résultats",
-    "step3Description": "Recevez résumé, tests et matériels d'étude personnalisés"
+    "howItWorksSubtitle": "Du document à la compréhension en trois étapes",
+    "step1Title": "Importez votre PDF",
+    "step1Description": "Notes de cours, manuels, articles, rapports — n'importe quel PDF fonctionne.",
+    "step2Title": "L'IA le comprend",
+    "step2Description": "L'IA lit tout le document et construit votre espace d'apprentissage personnel.",
+    "step3Title": "Apprenez avec l'IA",
+    "step3Description": "Discutez avec le document, retournez des cartes, faites des quiz et étudiez des notes intelligentes.",
+    "featuresTitle": "Un import. Sept façons d'apprendre.",
+    "featuresSubtitle": "Chaque document devient un espace d'apprentissage complet",
+    "featureSummaryDesc": "Un résumé clair et structuré de tout le document.",
+    "featureChatDesc": "Demandez n'importe quoi — l'IA répond à partir de votre document, comme un tuteur.",
+    "featureConceptsDesc": "Les termes et idées essentiels, expliqués simplement.",
+    "featureQuizDesc": "Des QCM avec explications pour vous tester.",
+    "featureFlashcardsDesc": "Des cartes mémoire pour une révision active et rapide.",
+    "featureQuestionsDesc": "Les questions d'examen qu'un professeur poserait, avec des réponses modèles.",
+    "featureNotesDesc": "Une fiche de révision condensée à partir de tout le document.",
+    "pricingTeaser": "Commencez gratuitement avec 3 documents par mois. Passez à l'offre supérieure quand vous en avez besoin.",
+    "pricingCta": "Voir les tarifs"
   },
   "settings": {
     "title": "Paramètres du compte",
@@ -261,9 +277,24 @@
     "currentPlan": "Forfait actuel",
     "upgrade": "Mettre à niveau",
     "getStarted": "Commencer",
-    "freeFeatures": ["Traitement PDF basique", "Résumés limités", "Support communautaire"],
-    "standardFeatures": ["Traitement PDF avancé", "Résumés illimités", "Génération de quiz", "Support par email"],
-    "premiumFeatures": ["Tout ce qui est inclus dans Standard", "Création de cours", "Analyses avancées", "Support prioritaire", "Accès API"],
+    "freeFeatures": [
+      "Traitement PDF basique",
+      "Résumés limités",
+      "Support communautaire"
+    ],
+    "standardFeatures": [
+      "Traitement PDF avancé",
+      "Résumés illimités",
+      "Génération de quiz",
+      "Support par email"
+    ],
+    "premiumFeatures": [
+      "Tout ce qui est inclus dans Standard",
+      "Création de cours",
+      "Analyses avancées",
+      "Support prioritaire",
+      "Accès API"
+    ],
     "mostPopular": "Le plus populaire",
     "unlimited": "Illimité",
     "perMonth": "par mois",
@@ -300,7 +331,8 @@
     "year": "an",
     "selfAssessmentQuestions": "Questions d'auto-évaluation",
     "questions": "questions",
-    "aiAdvancedAnswers": "Réponses et résumés IA avancés"
+    "aiAdvancedAnswers": "Réponses et résumés IA avancés",
+    "free": "Gratuit"
   },
   "pdfProcessor": {
     "title": "Résumeur PDF",
@@ -340,7 +372,10 @@
     "academicSummaryDescription": "Résumé Académique Premium - Comprend une structure détaillée avec glossaire technique, formules corrigées et questions d'auto-évaluation",
     "shortSummary": "Résumé Court",
     "longSummary": "Résumé Détaillé",
-    "dropHere": "Déposez ici pour télécharger"
+    "dropHere": "Déposez ici pour télécharger",
+    "heroTitle": "Importez un PDF. Obtenez un tuteur personnel.",
+    "heroSubtitle": "L'IA lit votre document et le transforme en résumé, tuteur de chat, cartes mémoire, quiz et plus encore.",
+    "whatYouGet": "Votre espace d'apprentissage comprendra :"
   },
   "summaries": {
     "title": "Vos résumés",
@@ -392,7 +427,12 @@
     "noSummariesSelected": "Sélectionnez au moins un résumé à supprimer",
     "confirmBulkDelete": "Êtes-vous sûr de vouloir supprimer {count} résumés ?",
     "bulkDeleteSuccess": "Résumés supprimés avec succès",
-    "bulkDeleteError": "Certains résumés n'ont pas pu être supprimés"
+    "bulkDeleteError": "Certains résumés n'ont pas pu être supprimés",
+    "libraryTitle": "Bibliothèque",
+    "librarySubtitle": "Chaque document importé devient un espace d'apprentissage",
+    "openLearn": "Apprendre",
+    "noCoursesText": "Aucun cours",
+    "coursesText": "cours"
   },
   "summaryDetail": {
     "backToSummaries": "Retour aux résumés",
@@ -437,7 +477,23 @@
     "noQuizzesSelected": "Sélectionnez au moins un quiz à supprimer",
     "confirmBulkDelete": "Êtes-vous sûr de vouloir supprimer {count} quiz ?",
     "bulkDeleteSuccess": "Quiz supprimés avec succès",
-    "bulkDeleteError": "Certains quiz n'ont pas pu être supprimés"
+    "bulkDeleteError": "Certains quiz n'ont pas pu être supprimés",
+    "loadingTest": "Chargement du test...",
+    "testNotFound": "Test introuvable",
+    "testTitle": "Test :",
+    "questionsCount": "questions",
+    "completeTestMessage": "Terminez le test pour vérifier vos connaissances",
+    "shuffleQuestions": "Mélanger les questions",
+    "generateOtherTest": "Générer un autre test",
+    "checkAnswers": "Vérifier les réponses",
+    "questionsCompleted": "questions complétées",
+    "outOf": "sur",
+    "yourResult": "Votre résultat :",
+    "answeredCorrectly": "Vous avez répondu correctement à",
+    "ofQuestions": "des questions",
+    "retakeTest": "Refaire le test",
+    "otherTests": "Autres tests",
+    "backToTests": "Retour aux tests"
   },
   "quizDetail": {
     "backToQuizzes": "Retour aux tests",
@@ -747,5 +803,96 @@
     "alwaysOn": "Toujours Actif",
     "accept": "Accepter",
     "rejectNonEssential": "Refuser les cookies non essentiels"
+  },
+  "workspace": {
+    "backToLibrary": "Retour à la Bibliothèque",
+    "printView": "Vue d'impression",
+    "addToCourse": "Ajouter au cours",
+    "pages": "pages",
+    "generatedFromSummary": "Généré à partir du résumé (texte original du document indisponible)",
+    "readyTitle": "Votre espace d'apprentissage est prêt",
+    "openWorkspace": "Ouvrir l'Espace d'Apprentissage",
+    "notFound": "Document introuvable",
+    "sections": {
+      "summary": "Résumé",
+      "chat": "Discuter avec le Document",
+      "concepts": "Concepts Clés",
+      "quiz": "Quiz",
+      "flashcards": "Cartes mémoire",
+      "questions": "Questions Importantes",
+      "notes": "Notes d'Étude"
+    },
+    "empty": {
+      "conceptsTitle": "Découvrez les concepts clés",
+      "conceptsDescription": "Laissez l'IA extraire les termes et idées les plus importants de ce document, avec des définitions claires et des exemples.",
+      "flashcardsTitle": "Entraînez-vous avec des cartes mémoire",
+      "flashcardsDescription": "Transformez ce document en cartes pour une révision active et rapide.",
+      "questionsTitle": "Préparez-vous à l'examen",
+      "questionsDescription": "Obtenez les questions ouvertes qu'un professeur poserait le plus probablement, avec des réponses modèles.",
+      "notesTitle": "Obtenez des notes d'étude condensées",
+      "notesDescription": "Une fiche de révision bien structurée, construite à partir de tout le document.",
+      "quizTitle": "Testez-vous",
+      "quizDescription": "Un quiz à choix multiples généré à partir de ce document, avec des explications."
+    },
+    "generate": "Générer",
+    "regenerate": "Régénérer",
+    "generating": "Génération...",
+    "generatingHint": "Cela prend généralement 10 à 20 secondes",
+    "generationError": "Une erreur est survenue lors de la génération. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "rateLimited": "Trop de requêtes. Réessayez dans {seconds}s.",
+    "locked": {
+      "title": "Débloquez {feature}",
+      "description": "Cet outil est disponible avec les formules payantes. Passez à une formule supérieure pour débloquer tout l'espace d'apprentissage.",
+      "cta": "Voir les formules"
+    },
+    "chat": {
+      "placeholder": "Posez n'importe quelle question sur ce document...",
+      "send": "Envoyer",
+      "starterHint": "Essayez de demander :",
+      "starter1": "Explique l'idée principale en mots simples",
+      "starter2": "Que dois-je mémoriser de ce document ?",
+      "starter3": "Donne-moi un exemple concret de ces concepts",
+      "starter4": "Quelle est la partie la plus difficile à comprendre ?",
+      "remaining": "{count} messages gratuits restants pour ce document",
+      "limitReached": "Vous avez utilisé vos messages gratuits pour ce document. Passez à une formule supérieure pour un chat illimité.",
+      "error": "Le tuteur n'a pas pu répondre. Veuillez réessayer.",
+      "thinking": "Réflexion..."
+    },
+    "flashcardsUi": {
+      "flip": "Cliquez pour retourner",
+      "know": "Je la connais",
+      "review": "À revoir",
+      "shuffle": "Mélanger",
+      "restart": "Recommencer",
+      "progress": "{current} sur {total}",
+      "knownPile": "Connues",
+      "reviewPile": "À revoir",
+      "doneTitle": "Paquet terminé !",
+      "doneDescription": "Vous avez marqué {known} cartes sur {total} comme connues."
+    },
+    "quizUi": {
+      "check": "Vérifier les réponses",
+      "score": "Vous avez obtenu {score} sur {total}",
+      "explanation": "Explication",
+      "retake": "Refaire le quiz",
+      "newQuiz": "Générer un nouveau quiz"
+    },
+    "conceptsUi": {
+      "whyItMatters": "Pourquoi c'est important",
+      "example": "Exemple"
+    },
+    "questionsUi": {
+      "showAnswer": "Afficher la réponse modèle",
+      "hideAnswer": "Masquer la réponse",
+      "basic": "Basique",
+      "intermediate": "Intermédiaire",
+      "advanced": "Avancé"
+    },
+    "notesUi": {
+      "copy": "Copier",
+      "copied": "Copié !",
+      "print": "Imprimer"
+    }
   }
 }

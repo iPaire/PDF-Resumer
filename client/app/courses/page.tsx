@@ -61,17 +61,17 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('loadingCourses')}</p>
+          <p className="mt-4 text-ink-soft">{t('loadingCourses')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <a 
   className="inline-flex items-center text-blue-600 hover:text-blue-800" 
@@ -95,8 +95,8 @@ export default function CoursesPage() {
   {t('backToDashboard')}
 </a>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t('yourCourses')}</h1>
-          <p className="mt-2 text-gray-600">{t('manageOrganizeCourses')}</p>
+          <h1 className="text-3xl font-bold text-ink">{t('yourCourses')}</h1>
+          <p className="mt-2 text-ink-soft">{t('manageOrganizeCourses')}</p>
         </div>
 
         <div className="mb-6 flex justify-end">
@@ -113,7 +113,7 @@ export default function CoursesPage() {
           {courses.map(course => (
             <div 
               key={course.id}
-              className="bg-white border border-gray-200 rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer"
+              className="bg-white border border-line rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer"
               onClick={() => router.push(`/courses/${course.id}`)}
             >
               <div className="p-6">
@@ -123,25 +123,25 @@ export default function CoursesPage() {
                   </div>
                   <button 
                     onClick={(e) => deleteCourse(course.id, e)}
-                    className="text-gray-400 hover:text-red-500"
+                    className="text-ink-faint hover:text-red-500"
                   >
                     <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
-                <h3 className="mt-4 text-xl font-semibold text-gray-900">{course.title}</h3>
-                <p className="mt-2 text-gray-500 text-sm">
+                <h3 className="mt-4 text-xl font-semibold text-ink">{course.title}</h3>
+                <p className="mt-2 text-ink-faint text-sm">
                   {course.description || t('noDescription')}
                 </p>
                 <div className="mt-6 flex justify-between items-center">
                   <div className="flex space-x-4">
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-ink-faint">
                       {course._count.summaries} {course._count.summaries === 1 ? t('summaryCount') : t('summariesCount')}
                     </span>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-ink-faint">
                       {course._count.files} {course._count.files === 1 ? t('fileCount') : t('filesCount')}
                     </span>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                  <ChevronRight className="h-5 w-5 text-ink-faint" />
                 </div>
               </div>
             </div>
@@ -149,10 +149,10 @@ export default function CoursesPage() {
         </div>
 
         {courses.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <Folder className="mx-auto h-16 w-16 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">{t('noCourses')}</h3>
-            <p className="mt-2 text-sm text-gray-500">
+          <div className="text-center py-12 bg-surface border border-line rounded-card shadow-card">
+            <Folder className="mx-auto h-16 w-16 text-ink-faint" />
+            <h3 className="mt-4 text-lg font-medium text-ink">{t('noCourses')}</h3>
+            <p className="mt-2 text-sm text-ink-faint">
               {t('createFirstCourse')}
             </p>
             <div className="mt-6">

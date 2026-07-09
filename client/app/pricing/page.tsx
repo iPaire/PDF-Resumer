@@ -159,7 +159,7 @@ export default function PricingPage() {
             {/* Plan gratuit */}
             <div className="bg-white shadow-lg rounded-xl p-5 border border-gray-300">
               <h2 className="text-xl font-semibold text-gray-800 mb-3">{t('free')}</h2>
-              <p className="text-gray-600 mb-3 text-sm">{t('freeDescription')}</p>
+              <p className="text-ink-soft mb-3 text-sm">{t('freeDescription')}</p>
               <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-1">
                 <li>3 {t('pdfLimitMonth')}</li>
                 <li>{t('aiSummary')}</li>
@@ -183,7 +183,7 @@ export default function PricingPage() {
               )}
               <div className={`bg-white shadow-xl rounded-xl p-5 border-2 ${hasDiscount() ? 'border-purple-500' : 'border-yellow-500'}`}>
                 <h2 className="text-xl font-semibold text-gray-800 mb-3">{t('premiumMonthly')}</h2>
-                <p className="text-gray-600 mb-3 text-sm">{t('premiumMonthlyDescription')}</p>
+                <p className="text-ink-soft mb-3 text-sm">{t('premiumMonthlyDescription')}</p>
                 <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-1">
                   <li>50 {t('pdfLimitMonth')}</li>
                   <li>{t('aiSummary')} + {t('quizTests')}</li>
@@ -194,9 +194,9 @@ export default function PricingPage() {
                   <div>
                     <div className="mb-2">
                       <span className="font-bold text-gray-800 text-lg">{currencySymbol}{prices.PREMIUM_MONTHLY_REDUCED} / {t('month')}</span>
-                      <span className="ml-2 text-xs text-gray-500 line-through">{currencySymbol}{prices.PREMIUM_MONTHLY}</span>
+                      <span className="ml-2 text-xs text-ink-faint line-through">{currencySymbol}{prices.PREMIUM_MONTHLY}</span>
                     </div>
-                    <p className="text-xs text-gray-600 mb-4">{t('firstTwoMonths')} {currencySymbol}{prices.PREMIUM_MONTHLY}/{t('month')}</p>
+                    <p className="text-xs text-ink-soft mb-4">{t('firstTwoMonths')} {currencySymbol}{prices.PREMIUM_MONTHLY}/{t('month')}</p>
                   </div>
                 ) : (
                   <p className="font-bold text-gray-800 text-lg mb-4">{currencySymbol}{prices.PREMIUM_MONTHLY} / {t('month')}</p>
@@ -222,7 +222,7 @@ export default function PricingPage() {
               </div>
               <div className="bg-white shadow-xl rounded-xl p-5 border-2 border-yellow-500">
                 <h2 className="text-xl font-semibold text-gray-800 mb-3">{t('premiumAnnual')}</h2>
-                <p className="text-gray-600 mb-3 text-sm">{t('premiumAnnualDescription')}</p>
+                <p className="text-ink-soft mb-3 text-sm">{t('premiumAnnualDescription')}</p>
                 <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-1">
                   <li>200 {t('pdfLimitMonth')}</li>
                   <li>Tot ce este în {t('premiumMonthly')}</li>
@@ -248,7 +248,7 @@ export default function PricingPage() {
             {/* Plan gratuit */}
             <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-300 transition-all hover:shadow-xl">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('free')}</h2>
-              <p className="text-gray-600 mb-4">{t('freeDescription')}</p>
+              <p className="text-ink-soft mb-4">{t('freeDescription')}</p>
               <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-2">
                 <li>3 {t('pdfLimitMonth')}</li>
                 <li>{t('maxFileSize')} 10MB</li>
@@ -272,7 +272,7 @@ export default function PricingPage() {
               )}
               <div className={`bg-white shadow-xl rounded-xl p-6 border-2 transition-all hover:shadow-2xl ${hasDiscount() ? 'border-purple-500' : 'border-yellow-500'}`}>
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('premiumMonthly')}</h2>
-                <p className="text-gray-600 mb-4">{t('premiumMonthlyDescription')}</p>
+                <p className="text-ink-soft mb-4">{t('premiumMonthlyDescription')}</p>
                 <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-2">
                   <li>50 {t('pdfLimitMonth')}</li>
                   <li>{t('maxFileSize')} 50MB</li>
@@ -283,9 +283,9 @@ export default function PricingPage() {
                   <div>
                     <div className="mb-2">
                       <span className="font-bold text-gray-800 text-lg">{currencySymbol}{prices.PREMIUM_MONTHLY_REDUCED} / {t('month')}</span>
-                      <span className="ml-2 text-sm text-gray-500 line-through">{currencySymbol}{prices.PREMIUM_MONTHLY}</span>
+                      <span className="ml-2 text-sm text-ink-faint line-through">{currencySymbol}{prices.PREMIUM_MONTHLY}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-6">{t('firstTwoMonths')} {currencySymbol}{prices.PREMIUM_MONTHLY}/{t('month')}</p>
+                    <p className="text-sm text-ink-soft mb-6">{t('firstTwoMonths')} {currencySymbol}{prices.PREMIUM_MONTHLY}/{t('month')}</p>
                   </div>
                 ) : (
                   <p className="font-bold text-gray-800 text-lg mb-6">{currencySymbol}{prices.PREMIUM_MONTHLY} / {t('month')}</p>
@@ -311,7 +311,7 @@ export default function PricingPage() {
               </div>
               <div className="bg-white shadow-xl rounded-xl p-6 border-2 border-yellow-500 transition-all hover:shadow-2xl">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('premiumAnnual')}</h2>
-                <p className="text-gray-600 mb-4">{t('premiumAnnualDescription')}</p>
+                <p className="text-ink-soft mb-4">{t('premiumAnnualDescription')}</p>
                 <ul className="text-sm text-gray-700 list-disc ml-5 mb-4 space-y-2">
                   <li>200 {t('pdfLimitMonth')}</li>
                   <li>{t('maxFileSize')} 250MB</li>
@@ -335,7 +335,7 @@ export default function PricingPage() {
           </div>
         )}
         
-        <div className="mt-10 sm:mt-12 text-center text-gray-600">
+        <div className="mt-10 sm:mt-12 text-center text-ink-soft">
           <p className="mb-3 sm:mb-4 text-sm sm:text-base">✅ {t('allPlansInclude')}</p>
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
             <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('aiSummary')}</span>
@@ -343,7 +343,7 @@ export default function PricingPage() {
             <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('technicalSupport')}</span>
             <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('freeUpdates')}</span>
           </div>
-          <p className="mt-4 text-xs text-gray-500">{t('pricesInEuro')}</p>
+          <p className="mt-4 text-xs text-ink-faint">{t('pricesInEuro')}</p>
         </div>
       </div>
     </div>

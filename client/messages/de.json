@@ -43,7 +43,11 @@
     "settings": "Einstellungen",
     "selectFiles": "Dateien auswählen",
     "filesSelected": "Dateien ausgewählt",
-    "conversionFailed": "Konvertierung fehlgeschlagen"
+    "conversionFailed": "Konvertierung fehlgeschlagen",
+    "library": "Bibliothek",
+    "newDocument": "Neues Dokument",
+    "tools": "Werkzeuge",
+    "translatePdf": "PDF übersetzen"
   },
   "terms": {
     "title": "Allgemeine Geschäftsbedingungen",
@@ -91,7 +95,6 @@
     "passwordsDontMatch": "Passwörter stimmen nicht überein",
     "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein",
     "invalidEmail": "Die E-Mail-Adresse ist ungültig",
-    "registrationError": "Registrierungsfehler",
     "alreadyHaveAccountLogin": "Haben Sie bereits ein Konto?",
     "authenticate": "Anmelden",
     "resetPasswordTitle": "Passwort zurücksetzen",
@@ -114,7 +117,6 @@
     "resendCode": "Code erneut senden",
     "verifyCode": "Code überprüfen",
     "newPassword": "Neues Passwort",
-    "confirmPassword": "Passwort bestätigen",
     "minimumCharacters": "Mindestens 6 Zeichen",
     "backToAuthentication": "Zurück zur Authentifizierung"
   },
@@ -155,7 +157,6 @@
     "viewSummariesDescription": "Greifen Sie auf alle erstellten Zusammenfassungen zu",
     "quizTests": "Testfragen",
     "quizTestsDescription": "Üben Sie mit generierten Tests",
-    "manageCourses": "Kurse verwalten",
     "manageCoursesDescription": "Erstellen und verwalten Sie Ihre Kurse",
     "recentCourses": "Kürzliche Kurse",
     "viewAllCourses": "Alle Kurse anzeigen",
@@ -168,7 +169,6 @@
     "open": "Öffnen",
     "noCourses": "Keine Kurse erstellt",
     "createFirstCourse": "Beginnen Sie mit der Erstellung Ihres ersten Kurses.",
-    "createCourse": "Kurs erstellen",
     "recentActivity": "Kürzliche Aktivität",
     "viewAllHistory": "Gesamten Verlauf anzeigen",
     "activity": "Aktivität",
@@ -187,7 +187,8 @@
     "summary": "Zusammenfassung",
     "quiz": "Test",
     "summariesSelected": "Zusammenfassungen ausgewählt",
-    "quizzesSelected": "Tests ausgewählt"
+    "quizzesSelected": "Tests ausgewählt",
+    "continueLearning": "Weiterlernen"
   },
   "upload": {
     "dragAndDrop": "Ziehen Sie Dateien hierher oder klicken Sie zur Auswahl",
@@ -200,21 +201,32 @@
     "converting": "Wird konvertiert..."
   },
   "homepage": {
-    "heroTitle": "Verwandeln Sie Dokumente in",
-    "heroHighlight": "Wissen",
-    "heroSubtitle": "SmartPDF Notes extrahiert automatisch Zusammenfassungen, Tests und personalisierte Lektionen aus Ihren Bildungsmaterialien",
+    "heroTitle": "Verwandle jedes PDF in",
+    "heroHighlight": "deinen persönlichen KI-Tutor",
+    "heroSubtitle": "Lade ein Dokument hoch und erhalte Zusammenfassung, Chat-Tutor, Karteikarten, Quizze, Schlüsselkonzepte und Lernnotizen — alles, was du zum echten Lernen brauchst.",
     "loginBtn": "Anmelden",
-    "registerBtn": "Registrieren",
+    "registerBtn": "Kostenlos lernen starten",
     "dashboardBtn": "Dashboard",
-    "uploadBtn": "PDF zusammenfassen",
-    "howItWorks": "So funktioniert's",
-    "howItWorksSubtitle": "Nur 3 einfache Schritte, um Dokumente in Lernmaterialien zu verwandeln",
+    "uploadBtn": "PDF hochladen",
+    "howItWorks": "So funktioniert es",
+    "howItWorksSubtitle": "Vom Dokument zum Verständnis in drei Schritten",
     "step1Title": "PDF hochladen",
-    "step1Description": "Laden Sie Bildungsmaterialien, Kurse oder Präsentationen hoch",
-    "step2Title": "KI verarbeitet",
-    "step2Description": "Unser System extrahiert Schlüsselkonzepte und strukturiert sie",
-    "step3Title": "Ergebnisse erhalten",
-    "step3Description": "Erhalten Sie Zusammenfassung, Tests und personalisierte Lernmaterialien"
+    "step1Description": "Vorlesungsnotizen, Lehrbücher, Artikel, Berichte — jedes PDF funktioniert.",
+    "step2Title": "Die KI versteht es",
+    "step2Description": "Die KI liest das gesamte Dokument und baut deinen persönlichen Lernbereich auf.",
+    "step3Title": "Mit KI lernen",
+    "step3Description": "Chatte mit dem Dokument, dreh Karteikarten um, mach Quizze und lerne mit smarten Notizen.",
+    "featuresTitle": "Ein Upload. Sieben Wege zu lernen.",
+    "featuresSubtitle": "Jedes Dokument wird zu einem vollständigen Lernbereich",
+    "featureSummaryDesc": "Eine klare, strukturierte Zusammenfassung des gesamten Dokuments.",
+    "featureChatDesc": "Frag alles — die KI antwortet aus deinem Dokument, wie ein Tutor.",
+    "featureConceptsDesc": "Die wichtigsten Begriffe und Ideen, einfach erklärt.",
+    "featureQuizDesc": "Multiple-Choice-Fragen mit Erklärungen zum Selbsttest.",
+    "featureFlashcardsDesc": "Karteikarten für schnelles, aktives Wiederholen.",
+    "featureQuestionsDesc": "Die Prüfungsfragen, die ein Professor stellen würde — mit Musterantworten.",
+    "featureNotesDesc": "Ein kompaktes Wiederholungsblatt aus dem gesamten Dokument.",
+    "pricingTeaser": "Starte kostenlos mit 3 Dokumenten pro Monat. Upgrade, wenn du mehr brauchst.",
+    "pricingCta": "Preise ansehen"
   },
   "settings": {
     "title": "Kontoeinstellungen",
@@ -265,9 +277,24 @@
     "currentPlan": "Aktueller Plan",
     "upgrade": "Upgrade",
     "getStarted": "Loslegen",
-    "freeFeatures": ["Grundlegende PDF-Verarbeitung", "Eingeschränkte Zusammenfassungen", "Community-Support"],
-    "standardFeatures": ["Erweiterte PDF-Verarbeitung", "Unbegrenzte Zusammenfassungen", "Testgenerierung", "E-Mail-Support"],
-    "premiumFeatures": ["Alles aus Standard", "Kurserstellung", "Erweiterte Analysen", "Prioritäts-Support", "API-Zugriff"],
+    "freeFeatures": [
+      "Grundlegende PDF-Verarbeitung",
+      "Eingeschränkte Zusammenfassungen",
+      "Community-Support"
+    ],
+    "standardFeatures": [
+      "Erweiterte PDF-Verarbeitung",
+      "Unbegrenzte Zusammenfassungen",
+      "Testgenerierung",
+      "E-Mail-Support"
+    ],
+    "premiumFeatures": [
+      "Alles aus Standard",
+      "Kurserstellung",
+      "Erweiterte Analysen",
+      "Prioritäts-Support",
+      "API-Zugriff"
+    ],
     "mostPopular": "Am beliebtesten",
     "unlimited": "Unbegrenzt",
     "perMonth": "pro Monat",
@@ -304,7 +331,8 @@
     "year": "Jahr",
     "selfAssessmentQuestions": "Selbstbewertungsfragen",
     "questions": "Fragen",
-    "aiAdvancedAnswers": "Erweiterte KI-Antworten und Zusammenfassungen"
+    "aiAdvancedAnswers": "Erweiterte KI-Antworten und Zusammenfassungen",
+    "free": "Kostenlos"
   },
   "pdfProcessor": {
     "title": "PDF-Zusammenfasser",
@@ -344,7 +372,10 @@
     "academicSummaryDescription": "Premium Akademische Zusammenfassung - Enthält detaillierte Struktur mit technischem Glossar, korrigierten Formeln und Selbstbewertungsfragen",
     "shortSummary": "Kurze Zusammenfassung",
     "longSummary": "Detaillierte Zusammenfassung",
-    "dropHere": "Hier ablegen zum Hochladen"
+    "dropHere": "Hier ablegen zum Hochladen",
+    "heroTitle": "Lade ein PDF hoch. Erhalte einen persönlichen Tutor.",
+    "heroSubtitle": "Die KI liest dein Dokument und verwandelt es in Zusammenfassung, Chat-Tutor, Karteikarten, Quizze und mehr.",
+    "whatYouGet": "Dein Lernbereich wird enthalten:"
   },
   "summaries": {
     "title": "Ihre Zusammenfassungen",
@@ -396,7 +427,12 @@
     "noSummariesSelected": "Wählen Sie mindestens eine Zusammenfassung zum Löschen aus",
     "confirmBulkDelete": "Sind Sie sicher, dass Sie {count} Zusammenfassungen löschen möchten?",
     "bulkDeleteSuccess": "Zusammenfassungen erfolgreich gelöscht",
-    "bulkDeleteError": "Einige Zusammenfassungen konnten nicht gelöscht werden"
+    "bulkDeleteError": "Einige Zusammenfassungen konnten nicht gelöscht werden",
+    "libraryTitle": "Bibliothek",
+    "librarySubtitle": "Jedes hochgeladene Dokument wird zu einem Lernbereich",
+    "openLearn": "Lernen",
+    "noCoursesText": "Keine Kurse",
+    "coursesText": "Kurse"
   },
   "summaryDetail": {
     "backToSummaries": "Zurück zu Zusammenfassungen",
@@ -441,7 +477,23 @@
     "noQuizzesSelected": "Wählen Sie mindestens einen Test zum Löschen aus",
     "confirmBulkDelete": "Sind Sie sicher, dass Sie {count} Tests löschen möchten?",
     "bulkDeleteSuccess": "Tests erfolgreich gelöscht",
-    "bulkDeleteError": "Einige Tests konnten nicht gelöscht werden"
+    "bulkDeleteError": "Einige Tests konnten nicht gelöscht werden",
+    "loadingTest": "Test wird geladen...",
+    "testNotFound": "Test nicht gefunden",
+    "testTitle": "Test:",
+    "questionsCount": "Fragen",
+    "completeTestMessage": "Schließe den Test ab, um dein Wissen zu überprüfen",
+    "shuffleQuestions": "Fragen mischen",
+    "generateOtherTest": "Anderen Test generieren",
+    "checkAnswers": "Antworten prüfen",
+    "questionsCompleted": "Fragen beantwortet",
+    "outOf": "von",
+    "yourResult": "Dein Ergebnis:",
+    "answeredCorrectly": "Du hast richtig beantwortet",
+    "ofQuestions": "der Fragen",
+    "retakeTest": "Test wiederholen",
+    "otherTests": "Weitere Tests",
+    "backToTests": "Zurück zu den Tests"
   },
   "quizDetail": {
     "backToQuizzes": "Zurück zu Tests",
@@ -606,7 +658,6 @@
     "fileCount": "Datei",
     "noCourses": "Sie haben keine Kurse",
     "createFirstCourse": "Beginnen Sie mit der Erstellung Ihres ersten Kurses, um Zusammenfassungen zu organisieren.",
-    "loadingCourses": "Kurse werden geladen...",
     "deleteCourseConfirm": "Sind Sie sicher, dass Sie diesen Kurs löschen möchten? Diese Aktion ist dauerhaft.",
     "backToCourses": "Zurück zu Kursen",
     "newCourseTitle": "Einen neuen Kurs erstellen",
@@ -752,5 +803,96 @@
     "alwaysOn": "Immer Aktiv",
     "accept": "Akzeptieren",
     "rejectNonEssential": "Nicht-wesentliche Cookies ablehnen"
+  },
+  "workspace": {
+    "backToLibrary": "Zurück zur Bibliothek",
+    "printView": "Druckansicht",
+    "addToCourse": "Zum Kurs hinzufügen",
+    "pages": "Seiten",
+    "generatedFromSummary": "Aus der Zusammenfassung generiert (Originaltext des Dokuments nicht verfügbar)",
+    "readyTitle": "Dein Lernbereich ist bereit",
+    "openWorkspace": "Lernbereich öffnen",
+    "notFound": "Dokument nicht gefunden",
+    "sections": {
+      "summary": "Zusammenfassung",
+      "chat": "Mit dem Dokument chatten",
+      "concepts": "Schlüsselkonzepte",
+      "quiz": "Quiz",
+      "flashcards": "Karteikarten",
+      "questions": "Wichtige Fragen",
+      "notes": "Lernnotizen"
+    },
+    "empty": {
+      "conceptsTitle": "Entdecke die Schlüsselkonzepte",
+      "conceptsDescription": "Lass die KI die wichtigsten Begriffe und Ideen aus diesem Dokument extrahieren – mit klaren Definitionen und Beispielen.",
+      "flashcardsTitle": "Übe mit Karteikarten",
+      "flashcardsDescription": "Verwandle dieses Dokument in Karteikarten für schnelles, aktives Wiederholen.",
+      "questionsTitle": "Bereite dich auf die Prüfung vor",
+      "questionsDescription": "Erhalte die offenen Fragen, die ein Professor am ehesten stellen würde – mit Musterantworten.",
+      "notesTitle": "Erhalte kompakte Lernnotizen",
+      "notesDescription": "Ein gut strukturiertes Wiederholungsblatt, erstellt aus dem gesamten Dokument.",
+      "quizTitle": "Teste dich selbst",
+      "quizDescription": "Ein Multiple-Choice-Quiz aus diesem Dokument, mit Erklärungen."
+    },
+    "generate": "Generieren",
+    "regenerate": "Neu generieren",
+    "generating": "Wird generiert...",
+    "generatingHint": "Dauert normalerweise 10–20 Sekunden",
+    "generationError": "Beim Generieren ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+    "retry": "Erneut versuchen",
+    "rateLimited": "Zu viele Anfragen. Versuche es in {seconds}s erneut.",
+    "locked": {
+      "title": "{feature} freischalten",
+      "description": "Dieses Tool ist in den Bezahlplänen verfügbar. Führe ein Upgrade durch, um den gesamten Lernbereich freizuschalten.",
+      "cta": "Pläne ansehen"
+    },
+    "chat": {
+      "placeholder": "Frag alles über dieses Dokument...",
+      "send": "Senden",
+      "starterHint": "Frag zum Beispiel:",
+      "starter1": "Erkläre die Hauptidee in einfachen Worten",
+      "starter2": "Was sollte ich aus diesem Dokument auswendig lernen?",
+      "starter3": "Gib mir ein Praxisbeispiel für diese Konzepte",
+      "starter4": "Was ist hier am schwersten zu verstehen?",
+      "remaining": "{count} kostenlose Nachrichten für dieses Dokument übrig",
+      "limitReached": "Du hast deine kostenlosen Nachrichten für dieses Dokument aufgebraucht. Upgrade für unbegrenzten Chat.",
+      "error": "Der Tutor konnte nicht antworten. Bitte versuche es erneut.",
+      "thinking": "Denkt nach..."
+    },
+    "flashcardsUi": {
+      "flip": "Zum Umdrehen klicken",
+      "know": "Kann ich",
+      "review": "Nochmal wiederholen",
+      "shuffle": "Mischen",
+      "restart": "Von vorn beginnen",
+      "progress": "{current} von {total}",
+      "knownPile": "Gewusst",
+      "reviewPile": "Zu wiederholen",
+      "doneTitle": "Stapel geschafft!",
+      "doneDescription": "Du hast {known} von {total} Karten als gewusst markiert."
+    },
+    "quizUi": {
+      "check": "Antworten prüfen",
+      "score": "Du hast {score} von {total} erreicht",
+      "explanation": "Erklärung",
+      "retake": "Quiz wiederholen",
+      "newQuiz": "Neues Quiz generieren"
+    },
+    "conceptsUi": {
+      "whyItMatters": "Warum es wichtig ist",
+      "example": "Beispiel"
+    },
+    "questionsUi": {
+      "showAnswer": "Musterantwort anzeigen",
+      "hideAnswer": "Antwort ausblenden",
+      "basic": "Grundlagen",
+      "intermediate": "Mittel",
+      "advanced": "Fortgeschritten"
+    },
+    "notesUi": {
+      "copy": "Kopieren",
+      "copied": "Kopiert!",
+      "print": "Drucken"
+    }
   }
 }
