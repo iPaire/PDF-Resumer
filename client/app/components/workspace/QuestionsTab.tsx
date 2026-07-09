@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { HelpCircle, RefreshCw } from 'react-feather';
 import { Button, Badge, Card, CardBody } from '@/components/ui';
+import MathText from '@/components/MathText';
 import ArtifactSection from './ArtifactSection';
 import type { WorkspaceData } from './WorkspaceShell';
 
@@ -62,7 +63,7 @@ export default function QuestionsTab({
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium text-ink leading-relaxed">
                       <span className="text-accent font-semibold mr-1.5">{i + 1}.</span>
-                      {q.question}
+                      <MathText text={q.question} />
                     </p>
                     <Badge tone={DIFFICULTY_TONE[q.difficulty] || 'warn'} className="shrink-0 mt-0.5">
                       {t(`questionsUi.${q.difficulty}`)}
@@ -76,7 +77,7 @@ export default function QuestionsTab({
                   </button>
                   {revealed[i] && (
                     <div className="mt-3 bg-accent-soft rounded-md px-4 py-3 text-sm text-ink leading-relaxed">
-                      {q.modelAnswer}
+                      <MathText text={q.modelAnswer} />
                     </div>
                   )}
                 </CardBody>

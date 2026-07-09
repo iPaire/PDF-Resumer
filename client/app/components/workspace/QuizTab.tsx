@@ -7,8 +7,15 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Award, CheckSquare, RefreshCw } from 'react-feather';
 import { Button, Card, CardBody } from '@/components/ui';
+import MathText from '@/components/MathText';
 import ArtifactSection from './ArtifactSection';
 import type { WorkspaceData, WorkspaceQuizQuestion } from './WorkspaceShell';
+
+// AI-generated options often already start with "A) " - strip it, since the
+// player renders its own letter prefix (was showing as "A.A) ...").
+function cleanOption(option: string): string {
+  return option.replace(/^\s*[A-Fa-f][).]\s*/, '');
+}
 
 function isPaid(plan: string) {
   return plan === 'trial' || plan === 'standard' || plan === 'premium';
@@ -85,7 +92,7 @@ function QuizPlayer({
             <CardBody>
               <p className="font-medium text-ink leading-relaxed mb-3">
                 <span className="text-accent font-semibold mr-1.5">{qIdx + 1}.</span>
-                {q.question}
+                <MathText text={q.question} />
               </p>
               <div className="space-y-2">
                 {q.options.map((option, oIdx) => (
@@ -96,13 +103,14 @@ function QuizPlayer({
                     className={`w-full text-left px-4 py-2.5 rounded-btn border text-sm transition-colors cursor-pointer disabled:cursor-default ${optionClasses(qIdx, oIdx)}`}
                   >
                     <span className="font-semibold mr-2">{String.fromCharCode(65 + oIdx)}.</span>
-                    {option}
+                    <MathText text={cleanOption(option)} />
                   </button>
                 ))}
               </div>
               {submitted && q.explanation && (
                 <div className="mt-3 bg-sunken rounded-md px-4 py-3 text-sm text-ink-soft leading-relaxed">
-                  <span className="font-medium text-ink">{t('quizUi.explanation')}:</span> {q.explanation}
+                  <span className="font-medium text-ink">{t('quizUi.explanation')}:</span>{' '}
+                  <MathText text={q.explanation} />
                 </div>
               )}
             </CardBody>

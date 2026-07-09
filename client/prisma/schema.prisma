@@ -4,7 +4,14 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Runtime traffic goes through Supabase's TRANSACTION-mode pooler
+  // (port 6543, ?pgbouncer=true&connection_limit=1). Session mode (5432)
+  // caps at 15 clients and Vercel's concurrent lambdas exhaust it, taking
+  // the whole app down (EMAXCONNSESSION).
+  url       = env("DATABASE_URL")
+  // Schema changes (prisma db push in the build) need a direct/session
+  // connection - DDL doesn't run reliably through the transaction pooler.
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Award, Layers, RefreshCw, Shuffle } from 'react-feather';
 import { Button, Badge } from '@/components/ui';
+import MathText from '@/components/MathText';
 import ArtifactSection from './ArtifactSection';
 import type { WorkspaceData } from './WorkspaceShell';
 
@@ -140,7 +141,7 @@ function Deck({ cards, plan, regenerate }: { cards: Flashcard[]; plan: string; r
                 style={{ backfaceVisibility: 'hidden' }}
               >
                 <p className="text-lg sm:text-xl font-semibold text-ink text-center leading-relaxed">
-                  {current!.front}
+                  <MathText text={current!.front} />
                 </p>
                 <span className="absolute bottom-4 text-xs text-ink-faint">{t('flashcardsUi.flip')}</span>
               </div>
@@ -148,7 +149,7 @@ function Deck({ cards, plan, regenerate }: { cards: Flashcard[]; plan: string; r
                 className="absolute inset-0 bg-accent-soft border border-line rounded-card shadow-card flex flex-col items-center justify-center p-8"
                 style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
               >
-                <p className="text-base sm:text-lg text-ink text-center leading-relaxed">{current!.back}</p>
+                <p className="text-base sm:text-lg text-ink text-center leading-relaxed"><MathText text={current!.back} /></p>
               </div>
             </div>
           </button>

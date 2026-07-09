@@ -27,7 +27,7 @@ export default function ChatTab({ data }: { data: WorkspaceData }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [limitReached, setLimitReached] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const paid = isPaid(data.plan);
   const userMessages = messages.filter((m) => m.role === 'user').length;
@@ -49,8 +49,16 @@ export default function ChatTab({ data }: { data: WorkspaceData }) {
     })();
   }, [data.id]);
 
+  // Follow the conversation only while the user is already at the bottom.
+  // If they scrolled up to read at their own pace, streaming must not yank
+  // them back down.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = listRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (nearBottom) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages, sending]);
 
   const send = async (text: string) => {
@@ -117,7 +125,7 @@ export default function ChatTab({ data }: { data: WorkspaceData }) {
   return (
     <div className="flex flex-col bg-surface border border-line rounded-card shadow-card" style={{ minHeight: '65vh' }}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
         {!historyLoaded ? (
           <div className="flex justify-center py-10">
             <Spinner />
@@ -168,7 +176,6 @@ export default function ChatTab({ data }: { data: WorkspaceData }) {
           </div>
         )}
         {error && <p className="text-center text-sm text-danger">{error}</p>}
-        <div ref={bottomRef} />
       </div>
 
       {/* Composer */}

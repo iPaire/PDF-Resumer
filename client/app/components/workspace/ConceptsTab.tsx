@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Key, RefreshCw } from 'react-feather';
 import { Button, Card, CardBody } from '@/components/ui';
+import MathText from '@/components/MathText';
 import ArtifactSection from './ArtifactSection';
 import type { WorkspaceData } from './WorkspaceShell';
 
@@ -55,11 +56,11 @@ export default function ConceptsTab({
             {content.concepts.map((c, i) => (
               <Card key={i} hoverable>
                 <CardBody>
-                  <h3 className="font-semibold text-ink">{c.term}</h3>
-                  <p className="mt-1.5 text-sm text-ink-soft leading-relaxed">{c.definition}</p>
+                  <h3 className="font-semibold text-ink"><MathText text={c.term} /></h3>
+                  <p className="mt-1.5 text-sm text-ink-soft leading-relaxed"><MathText text={c.definition} /></p>
                   {c.whyItMatters && (
                     <p className="mt-3 text-sm text-accent-strong bg-accent-soft rounded-md px-3 py-2">
-                      <span className="font-medium">{t('conceptsUi.whyItMatters')}:</span> {c.whyItMatters}
+                      <span className="font-medium">{t('conceptsUi.whyItMatters')}:</span> <MathText text={c.whyItMatters} />
                     </p>
                   )}
                   {c.example && (
@@ -71,7 +72,7 @@ export default function ConceptsTab({
                         {t('conceptsUi.example')} {expanded[i] ? '▾' : '▸'}
                       </button>
                       {expanded[i] && (
-                        <p className="mt-1.5 text-sm text-ink-soft bg-sunken rounded-md px-3 py-2">{c.example}</p>
+                        <p className="mt-1.5 text-sm text-ink-soft bg-sunken rounded-md px-3 py-2"><MathText text={c.example} /></p>
                       )}
                     </div>
                   )}
