@@ -6,8 +6,10 @@
 import prisma from './prisma';
 import { uploadDiagram, storageConfigured } from './supabase-storage';
 
-const MAX_DIAGRAM_PAGES = 8;
-const RENDER_SCALE = 2; // A4 -> ~1190x1684 px
+// Runs inside the summarize function's remaining time budget (maxDuration
+// 60s, most of it spent on the LLM) - keep rendering cheap.
+const MAX_DIAGRAM_PAGES = 6;
+const RENDER_SCALE = 1.5; // A4 -> ~893x1263 px
 
 export interface DiagramRef {
   page: number;
@@ -73,19 +75,24 @@ async function renderPagesToPng(
     const canvasFactory = (doc as any).canvasFactory;
     for (const pageNumber of pages) {
       if (pageNumber < 1 || pageNumber > doc.numPages) continue;
-      const page = await doc.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: RENDER_SCALE });
-      const { canvas, context } = canvasFactory.create(
-        Math.ceil(viewport.width),
-        Math.ceil(viewport.height)
-      );
-      // White background: PDF pages are transparent by default.
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
+      // Per-page isolation: one unrenderable page must not lose the rest.
+      try {
+        const page = await doc.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: RENDER_SCALE });
+        const { canvas, context } = canvasFactory.create(
+          Math.ceil(viewport.width),
+          Math.ceil(viewport.height)
+        );
+        // White background: PDF pages are transparent by default.
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
 
-      await page.render({ canvasContext: context, viewport }).promise;
-      out.push({ page: pageNumber, png: canvas.toBuffer('image/png') });
-      page.cleanup();
+        await page.render({ canvasContext: context, viewport }).promise;
+        out.push({ page: pageNumber, png: canvas.toBuffer('image/png') });
+        page.cleanup();
+      } catch (pageError) {
+        console.warn(`[diagrams] page ${pageNumber} failed to render:`, pageError);
+      }
     }
   } finally {
     await doc.destroy();
@@ -104,13 +111,19 @@ export async function generateDiagramsArtifact(
   pdfBuffer: ArrayBuffer,
   pageTexts: string[]
 ): Promise<void> {
+  const startedAt = Date.now();
   try {
-    if (!storageConfigured()) return;
+    if (!storageConfigured()) {
+      console.warn('[diagrams] storage not configured, skipping');
+      return;
+    }
 
     const pages = detectDiagramPages(pageTexts);
+    console.log(`[diagrams] summary ${summaryId}: ${pageTexts.length} pages scanned, candidates: [${pages.join(', ')}]`);
     if (pages.length === 0) return;
 
     const rendered = await renderPagesToPng(pdfBuffer, pages);
+    console.log(`[diagrams] rendered ${rendered.length}/${pages.length} pages in ${Date.now() - startedAt}ms`);
     if (rendered.length === 0) return;
 
     const refs: DiagramRef[] = [];
@@ -131,7 +144,7 @@ export async function generateDiagramsArtifact(
       update: { content: { pages: refs } as object, updatedAt: new Date() },
     });
 
-    console.log(`[diagrams] stored ${refs.length} diagram pages for summary ${summaryId}`);
+    console.log(`[diagrams] stored ${refs.length} diagram pages for summary ${summaryId} (total ${Date.now() - startedAt}ms)`);
   } catch (error) {
     console.error(`[diagrams] generation failed for summary ${summaryId}:`, error);
   }

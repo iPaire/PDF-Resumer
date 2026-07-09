@@ -906,6 +906,8 @@
       "print": "Tipărește"
     },
     "diagramsTitle": "Scheme și figuri din document",
-    "diagramsPage": "Pagina {page}"
+    "diagramsPage": "Pagina {page}",
+    "duplicateNoticeTitle": "Ai rezumat deja acest document",
+    "duplicateNotice": "Am găsit un rezumat existent pentru exact acest fișier și ți-am deschis workspace-ul lui — nu s-a creat un duplicat și nu ți s-a consumat din cota lunară."
   }
 }

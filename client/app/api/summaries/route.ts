@@ -68,14 +68,20 @@ export async function GET(req: NextRequest) {
   try {
     console.log('Fetching summaries for user:', userId);
 
-    // Obține toate rezumatele utilizatorului cu informații despre cursurile asociate
+    // Metadata only: this list feeds the Library grid and course pickers,
+    // which never display content. Shipping every summary's full markdown
+    // (plus running improveFormatting on each) made this endpoint transfer
+    // megabytes and take seconds - the detail/workspace routes serve content.
     const summaries = await prisma.summary.findMany({
       where: {
         userId: userId
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
         courses: {
-          include: {
+          select: {
             course: {
               select: {
                 id: true,
@@ -92,11 +98,9 @@ export async function GET(req: NextRequest) {
 
     console.log('Found summaries:', summaries.length);
 
-    // Formatează datele pentru frontend cu îmbunătățirea conținutului
     const formattedSummaries = summaries.map(summary => ({
       id: summary.id,
       title: summary.title,
-      content: improveFormatting(summary.content, summary.title, summary.createdAt),
       createdAt: summary.createdAt,
       coursesCount: summary.courses.length,
       courses: summary.courses.map(cs => ({

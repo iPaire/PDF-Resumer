@@ -906,6 +906,8 @@
       "print": "Imprimer"
     },
     "diagramsTitle": "Schémas et figures du document",
-    "diagramsPage": "Page {page}"
+    "diagramsPage": "Page {page}",
+    "duplicateNoticeTitle": "Vous avez déjà résumé ce document",
+    "duplicateNotice": "Nous avons trouvé un résumé existant pour ce fichier exact et ouvert son espace de travail — aucun doublon n'a été créé et votre quota mensuel n'a pas été utilisé."
   }
 }

@@ -906,6 +906,8 @@
       "print": "Print"
     },
     "diagramsTitle": "Diagrams and figures from the document",
-    "diagramsPage": "Page {page}"
+    "diagramsPage": "Page {page}",
+    "duplicateNoticeTitle": "You already summarized this document",
+    "duplicateNotice": "We found an existing summary for this exact file and opened its workspace — no duplicate was created and your monthly quota was not used."
   }
 }

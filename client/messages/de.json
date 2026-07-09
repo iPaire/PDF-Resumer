@@ -906,6 +906,8 @@
       "print": "Drucken"
     },
     "diagramsTitle": "Diagramme und Abbildungen aus dem Dokument",
-    "diagramsPage": "Seite {page}"
+    "diagramsPage": "Seite {page}",
+    "duplicateNoticeTitle": "Du hast dieses Dokument bereits zusammengefasst",
+    "duplicateNotice": "Wir haben eine vorhandene Zusammenfassung für genau diese Datei gefunden und ihren Lernbereich geöffnet — es wurde kein Duplikat erstellt und dein Monatskontingent nicht verbraucht."
   }
 }

@@ -221,8 +221,10 @@ export default function PDFProcessor() {
 
         // Land the user in their learning workspace. The inline result view
         // below remains as a fallback for responses without a summaryId.
+        // `duplicate` means the same file was already summarized - the
+        // workspace shows an explanatory banner via the query param.
         if (data.summaryId) {
-          router.push(`/workspace/${data.summaryId}`);
+          router.push(`/workspace/${data.summaryId}${data.duplicate ? '?existing=1' : ''}`);
           return;
         }
 

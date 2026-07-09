@@ -906,6 +906,8 @@
       "print": "Imprimir"
     },
     "diagramsTitle": "Diagramas y figuras del documento",
-    "diagramsPage": "Página {page}"
+    "diagramsPage": "Página {page}",
+    "duplicateNoticeTitle": "Ya has resumido este documento",
+    "duplicateNotice": "Encontramos un resumen existente para este mismo archivo y abrimos su espacio de trabajo: no se creó un duplicado y no se consumió tu cuota mensual."
   }
 }

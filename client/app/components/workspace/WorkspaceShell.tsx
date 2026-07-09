@@ -17,6 +17,8 @@ import {
   Edit3,
   ArrowLeft,
   Printer,
+  Info,
+  X,
 } from 'react-feather';
 import { Badge } from '@/components/ui';
 import SummaryTab from './SummaryTab';
@@ -80,6 +82,12 @@ export default function WorkspaceShell({ data }: { data: WorkspaceData }) {
   const tabParam = searchParams.get('tab') as SectionId | null;
   const initialTab: SectionId = tabParam && SECTION_IDS.includes(tabParam) ? tabParam : 'summary';
   const [active, setActive] = useState<SectionId>(initialTab);
+
+  // Set when a re-uploaded file matched an existing summary (?existing=1):
+  // tell the user why they landed here instead of getting a new summary.
+  const [showDuplicateNotice, setShowDuplicateNotice] = useState(
+    () => searchParams.get('existing') === '1'
+  );
 
   // Which artifact types already exist (drives the status dots); updated live
   // as the user generates content.
@@ -202,7 +210,25 @@ export default function WorkspaceShell({ data }: { data: WorkspaceData }) {
         </aside>
 
         {/* Active section */}
-        <div className="flex-1 min-w-0">{content}</div>
+        <div className="flex-1 min-w-0">
+          {showDuplicateNotice && (
+            <div className="mb-5 flex items-start gap-3 bg-accent-soft border border-line rounded-card p-4">
+              <Info size={18} className="text-accent shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink">{t('duplicateNoticeTitle')}</p>
+                <p className="mt-0.5 text-sm text-ink-soft leading-relaxed">{t('duplicateNotice')}</p>
+              </div>
+              <button
+                onClick={() => setShowDuplicateNotice(false)}
+                className="shrink-0 p-1 rounded-btn text-ink-faint hover:text-ink hover:bg-surface cursor-pointer"
+                aria-label="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+          {content}
+        </div>
       </div>
     </div>
   );
