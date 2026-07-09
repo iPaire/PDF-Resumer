@@ -118,6 +118,14 @@ body {
   animation: slide-up 0.3s ease-out forwards;
 }
 
+/* KaTeX renders a hidden MathML layer alongside the visible one; without
+   this, selecting/copying page text captures BOTH layers, producing the
+   classic duplicated/broken formula artifacts (e.g. "f\nc\n" for f_c). */
+.katex-mathml {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 @keyframes shimmer {
   from {
     background-position: 200% 0;

@@ -303,8 +303,17 @@ export default function ConvertToPDF() {
     >
       <style>{SP_STYLES}</style>
 
-      <main className="flex flex-col items-center" style={{ padding: 'clamp(28px,6vw,56px) 20px 80px' }}>
-        <div className="w-full" style={{ maxWidth: 600 }}>
+      <main className="relative flex flex-col items-center" style={{ padding: 'clamp(28px,6vw,56px) 20px 80px', overflow: 'hidden' }}>
+        {/* Soft ambient wash behind the hero - depth without noise */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', top: -180, left: '50%', transform: 'translateX(-50%)',
+            width: 720, height: 420, pointerEvents: 'none',
+            background: `radial-gradient(closest-side, ${C.accent}14, transparent 70%)`,
+          }}
+        />
+        <div className="w-full relative" style={{ maxWidth: 600 }}>
 
           {/* Status pill */}
           <div
@@ -319,9 +328,10 @@ export default function ConvertToPDF() {
           </div>
 
           {/* Heading + intro (crawlable) */}
-          <h1 style={{ margin: '0 0 10px', fontSize: 'clamp(26px,5vw,32px)', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.1 }}>
+          <h1 style={{ margin: '0 0 10px', fontSize: 'clamp(28px,5.5vw,38px)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.08 }}>
             {tConvert('seoHeading')}
           </h1>
+          <div aria-hidden="true" style={{ width: 44, height: 4, borderRadius: 999, background: C.accent, margin: '0 0 14px' }} />
           <p style={{ margin: '0 0 26px', fontSize: 15, lineHeight: 1.55, color: C.muted, maxWidth: 520 }}>
             {tConvert('seoIntro')}
           </p>
@@ -364,7 +374,7 @@ export default function ConvertToPDF() {
                 >
                   <div
                     className="flex items-center justify-center"
-                    style={{ width: 52, height: 52, borderRadius: 14, background: '#fff', border: '1px solid #E4E7EC', boxShadow: '0 1px 2px rgba(16,24,40,0.05)', color: C.accent, marginBottom: 6 }}
+                    style={{ width: 56, height: 56, borderRadius: 16, background: C.accentBg, border: `1px solid ${C.accent}26`, boxShadow: '0 1px 2px rgba(16,24,40,0.05)', color: C.accent, marginBottom: 6 }}
                   >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 15V3" /><path d="m7 8 5-5 5 5" /><path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4" />
@@ -374,8 +384,22 @@ export default function ConvertToPDF() {
                   <div style={{ fontSize: 14, color: C.slate }}>
                     or <span style={{ color: C.accent, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 2 }}>click to browse</span>
                   </div>
-                  <div style={{ marginTop: 8, fontFamily: MONO, fontSize: 11.5, color: '#98A2B3', letterSpacing: '0.01em' }}>
-                    JPG · PNG · PDF · TXT · DOCX — up to {MAX_MB} MB
+                  <div className="flex flex-wrap items-center justify-center" style={{ marginTop: 12, gap: 6 }}>
+                    {['JPG', 'PNG', 'PDF', 'TXT', 'DOCX'].map((ext) => (
+                      <span
+                        key={ext}
+                        style={{
+                          padding: '3px 9px', borderRadius: 999, background: '#fff',
+                          border: `1px solid ${C.chipBorder}`, fontFamily: MONO,
+                          fontSize: 10.5, letterSpacing: '0.04em', color: C.muted2,
+                        }}
+                      >
+                        {ext}
+                      </span>
+                    ))}
+                    <span style={{ fontFamily: MONO, fontSize: 10.5, color: '#98A2B3', marginLeft: 4 }}>
+                      up to {MAX_MB} MB
+                    </span>
                   </div>
                 </div>
               </div>
@@ -463,18 +487,46 @@ export default function ConvertToPDF() {
           {/* Trust bar (honest: no storage, HTTPS, public) */}
           <div
             className="flex flex-wrap items-center justify-center"
-            style={{ gap: '10px 18px', marginTop: 22, fontSize: 12.5, color: C.faint }}
+            style={{ gap: 8, marginTop: 22 }}
           >
-            <span className="inline-flex items-center" style={{ gap: 6 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="11" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Encrypted in transit
-            </span>
-            <span style={{ width: 3, height: 3, borderRadius: '50%', background: C.borderStrong }} />
-            <span>Files aren&apos;t stored</span>
-            <span style={{ width: 3, height: 3, borderRadius: '50%', background: C.borderStrong }} />
-            <span>No sign-up required</span>
+            {[
+              {
+                label: 'Encrypted in transit',
+                icon: (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                ),
+              },
+              {
+                label: "Files aren't stored",
+                icon: (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                ),
+              },
+              {
+                label: 'No sign-up required',
+                icon: (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                ),
+              },
+            ].map((chip) => (
+              <span
+                key={chip.label}
+                className="inline-flex items-center"
+                style={{
+                  gap: 6, padding: '5px 11px', borderRadius: 999, background: '#fff',
+                  border: `1px solid ${C.border}`, fontSize: 12, fontWeight: 500, color: C.muted2,
+                }}
+              >
+                <span style={{ color: C.green, display: 'inline-flex' }}>{chip.icon}</span>
+                {chip.label}
+              </span>
+            ))}
           </div>
 
           {/* FAQ — crawlable content mirrored by the FAQPage JSON-LD in layout.tsx */}
@@ -482,13 +534,19 @@ export default function ConvertToPDF() {
             <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.01em', margin: '0 0 16px' }}>
               {tConvert('faqTitle')}
             </h2>
-            <div className="flex flex-col" style={{ gap: 18 }}>
+            <div className="flex flex-col" style={{ gap: 10 }}>
               {[
                 { q: tConvert('faq1Q'), a: tConvert('faq1A') },
                 { q: tConvert('faq2Q'), a: tConvert('faq2A') },
                 { q: tConvert('faq3Q'), a: tConvert('faq3A') },
               ].map((item, i) => (
-                <div key={i}>
+                <div
+                  key={i}
+                  style={{
+                    padding: '14px 16px', background: '#fff', border: `1px solid ${C.border}`,
+                    borderRadius: 12, boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                  }}
+                >
                   <h3 style={{ fontSize: 14.5, fontWeight: 600, margin: '0 0 4px', color: C.ink2 }}>{item.q}</h3>
                   <p style={{ fontSize: 14, lineHeight: 1.55, color: C.muted, margin: 0 }}>{item.a}</p>
                 </div>
@@ -515,9 +573,10 @@ function ghostBtn(disabled: boolean, height = 34): React.CSSProperties {
 
 function primaryBtn(disabled: boolean): React.CSSProperties {
   return {
-    height: 38, padding: '0 16px', border: 'none', background: C.ink, color: '#fff',
+    height: 38, padding: '0 16px', border: 'none', background: C.accent, color: '#fff',
     borderRadius: 8, fontFamily: 'var(--font-geist), sans-serif', fontSize: 14, fontWeight: 600,
     cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1,
+    boxShadow: '0 1px 2px rgba(37,99,235,0.25)',
     transition: 'background .12s ease, transform .08s ease',
   };
 }
@@ -628,7 +687,7 @@ const SP_STYLES = `
 .sp-row:hover { background: #FAFAFA; }
 .sp-remove:hover { background: #F0F0F1; color: ${C.ink}; }
 .sp-btn-ghost:hover:not(:disabled) { background: #FAFAFA; border-color: ${C.borderStrong}; }
-.sp-btn-primary:hover:not(:disabled) { background: #262626; }
+.sp-btn-primary:hover:not(:disabled) { background: #1D4ED8; }
 .sp-btn-primary:active:not(:disabled) { transform: translateY(1px); }
 @keyframes sp-spin { to { transform: rotate(360deg); } }
 .sp-spin { animation: sp-spin .7s linear infinite; }

@@ -21,7 +21,9 @@ const CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 // Bump whenever the summary/quiz prompts change materially, so stale-format
 // entries are not served after a deploy.
 // v2: adaptive document-driven prompts + LaTeX math output (KaTeX-rendered)
-const PROMPT_VERSION = 'v2';
+// v3: gpt-4o-mini for all tiers, full-document input budget (no more
+//     first-pages-only truncation), boilerplate stripping, worked-examples rule
+const PROMPT_VERSION = 'v3';
 
 interface CachedSummary {
   summary: string;
@@ -187,14 +189,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Strips per-page boilerplate BEFORE truncation and caching: repeated
+    // headers/footers (course name, professor, chapter line on every slide)
+    // and bare page-number lines. On slide decks this noise can eat 30% of
+    // the model's input budget before any real content reaches it.
+    function stripBoilerplate(raw: string, pages: number): string {
+      const lines = raw.split('\n');
+      const counts = new Map<string, number>();
+      for (const line of lines) {
+        const key = line.trim();
+        if (key.length >= 8 && key.length <= 120) {
+          counts.set(key, (counts.get(key) || 0) + 1);
+        }
+      }
+      // A line repeated on a third of the pages (min 4) is a header/footer.
+      const repeatedThreshold = Math.max(4, Math.floor(pages / 3));
+      const kept = lines.filter((line) => {
+        const key = line.trim();
+        if (/^\d{1,4}$/.test(key)) return false; // bare page number
+        if (key.length >= 8 && key.length <= 120 && (counts.get(key) || 0) >= repeatedThreshold) return false;
+        return true;
+      });
+      return kept.join('\n').replace(/\n{3,}/g, '\n\n');
+    }
+
     // Parse PDF
     let text = '';
     let numpages = 0;
 
     try {
       const data = await pdf(Buffer.from(buffer));
-      text = data.text;
       numpages = data.numpages;
+      text = stripBoilerplate(data.text, numpages);
     } catch (parseError) {
       console.error('Eroare parsare PDF:', parseError);
       return new Response(
@@ -238,31 +264,39 @@ export async function POST(request: NextRequest) {
       return 'en'; // default
     }
 
-    // Enhanced subscription-based configuration with summary length and faster models
+    // Subscription-based configuration. All tiers use gpt-4o-mini: it is
+    // cheaper than gpt-3.5-turbo, follows the LaTeX/structure instructions
+    // far better, and its 128k context window lets us feed whole documents
+    // instead of the first few pages. Tiers differ via input budget,
+    // output length and sections - not model quality.
     const baseConfig = {
       free: {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         temperature: 0.1,
         sections: ['basic'],
-        maxQuestions: 0
+        maxQuestions: 0,
+        inputCharLimit: 60_000
       },
       trial: {
-        model: 'gpt-3.5-turbo', // Faster than 16k variant
+        model: 'gpt-4o-mini',
         temperature: 0.3,
         sections: ['trial'],
-        maxQuestions: 5
+        maxQuestions: 5,
+        inputCharLimit: 120_000
       },
       standard: {
-        model: 'gpt-3.5-turbo', // Faster than 16k variant
+        model: 'gpt-4o-mini',
         temperature: 0.3,
         sections: ['standard'],
-        maxQuestions: 5
+        maxQuestions: 5,
+        inputCharLimit: 150_000
       },
       premium: {
         model: 'gpt-4o-mini',
         temperature: 0.2, // Slightly lower for faster response
         sections: ['premium'],
-        maxQuestions: 12
+        maxQuestions: 12,
+        inputCharLimit: 250_000
       }
     };
 
@@ -360,16 +394,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Simplified text truncation for speed
-    const maxInputChars = Math.floor(config.maxTokens * 2.5); // ~2.5 chars per token for input
+    // Input budget is decoupled from output tokens (the old maxTokens*2.5
+    // formula fed the model only the first ~2-3 pages of any real document,
+    // which is why summaries missed formulas and worked examples entirely).
+    // gpt-4o-mini's 128k context fits whole course PDFs; the per-plan cap
+    // only bounds cost. Oversized documents keep head (intro/definitions)
+    // and tail (applications/recaps) split at paragraph boundaries.
+    const maxInputChars = config.inputCharLimit;
     let truncatedText = text;
-    
+
     if (text.length > maxInputChars) {
-      // Find a good breaking point (paragraph or sentence)
-      const breakPoint = text.lastIndexOf('\n\n', maxInputChars) || 
-                        text.lastIndexOf('. ', maxInputChars) || 
-                        maxInputChars;
-      truncatedText = text.substring(0, breakPoint) + '...';
+      const headBudget = Math.floor(maxInputChars * 0.7);
+      const tailBudget = maxInputChars - headBudget;
+
+      let headEnd = text.lastIndexOf('\n\n', headBudget);
+      if (headEnd < headBudget * 0.5) headEnd = headBudget;
+
+      let tailStart = text.indexOf('\n\n', text.length - tailBudget);
+      if (tailStart === -1 || tailStart > text.length - tailBudget * 0.5) {
+        tailStart = text.length - tailBudget;
+      }
+
+      truncatedText = `${text.substring(0, headEnd)}\n\n[...]\n\n${text.substring(tailStart)}`;
     }
 
     // Enhanced technical content extraction with better formula detection
@@ -486,8 +532,14 @@ export async function POST(request: NextRequest) {
       });
       
       // Evidențiază valorile numerice cu unități (ar strica LaTeX-ul, deci
-      // doar pentru output legacy fără $...$)
-      if (!hasLatexMath) improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%Ω]+)/g, '**$1**');
+      // doar pentru output legacy fără $...$). Spațiul dintre număr și
+      // unitate e OBLIGATORIU, altfel regexul prindea numerotarea de
+      // secțiuni ("6.1. Considerații" -> "**1. Considera**ții"); lookahead-ul
+      // include diacriticele românești ca să nu taie cuvinte la mijloc.
+      if (!hasLatexMath) improved = improved.replace(
+        /(?<![\w.])(\d+(?:[.,]\d+)?)\s+([A-Za-zΩ%µ]{1,4})(?![\wțșăîâȚȘĂÎÂ])/g,
+        '**$1 $2**'
+      );
       
       // Îmbunătățește formatarea listelor - asigură consistență
       improved = improved.replace(/^(\s*-)(\s*)/gm, '- ');
@@ -651,6 +703,9 @@ MATH AND FORMULAS (critical)
 - Inline math between single dollar signs: $v = \\lambda f$. Important equations on their own line between double dollar signs: $$F = G\\frac{m_1 m_2}{r^2}$$
 - Preserve each formula exactly as the document states it (fix only obvious OCR artifacts). After each displayed equation, state briefly what each variable means.
 - Never write formulas as plain text or inside backticks.
+
+WORKED EXAMPLES (critical)
+- If the document contains worked examples, applications or solved exercises (e.g. "Aplicația 6.1", "Example", "Exercise", "Problem"), reproduce them in a dedicated "## " section for worked examples: state the problem, then the full solution with all formulas (in LaTeX) and every numeric value preserved. Do not merely mention that examples exist.
 
 QUALITY
 - Write complete, clear sentences a student can study from — not fragments of the original.

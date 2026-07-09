@@ -5,7 +5,7 @@ import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronDown, Plus } from 'react-feather';
+import { ChevronDown, Plus, Menu } from 'react-feather';
 import { Badge } from '@/components/ui';
 import { analyticsEvents } from '@/lib/analytics';
 
@@ -16,8 +16,10 @@ export default function Navbar() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLDivElement>(null);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const t = useTranslations('common');
 
@@ -28,6 +30,9 @@ export default function Navbar() {
       }
       if (toolsRef.current && !toolsRef.current.contains(event.target as Node)) {
         setToolsOpen(false);
+      }
+      if (mobileRef.current && !mobileRef.current.contains(event.target as Node)) {
+        setMobileOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -241,6 +246,20 @@ export default function Navbar() {
                   >
                     {t('pricing')}
                   </Link>
+                  <Link
+                    href="/convert-to-pdf"
+                    className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t('convertToPdf')}
+                  </Link>
+                  <Link
+                    href="/translate"
+                    className="block px-4 py-2 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t('translatePdf')}
+                  </Link>
                 </div>
 
                 {session.user.subscription !== 'free' && (
@@ -277,12 +296,71 @@ export default function Navbar() {
             )}
           </div>
         ) : (
-          <Link
-            href="/login"
-            className="bg-accent text-white px-4 py-2 rounded-btn hover:bg-accent-strong transition-colors text-sm font-semibold ml-1"
-          >
-            {t('login')}
-          </Link>
+          <>
+            <Link
+              href="/login"
+              className="bg-accent text-white px-4 py-2 rounded-btn hover:bg-accent-strong transition-colors text-sm font-semibold ml-1"
+            >
+              {t('login')}
+            </Link>
+
+            {/* Mobile menu for visitors - the free tools must stay reachable */}
+            <div ref={mobileRef} className="relative sm:hidden">
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="p-2 rounded-btn text-ink-soft hover:bg-sunken hover:text-ink transition-colors cursor-pointer"
+                aria-label={t('menu')}
+                aria-expanded={mobileOpen}
+              >
+                <Menu size={20} />
+              </button>
+              {mobileOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-surface rounded-card shadow-pop border border-line z-50 py-1.5">
+                  <Link
+                    href="/"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-2.5 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                  >
+                    {t('home')}
+                  </Link>
+                  <div className="px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                    {t('freeTools')}
+                  </div>
+                  <Link
+                    href="/convert-to-pdf"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      analyticsEvents.navigationClick('convert-to-pdf', 'navbar-mobile');
+                    }}
+                    className="block px-4 py-2.5 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                  >
+                    {t('convertToPdf')}
+                    <span className="block text-xs text-ink-faint mt-0.5">{t('noAccountNeeded')}</span>
+                  </Link>
+                  <Link
+                    href="/translate"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      analyticsEvents.navigationClick('translate', 'navbar-mobile');
+                    }}
+                    className="block px-4 py-2.5 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                  >
+                    {t('translatePdf')}
+                    <span className="block text-xs text-ink-faint mt-0.5">{t('noAccountNeeded')}</span>
+                  </Link>
+                  <div className="border-t border-line mt-1.5 pt-1.5">
+                    <Link
+                      href="/pricing"
+                      onClick={() => setMobileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-ink-soft hover:bg-sunken hover:text-ink"
+                    >
+                      {t('pricing')}
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </nav>

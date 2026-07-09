@@ -9,6 +9,8 @@ export default function Footer() {
     <footer className="mt-20 bg-white border-t py-6 text-center text-sm text-gray-600">
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex flex-wrap justify-center gap-4 mb-4">
+          <Link href="/convert-to-pdf" className="hover:text-blue-600 transition">{t('convertToPdf')}</Link>
+          <Link href="/translate" className="hover:text-blue-600 transition">{t('translatePdf')}</Link>
           <Link href="/despre" className="hover:text-blue-600 transition">{t('aboutUs')}</Link>
           <Link href="/termeni" className="hover:text-blue-600 transition">{t('terms')}</Link>
           <Link href="/confidentialitate" className="hover:text-blue-600 transition">{t('privacy')}</Link>

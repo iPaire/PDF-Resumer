@@ -44,8 +44,13 @@ function improveFormatting(summary: string, title: string = '', createdAt: Date 
     return match;
   });
 
-  // Evidențiază valorile numerice cu unități
-  if (!hasLatexMath) improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%]+)/g, '**$1**');
+  // Evidențiază valorile numerice cu unități. Spațiul dintre număr și
+  // unitate e obligatoriu (altfel prindea numerotarea "6.1. Titlu"), iar
+  // lookahead-ul include diacriticele ca să nu taie cuvinte românești.
+  if (!hasLatexMath) improved = improved.replace(
+    /(?<![\w.])(\d+(?:[.,]\d+)?)\s+([A-Za-zΩ%µ]{1,4})(?![\wțșăîâȚȘĂÎÂ])/g,
+    '**$1 $2**'
+  );
   
   // Îmbunătățește formatarea listelor
   improved = improved.replace(/^(\s*-)(\s*)/gm, '- ');

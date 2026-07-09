@@ -1,7 +1,41 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { FileText } from 'react-feather';
+import { FileText, Globe } from 'react-feather';
+
+// Must stay in sync with SUPPORTED_TARGET_LANGS in /api/translate-pdf.
+const TARGET_LANGUAGES: { code: string; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'ro', label: 'Română' },
+  { code: 'es', label: 'Español' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'fr', label: 'Français' },
+  { code: 'it', label: 'Italiano' },
+  { code: 'pt', label: 'Português' },
+  { code: 'nl', label: 'Nederlands' },
+  { code: 'pl', label: 'Polski' },
+  { code: 'hu', label: 'Magyar' },
+  { code: 'cs', label: 'Čeština' },
+  { code: 'sk', label: 'Slovenčina' },
+  { code: 'bg', label: 'Български' },
+  { code: 'el', label: 'Ελληνικά' },
+  { code: 'tr', label: 'Türkçe' },
+  { code: 'ru', label: 'Русский' },
+  { code: 'uk', label: 'Українська' },
+  { code: 'sv', label: 'Svenska' },
+  { code: 'no', label: 'Norsk' },
+  { code: 'da', label: 'Dansk' },
+  { code: 'fi', label: 'Suomi' },
+  { code: 'ar', label: 'العربية' },
+  { code: 'he', label: 'עברית' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'id', label: 'Bahasa Indonesia' },
+  { code: 'vi', label: 'Tiếng Việt' },
+  { code: 'th', label: 'ไทย' },
+  { code: 'zh-CN', label: '中文 (简体)' },
+  { code: 'ja', label: '日本語' },
+  { code: 'ko', label: '한국어' },
+];
 
 export default function TranslatePDF() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -9,7 +43,10 @@ export default function TranslatePDF() {
   const [translatedFile, setTranslatedFile] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(0);
+  const [targetLang, setTargetLang] = useState('en');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const targetLabel = TARGET_LANGUAGES.find((l) => l.code === targetLang)?.label || 'English';
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -36,6 +73,7 @@ export default function TranslatePDF() {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      formData.append('targetLang', targetLang);
 
       setProgress(30);
 
@@ -103,7 +141,7 @@ export default function TranslatePDF() {
             PDF Translator
           </h1>
           <p className="mt-3 text-lg text-gray-600">
-            Translate any PDF document to English while preserving formulas and diagrams
+            Translate any PDF document into the language of your choice while preserving formulas and diagrams
           </p>
         </div>
 
@@ -112,7 +150,7 @@ export default function TranslatePDF() {
             <div>
               <h2 className="text-xl text-black font-semibold mb-4">Upload PDF Document</h2>
               <p className="text-gray-600 mb-4">
-                Upload a PDF in any language and get it translated to English
+                Upload a PDF in any language and choose the language to translate it into
               </p>
 
               <input
@@ -199,6 +237,27 @@ export default function TranslatePDF() {
               </div>
             )}
 
+            {/* Target language picker */}
+            <div>
+              <label htmlFor="target-lang" className="block text-sm font-medium text-gray-700 mb-2">
+                <Globe className="inline h-4 w-4 mr-1 text-blue-600" />
+                Translate to
+              </label>
+              <select
+                id="target-lang"
+                value={targetLang}
+                onChange={(e) => setTargetLang(e.target.value)}
+                disabled={isTranslating}
+                className="w-full sm:w-72 px-4 py-2.5 border border-gray-300 rounded-md bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+              >
+                {TARGET_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={handleTranslate}
@@ -216,7 +275,7 @@ export default function TranslatePDF() {
                     Translating...
                   </>
                 ) : (
-                  'Translate to English'
+                  `Translate to ${targetLabel}`
                 )}
               </button>
             </div>
@@ -237,14 +296,14 @@ export default function TranslatePDF() {
                 <FileText className="h-8 w-8 text-blue-600 mr-3 shrink-0" />
                 <div>
                   <p className="font-medium text-gray-900">Translated Document</p>
-                  <p className="text-sm text-gray-500">PDF translated to English</p>
+                  <p className="text-sm text-gray-500">PDF translated to {targetLabel}</p>
                 </div>
               </div>
 
               <a
                 href={translatedFile}
                 download={selectedFile ?
-                  `${selectedFile.name.replace('.pdf', '')}_translated_en.pdf` :
+                  `${selectedFile.name.replace('.pdf', '')}_translated_${targetLang}.pdf` :
                   'translated_document.pdf'
                 }
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
@@ -284,14 +343,14 @@ export default function TranslatePDF() {
                 <span className="text-2xl font-bold text-blue-600">3</span>
               </div>
               <h3 className="font-medium text-gray-900 mb-2">Download</h3>
-              <p className="text-gray-600 text-sm">Get your translated PDF in English</p>
+              <p className="text-gray-600 text-sm">Get your translated PDF in the language you chose</p>
             </div>
           </div>
 
           <div className="mt-8 p-4 bg-blue-50 rounded-lg space-y-4">
             <div>
               <h3 className="font-medium text-gray-900 mb-2">Supported Languages</h3>
-              <p className="text-gray-600 text-sm">We support translation from over 100 languages including Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Russian, and many more.</p>
+              <p className="text-gray-600 text-sm">Translate from any language into 30 target languages including English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Russian, and more. The source language is detected automatically.</p>
             </div>
             <div>
               <h3 className="font-medium text-gray-900 mb-2">Formula & Diagram Preservation</h3>

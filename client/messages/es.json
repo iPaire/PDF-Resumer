@@ -47,7 +47,11 @@
     "library": "Biblioteca",
     "newDocument": "Nuevo documento",
     "tools": "Herramientas",
-    "translatePdf": "Traducir PDF"
+    "translatePdf": "Traducir PDF",
+    "freeTools": "Herramientas gratuitas",
+    "noAccountNeeded": "Gratis — sin cuenta",
+    "translatePdfDescription": "Traduce cualquier PDF al inglés conservando fórmulas y formato",
+    "menu": "Menú"
   },
   "terms": {
     "title": "Términos y Condiciones",

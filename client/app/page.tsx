@@ -14,6 +14,7 @@ import {
   Edit3,
   ArrowRight,
   Zap,
+  Globe,
 } from 'react-feather';
 
 export default function Home() {
@@ -81,13 +82,52 @@ export default function Home() {
             )}
           </div>
 
-          {/* Free tool - no account required, helps discovery + SEO */}
-          <p className="mt-6 text-sm text-ink-faint">
-            <Link href="/convert-to-pdf" className="font-medium text-accent hover:text-accent-strong underline underline-offset-2">
-              {tc('convertToPdf')}
-            </Link>{' '}
-            — {tc('convertToPdfDescription')}
-          </p>
+          {/* Free tools - no account required, main mobile entry points + SEO */}
+          <div className="mt-10 max-w-2xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint mb-3">
+              {tc('freeTools')}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 text-left">
+              <Link
+                href="/convert-to-pdf"
+                className="group bg-surface border border-line rounded-card p-4 hover:shadow-pop hover:-translate-y-0.5 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-btn bg-accent-soft text-accent flex items-center justify-center shrink-0">
+                    <FileText size={17} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink group-hover:text-accent transition-colors">
+                      {tc('convertToPdf')}
+                    </p>
+                    <p className="mt-0.5 text-sm text-ink-soft leading-snug">{tc('convertToPdfDescription')}</p>
+                    <span className="mt-2 inline-block text-xs font-medium text-success bg-success-soft rounded-pill px-2 py-0.5">
+                      {tc('noAccountNeeded')}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+              <Link
+                href="/translate"
+                className="group bg-surface border border-line rounded-card p-4 hover:shadow-pop hover:-translate-y-0.5 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-btn bg-accent-soft text-accent flex items-center justify-center shrink-0">
+                    <Globe size={17} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink group-hover:text-accent transition-colors">
+                      {tc('translatePdf')}
+                    </p>
+                    <p className="mt-0.5 text-sm text-ink-soft leading-snug">{tc('translatePdfDescription')}</p>
+                    <span className="mt-2 inline-block text-xs font-medium text-success bg-success-soft rounded-pill px-2 py-0.5">
+                      {tc('noAccountNeeded')}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
 
           {/* Workspace mock */}
           <div className="mt-16 max-w-4xl mx-auto">

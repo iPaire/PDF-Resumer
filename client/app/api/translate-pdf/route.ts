@@ -8,6 +8,14 @@ import pdf from 'pdf-parse';
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
 import { checkContentLength, checkFileSize, sniffType } from '@/lib/upload-guard';
 
+// Google Translate target codes the UI offers. Whitelisted so the parameter
+// can't be abused to smuggle arbitrary query content into the upstream call.
+const SUPPORTED_TARGET_LANGS = new Set([
+  'en', 'ro', 'es', 'de', 'fr', 'it', 'pt', 'nl', 'pl', 'hu', 'cs', 'sk',
+  'bg', 'el', 'tr', 'ru', 'uk', 'sv', 'no', 'da', 'fi', 'ar', 'he', 'hi',
+  'id', 'vi', 'th', 'zh-CN', 'ja', 'ko',
+]);
+
 export async function POST(request: NextRequest) {
   try {
     // Per-IP rate limit - this route is unauthenticated and CPU/network heavy
@@ -24,6 +32,11 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const targetLangRaw = formData.get('targetLang');
+    const targetLang =
+      typeof targetLangRaw === 'string' && SUPPORTED_TARGET_LANGS.has(targetLangRaw)
+        ? targetLangRaw
+        : 'en';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -65,8 +78,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Translate text to English using Google Translate API, preserving structure
-    const translatedText = await translateTextPreservingStructure(cleanedText);
+    // Translate text to the requested language, preserving structure
+    const translatedText = await translateTextPreservingStructure(cleanedText, targetLang);
 
     // Create new PDF with translated text AND original images/diagrams
     const translatedPdfBytes = await createPdfWithTextAndImages(translatedText, file.name, originalPdf);
@@ -77,7 +90,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${encodeURIComponent(
-          file.name.replace('.pdf', '_translated_en.pdf')
+          file.name.replace('.pdf', `_translated_${targetLang}.pdf`)
         )}"`,
       },
     });
@@ -357,7 +370,7 @@ function restoreMathFormulas(text: string, formulas: Map<string, string>): strin
 }
 
 // Function to translate text while preserving structure (newlines, spacing), math formulas, and image references
-async function translateTextPreservingStructure(text: string): Promise<string> {
+async function translateTextPreservingStructure(text: string, targetLang: string): Promise<string> {
   try {
     // Extract and preserve mathematical formulas and image references
     const { text: textWithoutMath, formulas } = extractMathFormulas(text);
@@ -381,7 +394,7 @@ async function translateTextPreservingStructure(text: string): Promise<string> {
       // Translate paragraph in chunks if needed
       const chunkSize = 4000;
       if (paragraph.length <= chunkSize) {
-        const translated = await translateChunk(paragraph);
+        const translated = await translateChunk(paragraph, targetLang);
         translatedParagraphs.push(translated);
       } else {
         // Split long paragraphs by sentences
@@ -401,7 +414,7 @@ async function translateTextPreservingStructure(text: string): Promise<string> {
 
         const translatedChunks: string[] = [];
         for (const chunk of chunks) {
-          const translated = await translateChunk(chunk);
+          const translated = await translateChunk(chunk, targetLang);
           translatedChunks.push(translated);
         }
         translatedParagraphs.push(translatedChunks.join(' '));
@@ -434,8 +447,8 @@ async function translateTextPreservingStructure(text: string): Promise<string> {
 }
 
 // Helper function to translate a single chunk
-async function translateChunk(chunk: string): Promise<string> {
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(chunk)}`;
+async function translateChunk(chunk: string, targetLang: string): Promise<string> {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(chunk)}`;
 
   const response = await fetch(url);
 

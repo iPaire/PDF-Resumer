@@ -47,7 +47,11 @@
     "library": "Bibliotecă",
     "newDocument": "Document nou",
     "tools": "Instrumente",
-    "translatePdf": "Traduce PDF"
+    "translatePdf": "Traduce PDF",
+    "freeTools": "Unelte gratuite",
+    "noAccountNeeded": "Gratuit — fără cont",
+    "translatePdfDescription": "Traduce orice PDF în engleză, păstrând formulele și aspectul",
+    "menu": "Meniu"
   },
   "terms": {
     "title": "Termeni și Condiții",

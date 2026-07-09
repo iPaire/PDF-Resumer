@@ -47,7 +47,11 @@
     "library": "Bibliothek",
     "newDocument": "Neues Dokument",
     "tools": "Werkzeuge",
-    "translatePdf": "PDF übersetzen"
+    "translatePdf": "PDF übersetzen",
+    "freeTools": "Kostenlose Tools",
+    "noAccountNeeded": "Kostenlos — ohne Konto",
+    "translatePdfDescription": "Übersetze jedes PDF ins Englische, Formeln und Layout bleiben erhalten",
+    "menu": "Menü"
   },
   "terms": {
     "title": "Allgemeine Geschäftsbedingungen",
