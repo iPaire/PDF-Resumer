@@ -149,15 +149,52 @@ export default function PDFProcessor() {
       analyticsEvents.pdfProcessingStarted();
       const processingStartTime = Date.now();
 
-      const formData = new FormData();
-      formData.append('pdf', file);
-      formData.append('filename', file.name);
-      formData.append('summaryLength', summaryLength);
+      // Vercel functions cap request bodies at 4.5MB, so large PDFs are
+      // uploaded straight to storage via a signed URL and /api/summarize
+      // receives only the path. Small files keep the direct multipart path.
+      const DIRECT_UPLOAD_LIMIT = 4 * 1024 * 1024;
+      let response: Response;
 
-      const response = await fetch('/api/summarize', {
-        method: 'POST',
-        body: formData
-      });
+      if (file.size > DIRECT_UPLOAD_LIMIT) {
+        const urlRes = await fetch('/api/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, size: file.size })
+        });
+        const urlData = await parseJSON(urlRes);
+        if (!urlRes.ok) {
+          throw new Error(urlData.error || 'Upload failed');
+        }
+
+        const putRes = await fetch(urlData.signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/pdf' },
+          body: file
+        });
+        if (!putRes.ok) {
+          throw new Error('Upload failed');
+        }
+
+        response = await fetch('/api/summarize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storagePath: urlData.path,
+            filename: file.name,
+            summaryLength
+          })
+        });
+      } else {
+        const formData = new FormData();
+        formData.append('pdf', file);
+        formData.append('filename', file.name);
+        formData.append('summaryLength', summaryLength);
+
+        response = await fetch('/api/summarize', {
+          method: 'POST',
+          body: formData
+        });
+      }
 
       const contentType = response.headers.get('content-type');
 

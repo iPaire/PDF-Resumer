@@ -9,6 +9,7 @@ import { Prisma } from "@prisma/client";
 import { createChatCompletion } from "@/lib/ai-client";
 import { cacheGet, cacheSet, cacheKey } from "@/lib/cache";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { downloadUpload, deleteUpload } from "@/lib/supabase-storage";
 
 // Distributed (Redis) cache for identical documents - survives cold starts
 // and is shared across serverless instances, unlike the old in-memory Map.
@@ -92,36 +93,91 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process file size
-    const contentLength = request.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
-      return new Response(
-        JSON.stringify({ error: 'Fișierul depășește limita de 10MB' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    // Two intake modes:
+    // - multipart/form-data with the PDF inline (small files)
+    // - application/json { storagePath, filename, summaryLength } for large
+    //   files the browser uploaded directly to Supabase Storage, because
+    //   Vercel caps function request bodies at 4.5MB.
+    let buffer: ArrayBuffer;
+    let filename: string;
+    let summaryLength: string;
+
+    const intakeType = request.headers.get('content-type') || '';
+    if (intakeType.includes('application/json')) {
+      const body = await request.json();
+      const storagePath = typeof body.storagePath === 'string' ? body.storagePath : '';
+      filename = typeof body.filename === 'string' ? body.filename : '';
+      summaryLength = typeof body.summaryLength === 'string' ? body.summaryLength : 'long';
+
+      if (!storagePath || !filename) {
+        return new Response(
+          JSON.stringify({ error: 'Niciun fișier PDF încărcat' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      // Uploads are keyed under the owner's user id by /api/upload-url.
+      if (!storagePath.startsWith(`${user.id}/`)) {
+        return new Response(
+          JSON.stringify({ error: 'Acces interzis la acest fișier' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        buffer = await downloadUpload(storagePath);
+      } catch (error) {
+        console.error('[summarize] storage download failed:', error);
+        return new Response(
+          JSON.stringify({ error: 'Nu am putut prelua fișierul încărcat. Încearcă din nou.' }),
+          { status: 502, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      // The buffer is all we need; clean up the transient upload now.
+      deleteUpload(storagePath).catch(() => {});
+
+      const planSizeLimitsMb: Record<string, number> = { free: 10, trial: 25, standard: 50, premium: 50 };
+      const maxMb = planSizeLimitsMb[user.subscription || 'free'] ?? 10;
+      if (buffer.byteLength > maxMb * 1024 * 1024) {
+        return new Response(
+          JSON.stringify({ error: `Fișierul depășește limita de ${maxMb}MB a planului tău` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      // Process file size
+      const contentLength = request.headers.get('content-length');
+      if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+        return new Response(
+          JSON.stringify({ error: 'Fișierul depășește limita de 10MB' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Process file upload
+      const formData = await request.formData();
+      const file = formData.get('pdf') as Blob | null;
+      const formFilename = formData.get('filename') as string | null;
+      summaryLength = (formData.get('summaryLength') as string | null) || 'long';
+
+      if (!file || !formFilename) {
+        return new Response(
+          JSON.stringify({ error: 'Niciun fișier PDF încărcat' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      filename = formFilename;
+
+      if (file.type !== 'application/pdf') {
+        return new Response(
+          JSON.stringify({ error: 'Tip fișier invalid. Vă rugăm să încărcați doar PDF-uri.' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      buffer = await file.arrayBuffer();
     }
 
-    // Process file upload
-    const formData = await request.formData();
-    const file = formData.get('pdf') as Blob | null;
-    const filename = formData.get('filename') as string | null;
-    const summaryLength = formData.get('summaryLength') as string | null || 'long';
-
-    if (!file || !filename) {
-      return new Response(
-        JSON.stringify({ error: 'Niciun fișier PDF încărcat' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (file.type !== 'application/pdf') {
-      return new Response(
-        JSON.stringify({ error: 'Tip fișier invalid. Vă rugăm să încărcați doar PDF-uri.' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const buffer = await file.arrayBuffer();
+    const fileSize = buffer.byteLength;
     const header = new Uint8Array(buffer, 0, 4);
     const headerHex = Array.from(header).map(b => b.toString(16).padStart(2, '0')).join('');
     if (headerHex !== '25504446') {
@@ -272,7 +328,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: user.id,
             name: filename,
-            size: file.size,
+            size: fileSize,
             pages: numpages,
             characters: text.length,
             summary: cached.summary,
@@ -298,7 +354,7 @@ export async function POST(request: NextRequest) {
           quiz: cached.quiz,
           fileID: fileRecord.id,
           summaryId: summaryRecord.id,
-          meta: { filename, pages: numpages, size: file.size, characters: text.length, language: targetLanguage }
+          meta: { filename, pages: numpages, size: fileSize, characters: text.length, language: targetLanguage }
         }),
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -996,7 +1052,7 @@ Format JSON:
         data: {
           userId: user.id,
           name: filename,
-          size: file.size,
+          size: fileSize,
           pages: numpages,
           characters: text.length,
           summary: summaryContent,
@@ -1025,7 +1081,7 @@ Format JSON:
         meta: {
           filename,
           pages: numpages,
-          size: file.size,
+          size: fileSize,
           characters: text.length,
           language: targetLanguage
         },
