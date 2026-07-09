@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, use } from 'react';
-import { Download, ArrowLeft, Printer, Trash2 } from 'react-feather';
+import { Download, ArrowLeft, Printer, Trash2, BookOpen } from 'react-feather';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -363,9 +363,10 @@ export default function SummaryDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex gap-2">
               <Link
                 href={`/workspace/${id}`}
-                className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 font-medium"
+                className="flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 font-medium"
               >
-                ✨ {tWorkspace('openWorkspace')}
+                <BookOpen className="h-4 w-4" />
+                {tWorkspace('openWorkspace')}
               </Link>
 
               <button

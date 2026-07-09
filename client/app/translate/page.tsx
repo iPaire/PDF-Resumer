@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { FileText } from 'react-feather';
 
 export default function TranslatePDF() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -150,7 +151,7 @@ export default function TranslatePDF() {
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <span className="text-3xl mr-3">📄</span>
+                    <FileText className="h-8 w-8 text-blue-600 mr-3 shrink-0" />
                     <div>
                       <p className="font-medium text-gray-900">{selectedFile.name}</p>
                       <p className="text-sm text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
@@ -233,7 +234,7 @@ export default function TranslatePDF() {
 
             <div className="bg-white p-4 rounded-lg flex items-center justify-between mb-6">
               <div className="flex items-center">
-                <span className="text-3xl mr-3">📄</span>
+                <FileText className="h-8 w-8 text-blue-600 mr-3 shrink-0" />
                 <div>
                   <p className="font-medium text-gray-900">Translated Document</p>
                   <p className="text-sm text-gray-500">PDF translated to English</p>

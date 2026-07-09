@@ -336,7 +336,7 @@ export default function PricingPage() {
         )}
         
         <div className="mt-10 sm:mt-12 text-center text-ink-soft">
-          <p className="mb-3 sm:mb-4 text-sm sm:text-base">✅ {t('allPlansInclude')}</p>
+          <p className="mb-3 sm:mb-4 text-sm sm:text-base">{t('allPlansInclude')}</p>
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
             <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('aiSummary')}</span>
             <span className="bg-gray-100 px-2 py-1 sm:px-3 sm:py-1 rounded-full">{t('exportPdfWord')}</span>

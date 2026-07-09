@@ -256,10 +256,10 @@ function extractKeyPoints(text: string): string {
   sentences.forEach(sentence => {
     const lowerSentence = sentence.toLowerCase();
     if (indicators.some(ind => lowerSentence.includes(ind)) && sentence.length > 30 && sentence.length < 200) {
-      keyPoints.push(`⭐ ${sentence.trim()}`);
+      keyPoints.push(`- ${sentence.trim()}`);
     }
   });
-  return keyPoints.length > 0 ? keyPoints.slice(0, 6).join('\n') : '⭐ Concepte și principii fundamentale ale cursului';
+  return keyPoints.length > 0 ? keyPoints.slice(0, 6).join('\n') : '- Concepte și principii fundamentale ale cursului';
 }
 
 function extractPracticalApplications(text: string): string {
@@ -269,10 +269,10 @@ function extractPracticalApplications(text: string): string {
   sentences.forEach(sentence => {
     const lowerSentence = sentence.toLowerCase();
     if (indicators.some(ind => lowerSentence.includes(ind)) && sentence.length > 25 && sentence.length < 180) {
-      applications.push(`🔧 ${sentence.trim()}`);
+      applications.push(`- ${sentence.trim()}`);
     }
   });
-  return applications.length > 0 ? applications.slice(0, 5).join('\n') : '🔧 Aplicații practice în domeniul studiat';
+  return applications.length > 0 ? applications.slice(0, 5).join('\n') : '- Aplicații practice în domeniul studiat';
 }
 
 function extractConclusions(text: string): string {

@@ -5,7 +5,7 @@
 // loading, error (retry), rate-limited (countdown) and ready.
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Lock } from 'react-feather';
+import { Lock, Zap } from 'react-feather';
 import { Button, EmptyState, Skeleton, SkeletonText } from '@/components/ui';
 
 // Survives tab switches (which unmount tabs) without refetching.
@@ -180,7 +180,8 @@ export default function ArtifactSection({
       description={emptyDescription}
       action={
         <Button size="lg" onClick={() => generate()}>
-          ✨ {t('generate')}
+          <Zap size={16} />
+          {t('generate')}
         </Button>
       }
       className="bg-surface border border-line rounded-card"

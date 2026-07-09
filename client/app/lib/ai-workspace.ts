@@ -220,8 +220,10 @@ export async function generateStudyNotes(ctx: DocContext): Promise<{ markdown: s
       `Document:\n"""\n${ctx.text}\n"""\n\n` +
       `Return JSON: {"markdown": string}\n` +
       `The markdown must use: ## section headings, bullet points, **bold** for key terms, ` +
-      `and backtick code spans for any formulas or notation. Keep it scannable - short lines, ` +
-      `no long paragraphs. Cover the whole document, prioritizing what is most likely to be tested.`,
+      `and LaTeX for ALL formulas and mathematical notation - inline between single dollar signs ` +
+      `($v = \\\\lambda f$) and important equations between double dollar signs. Never write math ` +
+      `as plain text or backticks. Keep it scannable - short lines, no long paragraphs. ` +
+      `Cover the whole document, prioritizing what is most likely to be tested.`,
     maxTokens: 3500,
     temperature: 0.4,
     jsonMode: true,

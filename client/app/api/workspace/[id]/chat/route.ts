@@ -89,8 +89,13 @@ export async function POST(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  // Free-plan cap on user messages per document.
-  const plan = session.user.subscription || 'free';
+  // Free-plan cap on user messages per document. Plan from the DB: the
+  // session JWT never carries `subscription`.
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { subscription: true },
+  });
+  const plan = dbUser?.subscription || 'free';
   const limit = chatMessageLimit(plan);
   if (Number.isFinite(limit)) {
     const used = await prisma.chatMessage.count({
@@ -129,8 +134,9 @@ export async function POST(
   const system =
     `You are a friendly, patient personal tutor helping a student understand a document titled "${summary.title}". ` +
     `Answer in ${language} unless the student asks otherwise. Be clear and concise; use short paragraphs, ` +
-    `bullet points and examples. If the answer is not in the document, say so explicitly, then answer from ` +
-    `general knowledge with that caveat.\n\n` +
+    `bullet points and examples. Typeset all mathematics in LaTeX between $ (inline) or $$ (display) ` +
+    `delimiters - never as plain text. If the answer is not in the document, say so explicitly, then answer ` +
+    `from general knowledge with that caveat.\n\n` +
     `Document content${ctx.source === 'summary' ? ' (summary only)' : ''}:\n"""\n${ctx.text}\n"""`;
 
   const userId = session.user.id;

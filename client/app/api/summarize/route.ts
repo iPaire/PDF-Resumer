@@ -19,7 +19,8 @@ const CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
 // Bump whenever the summary/quiz prompts change materially, so stale-format
 // entries are not served after a deploy.
-const PROMPT_VERSION = 'v1';
+// v2: adaptive document-driven prompts + LaTeX math output (KaTeX-rendered)
+const PROMPT_VERSION = 'v2';
 
 interface CachedSummary {
   summary: string;
@@ -381,10 +382,15 @@ export async function POST(request: NextRequest) {
       };
       const formulaLabel = formulaLabels[documentLanguage] || 'Formula';
 
+      // New prompts emit real LaTeX ($...$ / $$...$$) rendered by KaTeX.
+      // The regex-based formula wrapping below is only for legacy output and
+      // would corrupt LaTeX, so skip it when math delimiters are present.
+      const hasLatexMath = /\$[^$\n]+\$|\$\$[\s\S]+?\$\$/.test(improved);
+
       // Îmbunătățește formatarea formulelor - wrap them in code blocks without the "Formula:" prefix
       // The prefix is added by the frontend based on UI language
       // Pentru formule simple cu egale - wrap in backticks without label
-      improved = improved.replace(/([A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z0-9\s+\-*/()^.\\{}]+)(?=\s|$|\n)/g, (match) => {
+      if (!hasLatexMath) improved = improved.replace(/([A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z0-9\s+\-*/()^.\\{}]+)(?=\s|$|\n)/g, (match) => {
         // Skip if already wrapped or is part of a label
         if (match.includes('`') || match.includes(`**${formulaLabel}:**`)) {
           return match;
@@ -393,13 +399,13 @@ export async function POST(request: NextRequest) {
       });
 
       // Pentru formule LaTeX - wrap in backticks without label
-      improved = improved.replace(/(\\frac\{[^}]+\}\{[^}]+\})/g, (match) => {
+      if (!hasLatexMath) improved = improved.replace(/(\\frac\{[^}]+\}\{[^}]+\})/g, (match) => {
         if (match.includes('`')) return match;
         return `\n\n\`${match}\`\n`;
       });
 
       // Pentru formule cu indici - wrap in backticks without label
-      improved = improved.replace(/([A-Za-z_]+_{[^}]+}[^a-zA-Z]*[=≈≤≥<>][^=]*)/g, (match) => {
+      if (!hasLatexMath) improved = improved.replace(/([A-Za-z_]+_{[^}]+}[^a-zA-Z]*[=≈≤≥<>][^=]*)/g, (match) => {
         if (match.includes('`') || match.includes(`**${formulaLabel}:**`)) {
           return match;
         }
@@ -423,8 +429,9 @@ export async function POST(request: NextRequest) {
         return `${header}\n${separator}\n${nextRow}`;
       });
       
-      // Evidențiază valorile numerice cu unități
-      improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%Ω]+)/g, '**$1**');
+      // Evidențiază valorile numerice cu unități (ar strica LaTeX-ul, deci
+      // doar pentru output legacy fără $...$)
+      if (!hasLatexMath) improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%Ω]+)/g, '**$1**');
       
       // Îmbunătățește formatarea listelor - asigură consistență
       improved = improved.replace(/^(\s*-)(\s*)/gm, '- ');
@@ -570,194 +577,85 @@ export async function POST(request: NextRequest) {
                   user.subscription === 'premium' ? '2500 cuvinte' : '2000 cuvinte';
     }
 
+    // Shared rules for every tier. The old prompts were rigid metadata
+    // templates whose placeholders ("[nume fisier]", "[data curentă]") the
+    // model copied verbatim into the output; these follow the document's own
+    // structure and demand real LaTeX for every formula.
+    const sharedRules = `LANGUAGE
+- Write the ENTIRE summary in ${targetLanguage}. Section headings too.
+
+STRUCTURE
+- Start with one title line: "# " followed by a short descriptive title based on the document's subject (never the filename).
+- Organize with "## " sections that follow the DOCUMENT'S OWN structure and topics. Do not force a generic template onto it.
+- Bold every important term the first time you define it: **term** — clear definition.
+- Use bullet lists for enumerations and a markdown table whenever the document compares alternatives.
+
+MATH AND FORMULAS (critical)
+- Typeset EVERY formula, equation, variable and mathematical symbol in LaTeX.
+- Inline math between single dollar signs: $v = \\lambda f$. Important equations on their own line between double dollar signs: $$F = G\\frac{m_1 m_2}{r^2}$$
+- Preserve each formula exactly as the document states it (fix only obvious OCR artifacts). After each displayed equation, state briefly what each variable means.
+- Never write formulas as plain text or inside backticks.
+
+QUALITY
+- Write complete, clear sentences a student can study from — not fragments of the original.
+- No placeholders, no meta-commentary, no mention of these instructions, no invented facts.
+- Skip administrative noise: emails, headers, page numbers, course logistics.`;
+
     const sectionPrompts: Record<string, string> = {
-      basic: `Creează un REZUMAT TEHNIC FREE pentru acest material (${targetLanguage}):
+      basic: `Turn the following document into a concise, high-quality study summary.
 
+DOCUMENT:
 [TEXT]
 
-## **Rezumat Tehnic Free**
+${sharedRules}
 
-**Document:** [nume fisier]
-**Limba:** ${targetLanguage}
-**Pagini:** [numar pagini]
-**Data generării:** [data curentă]
-**Nivel detaliu:** Free (Compact)
+SCOPE FOR THIS SUMMARY (compact)
+- Cover only the most important ideas: a short overview, the 4-6 core concepts with definitions, the essential formulas or procedures, and a closing "key takeaways" list of 3-5 bullets.
+- End with a short glossary of at most 8 technical terms.
 
-### **1. Introducere Scurtă**
-Prezintă pe scurt subiectul principal, domeniul de aplicare și importanța practică în 2-3 propoziții.
+Maximum length: ${wordLimit}.`,
 
-### **2. Concepte Cheie**
-Listează punctual conceptele fundamentale:
-- **[Concept]:** Definiție foarte scurtă
-- **[Concept]:** Definiție foarte scurtă
-- **[Concept]:** Definiție foarte scurtă
+      trial: `Turn the following document into a thorough, well-structured study summary.
 
-### **3. [SECTION_3_TITLE]**
-[SECTION_3_CONTENT]
-
-### **4. Glosar Minim**
-Pentru termenii tehnici principali:
-**[Termen]:** Definiție scurtă în 1 propoziție
-
-### **5. Autoevaluare**
-1. Întrebare conceptuală simplă
-2. [SECTION_3_QUESTION]
-3. Întrebare despre aplicație
-
-**CERINȚE STRICTE:**
-- Elimină complet: emailuri, motto-uri, texte irelevante
-- Păstrează doar conținut tehnic util
-- Scrie clar și concis, fără repetiții
-
-Răspunde în ${targetLanguage}. STRICT maxim ${wordLimit}.`,
-
-      trial: `Creează un REZUMAT TEHNIC TRIAL pentru acest material (${targetLanguage}):
-
+DOCUMENT:
 [TEXT]
 
-## **Rezumat Tehnic Trial**
+${sharedRules}
 
-**Document:** [nume fisier]
-**Limba:** ${targetLanguage}
-**Pagini:** [numar pagini]
-**Data generării:** [data curentă]
-**Nivel detaliu:** Trial (Optimizat, 4 secțiuni)
+SCOPE FOR THIS SUMMARY (balanced)
+- Include: an overview paragraph giving context and why the topic matters; the fundamental concepts, each bolded and clearly defined; the main body organized by the document's chapters or topics, covering how things work and when they apply; the key formulas or methods with variables explained.
+- End with a "key takeaways" list and a glossary of up to 12 technical terms.
 
-### **1. Introducere și Context**
-Prezintă subiectul principal, domeniul de aplicare și importanța în teoria și practica actuală. Explică relevanța industrială și contextul de utilizare în 2-3 paragrafe.
+Maximum length: ${wordLimit}.`,
 
-### **2. Concepte Fundamentale**
-Definiții clare pentru conceptele de bază și principiile de funcționare esențiale. Include DOAR cei mai importanți 4-5 parametri critici și caracteristicile fundamentale necesare pentru înțelegere.
+      standard: `Turn the following document into a comprehensive study summary.
 
-### **3. [SECTION_3_TITLE]**
-[SECTION_3_CONTENT]
-
-### **4. Glosar Tehnic Esențial (10-12 termeni)**
-Pentru DOAR termenii tehnici principali (maxim 12):
-**[Termen]:** Definiție precisă și aplicabilitate
-
-**CERINȚE:**
-- Elimină zgomotul (emailuri, motto-uri)
-- Conținut strict tehnic și didactic
-- Calitate foarte bună
-
-Răspunde în ${targetLanguage}. Maxim ${wordLimit}.`,
-
-      standard: `Create a comprehensive STANDARD TECHNICAL SUMMARY for this material.
-
-TEXT TO SUMMARIZE:
+DOCUMENT:
 [TEXT]
 
-INSTRUCTIONS:
-You must create a well-structured technical summary in ${targetLanguage} language with the following sections:
+${sharedRules}
 
-## **Technical Summary Document: ${filename}**
+SCOPE FOR THIS SUMMARY (comprehensive)
+- Include: an introduction with context and practical relevance (2-3 paragraphs); all fundamental concepts, bolded and precisely defined, with how they interrelate; a developed section per chapter/topic of the document covering operating principles, applications and limitations; every important formula, each with its variables explained; comparison tables where the document contrasts methods or types.
+- End with a "key takeaways" list and a glossary of up to 20 technical terms.
 
-**Language:** ${targetLanguage}
-**Pages:** ${numpages}
-**Date of Generation:** ${new Date().toLocaleDateString('en-US')}
-**Detail Level:** Standard (Optimized, 5 sections)
+Maximum length: ${wordLimit}.`,
 
-### **1. Introduction and Detailed Context**
-Present the main subject, scope, and importance in the current theoretical and practical context. Explain the industrial, academic relevance, and evolution of the field in 3-4 well-developed paragraphs.
+      premium: `Turn the following document into ${summaryLength === 'short' ? 'a sharp, concise study summary that captures everything essential' : summaryLength === 'academic' ? 'an exhaustive, academic-grade study summary' : 'a complete, in-depth study summary'}.
 
-### **2. Advanced Fundamental Concepts**
-Precise and complete definitions for the main concepts. Explain the operating principles, basic theories, and MAXIMUM 8-10 key critical parameters. Include an analysis of the basic conceptual interrelationships.
-
-### **3. Technical Development on Chapters**
-For each main type in the document (maximum 4-5 main types):
-- Detailed operating principle
-- Scheme and practical implementation
-- Performances and limitations
-- Specific applications and usage contexts
-
-### **4. [SECTION_4_TITLE]**
-[SECTION_4_CONTENT]
-
-### **5. Standard Technical Glossary (20-25 terms)**
-For MAXIMUM 25 key technical terms:
-**[Term]:** Complete definition with examples and applicability
-
-REQUIREMENTS:
-- Strictly technical content, eliminate noise completely
-- Professional and didactic tone
-- Very high quality
-
-Respond in ${targetLanguage}. Maximum ${wordLimit}.`,
-
-      premium: `Creează un rezumat tehnic ${summaryLength === 'short' ? 'premium concis' : summaryLength === 'academic' ? 'academic premium ultra-detaliat' : 'complet premium'} pentru acest material (${targetLanguage}):
-
+DOCUMENT:
 [TEXT]
 
-Structură ${summaryLength === 'short' ? 'optimizată premium:' : summaryLength === 'academic' ? 'academică ultra-detaliată de calitate supremă:' : 'completă și detaliată:'}
+${sharedRules}
 
-## **Rezumat Tehnic ${summaryLength === 'short' ? 'Premium Concis' : summaryLength === 'academic' ? 'Academic Premium Ultra-Detaliat' : 'Complet Premium'}**
+SCOPE FOR THIS SUMMARY (${summaryLength === 'short' ? 'premium concise' : summaryLength === 'academic' ? 'premium academic' : 'premium complete'})
+${summaryLength === 'short'
+  ? `- Distill the document to its essence: a tight overview, the core concepts with crisp definitions, the key formulas (LaTeX, variables explained), and the main practical points.
+- End with a "key takeaways" list of 5-7 bullets and a short glossary of the most important terms.`
+  : `- Include: an introduction covering purpose, theoretical context and practical relevance; every fundamental concept, bolded and rigorously defined, including how concepts interrelate; a fully developed section for each chapter/topic of the document — operating principles, ${summaryLength === 'academic' ? 'derivations where the document shows them, ' : ''}advantages and limitations, applications, and concrete numeric values or standards the document mentions; ALL formulas and relations, each displayed in LaTeX with every variable explained; comparison tables wherever the document contrasts types, methods or approaches.
+- End with: a "key takeaways" list; an alphabetical glossary of the important technical terms; and a final "## Self-assessment" section with ${summaryLength === 'academic' ? '6-8' : '4-6'} exam-style open questions about this material (questions only, no answers).`}
 
-**Document:** [nume fisier]  
-**Limba:** ${targetLanguage}  
-**Pagini:** [numar pagini]  
-**Data generării:** [data curentă]  
-**Formule identificate:** ${technicalContent.formulaCount}  
-**Termeni tehnici:** ${technicalContent.technicalTerms}  
-**Nivel detaliu:** ${summaryLength === 'short' ? 'Premium Concis' : summaryLength === 'academic' ? 'Academic Ultra-Detaliat (Premium Maxim)' : 'Complet (Premium)'}  
-${summaryLength === 'academic' ? '**Formule identificate și corectate:** [număr]\n**Termeni tehnici curățați:** [număr]\n' : ''}
-
-### **Cuprins${summaryLength === 'short' ? ' Esențial' : summaryLength === 'academic' ? ' Detaliat Academic' : ' Detaliat'}**
-${summaryLength === 'academic' ? '1. Introducere și Context Detaliat\n2. Concepte Fundamentale Avansate\n3. Dezvoltare pe Capitole Complete\n4. Glosar Tehnic Curățat\n5. Relații și Formule Esențiale Corectate\n6. Comparații și Clasificări Avansate\n7. Întrebări de Autoevaluare Avansate și Realiste' : `1. Introducere și Context ${summaryLength === 'short' ? 'Esențial' : 'Detaliat'}
-2. Concepte Fundamentale ${summaryLength === 'short' ? 'Principale' : 'Avansate'}  
-3. ${summaryLength === 'short' ? 'Puncte Cheie pe Capitole' : 'Dezvoltare pe Capitole Complete'}
-4. Glosar Tehnic ${summaryLength === 'short' ? 'Esențial' : 'Curățat'}
-5. ${summaryLength === 'short' ? 'Formule Principale' : 'Relații și Formule Esențiale Corectate'}
-${summaryLength === 'short' ? '' : '6. Comparații și Clasificări Avansate\n'}${summaryLength === 'short' ? '6' : '7'}. Întrebări de Autoevaluare ${summaryLength === 'short' ? 'Focusate' : 'Avansate și Realiste'}`}
-
-### **1. Introducere și Context ${summaryLength === 'short' ? 'Esențial' : summaryLength === 'academic' ? 'Detaliat Academic' : 'Detaliat'}**
-${summaryLength === 'academic' ? `În cadrul acestui document despre [subiect], vom explora în profunzime conceptele legate de [domeniu], importanța lor în diverse aplicații industriale și academice, și [aspecte principale]. [Subiectul principal] reprezintă un element esențial în [domeniul de aplicare].
-
-1.1 Scopul documentului
-Scopul acestui document este de a oferi o analiză detaliată a [subiect principal], inclusiv principiile de funcționare, parametrii importanți, precum și tipurile și metodele utilizate.
-
-1.2 Context teoretic  
-Fundamentul științific al acestui document se bazează pe [teorii principale] și pe principiile de funcționare ale [componente/procese principale].
-
-1.3 Importanța practică
-Relevanța [subiectului] în aplicații reale este semnificativă, având un impact direct asupra [domeniilor de aplicare].` : `- Scopul documentului
-- Context teoretic
-- Importanța practică
-${summaryLength === 'short' ? '' : '- Structură clară și detaliată pentru învățare eficientă'}`}
-
-### **2. Concepte Fundamentale ${summaryLength === 'short' ? 'Principale' : summaryLength === 'academic' ? 'Avansate Ultra-Detaliate' : 'Avansate'}**
-${summaryLength === 'academic' ? `2.1 Principii teoretice
-[Descriere detaliată a principiilor de bază cu explicații complete]
-
-2.2 Parametri critici
-Parametrii esențiali includ:
-- [Parametru 1]: [Descriere și formulă]
-- [Parametru 2]: [Descriere și formulă]
-- [Parametru 3]: [Descriere și formulă]
-
-Formulele relevante includ:
-[Formulă 1]: [Explicație detaliată]
-[Formulă 2]: [Explicație detaliată]
-
-2.3 Interrelații conceptuale
-[Descriere detaliată a modului în care conceptele se interconectează]` : `- Principii teoretice cu formule matematice
-- Parametri critici cu ecuații
-${summaryLength === 'short' ? '' : '- Interrelații conceptuale'}`}
-
-### **3. ${summaryLength === 'short' ? 'Puncte Cheie pe Capitole' : 'Dezvoltare pe Capitole Complete'}**
-[Pentru ${summaryLength === 'short' ? 'conceptele principale' : 'fiecare capitol major'}:]
-- Principiul de funcționare
-- Formule matematice ${summaryLength === 'short' ? 'esențiale' : 'corectate'}
-- ${summaryLength === 'short' ? 'Aplicații principale' : 'Avantaje și limitări\n- Aplicații industriale\n- Valori numerice și standarde\n- Considerații practice'}
-
-### **4. Glosar Tehnic ${summaryLength === 'short' ? 'Esențial' : 'Curățat (fără zgomot)'}**
-[Pentru ${summaryLength === 'short' ? 'termenii principali' : 'fiecare termen tehnic important - alfabetic'}]
-
-### **5. ${summaryLength === 'short' ? 'Formule Principale' : 'Relații și Formule Esențiale (Corectate și Normalizate)'}**
-[Pentru ${summaryLength === 'short' ? 'formulele principale' : 'fiecare formulă din text'} - PĂSTREAZĂ EXACT]
-
-${summaryLength === 'short' ? '' : '### **6. Comparații și Clasificări Avansate**\n| Tip/Metodă | Avantaje | Dezavantaje | Aplicații Industriale | Costuri |\n[Tabele comparative detaliate]\n\n'}
-Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wordLimit}.`
+Maximum length: ${wordLimit}.`
     };
 
     // Generate sections based on subscription tier - single API call
@@ -788,9 +686,11 @@ Păstrează termenii tehnici originali. Folosește ${targetLanguage}. Maxim ${wo
               .replace('[SECTION_4_CONTENT]', adaptiveSection.content);
           }
 
-          const systemMessage = sectionType === 'standard'
-            ? `You are a technical expert specialized in creating educational materials. Create a ${summaryLength === 'short' ? 'concise and efficient' : 'detailed but structured'} summary. IMPORTANT: You must respond with the ACTUAL SUMMARY CONTENT in ${targetLanguage} language, NOT the template instructions. Extract and summarize the provided text content.`
-            : `Ești un expert tehnic specializat în generarea de materiale educaționale. Creează un rezumat ${summaryLength === 'short' ? 'concis și eficient' : 'detaliat dar structurat'}. Folosește limba ${targetLanguage}.`;
+          const systemMessage =
+            `You are an expert tutor and technical writer who produces exceptional study summaries. ` +
+            `You write in ${targetLanguage}, use clean Markdown, and typeset ALL mathematics in LaTeX ` +
+            `between $ (inline) or $$ (display) delimiters — never as plain text or code spans. ` +
+            `You output only the summary itself: no preamble, no placeholders, no meta-commentary.`;
 
           // Fallback chain: primary OpenAI model -> secondary OpenAI model -> Claude
           const sectionCompletion = await createChatCompletion({

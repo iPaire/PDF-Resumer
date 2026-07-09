@@ -99,7 +99,7 @@ export async function sendPasswordResetEmail({ to, token }: SendPasswordResetEma
             </div>
 
             <div class="warning">
-              <strong>⚠️ Important:</strong> Acest cod expiră în 15 minute și poate fi folosit o singură dată.
+              <strong>Important:</strong> Acest cod expiră în 15 minute și poate fi folosit o singură dată.
             </div>
 
             <div class="content">

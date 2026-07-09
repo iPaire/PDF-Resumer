@@ -51,9 +51,11 @@
     "react-ga4": "^2.1.0",
     "react-katex": "^3.1.0",
     "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "resend": "^6.1.2",
     "sharp": "^0.34.3",
     "stripe": "^18.2.1"

@@ -3,7 +3,7 @@
 // Flip-card study experience with local "know it / review again" piles.
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Layers, RefreshCw, Shuffle } from 'react-feather';
+import { Award, Layers, RefreshCw, Shuffle } from 'react-feather';
 import { Button, Badge } from '@/components/ui';
 import ArtifactSection from './ArtifactSection';
 import type { WorkspaceData } from './WorkspaceShell';
@@ -102,7 +102,9 @@ function Deck({ cards, plan, regenerate }: { cards: Flashcard[]; plan: string; r
 
       {finished ? (
         <div className="bg-surface border border-line rounded-card shadow-card p-10 text-center">
-          <div className="text-4xl mb-3">🎉</div>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success-soft text-success">
+            <Award size={26} />
+          </div>
           <h3 className="text-lg font-semibold text-ink">{t('flashcardsUi.doneTitle')}</h3>
           <p className="mt-1.5 text-sm text-ink-soft">
             {t('flashcardsUi.doneDescription', { known: known.size, total: cards.length })}

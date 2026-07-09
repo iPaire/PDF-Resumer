@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Edit3,
   ArrowRight,
+  Zap,
 } from 'react-feather';
 
 export default function Home() {
@@ -166,7 +167,7 @@ export default function Home() {
               href={status === 'authenticated' ? '/upload' : '/register'}
               className="bg-accent rounded-card p-5 flex flex-col justify-center items-center text-center text-white hover:bg-accent-strong transition-colors"
             >
-              <span className="text-2xl mb-2">✨</span>
+              <Zap size={26} className="mb-2" />
               <span className="font-semibold">
                 {status === 'authenticated' ? t('uploadBtn') : t('registerBtn')}
               </span>

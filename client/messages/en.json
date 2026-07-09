@@ -410,7 +410,7 @@
     "summaryLabel": "Summary:",
     "selectCourse": "Select course:",
     "noCourseOption": "-- No course --",
-    "createNewCourse": "➕ Create new course",
+    "createNewCourse": "Create new course",
     "cancel": "Cancel",
     "enterCourseTitle": "Enter the new course title:",
     "assignmentSuccess": "Summary assigned to course successfully!",

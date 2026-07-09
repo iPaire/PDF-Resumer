@@ -47,14 +47,14 @@ export async function GET() {
         name: summary.title,
         date: summary.createdAt.toISOString().split('T')[0],
         type: 'summary',
-        status: 'Procesat'
+        status: 'processed'
       })),
       ...quizzes.map(quiz => ({
         id: quiz.id,
         name: `Quiz - ${quiz.course.title}`,
         date: quiz.createdAt.toISOString().split('T')[0],
         type: 'quiz',
-        status: 'Procesat'
+        status: 'processed'
       }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
      .slice(0, 5);

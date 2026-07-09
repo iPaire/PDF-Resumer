@@ -5,13 +5,28 @@
 // learning workspace and the print view render content identically.
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
 // Sanitizes the HTML that rehypeRaw parses out of AI-generated summary text,
 // which is derived from user-uploaded PDFs (prompt-injection -> stored XSS).
-import rehypeSanitize from 'rehype-sanitize';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { useLocale } from 'next-intl';
+
+// Extends the GitHub sanitize schema so the class names remark-math attaches
+// survive sanitization; rehype-katex (which runs after) needs them to find
+// the formulas. KaTeX output itself is generated locally, so it is safe.
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    div: [...(defaultSchema.attributes?.div || []), ['className', 'math', 'math-display']],
+    span: [...(defaultSchema.attributes?.span || []), ['className', 'math', 'math-inline']],
+    code: [...(defaultSchema.attributes?.code || []), ['className', 'language-math', 'math-inline', 'math-display']],
+  },
+};
 
 // Funcție îmbunătățită pentru formatarea Markdown
 export const formatMarkdownSpacing = (text: string) => {
@@ -49,8 +64,8 @@ export default function MarkdownContent({ content }: { content: string }) {
 
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw, rehypeSanitize]}
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeKatex]}
       components={{
         h1({ node, children, ...props }) {
           const text = String(children);

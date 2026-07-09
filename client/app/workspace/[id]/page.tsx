@@ -40,6 +40,13 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
       })) > 0
     : false;
 
+  // Plan comes from the DB, not the session: the session JWT is built by a
+  // config that never sets `subscription`, so it is always undefined here.
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { subscription: true },
+  });
+
   const data: WorkspaceData = {
     id: summary.id,
     title: summary.title,
@@ -52,7 +59,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
     hasDocumentText,
     artifacts: summary.artifacts.map((a) => ({ type: a.type, updatedAt: a.updatedAt.toISOString() })),
     chatCount: summary._count.chatMessages,
-    plan: session.user.subscription || 'free',
+    plan: dbUser?.subscription || 'free',
   };
 
   return <WorkspaceShell data={data} />;

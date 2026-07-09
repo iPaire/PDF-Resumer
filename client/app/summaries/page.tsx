@@ -4,7 +4,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { FileText, Download, Trash2, Search, FolderPlus, Printer } from 'react-feather';
+import { FileText, Download, Trash2, Search, FolderPlus, Printer, BookOpen } from 'react-feather';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button, Card, CardBody, Badge, EmptyState, Spinner } from '@/components/ui';
@@ -333,7 +333,8 @@ export default function SummariesPage() {
 
                   <div className="mt-auto pt-4 flex items-center justify-between gap-2">
                     <Button href={`/workspace/${summary.id}`} size="sm">
-                      ✨ {t('openLearn')}
+                      <BookOpen size={14} />
+                      {t('openLearn')}
                     </Button>
                     <div className="flex items-center gap-0.5">
                       <Link

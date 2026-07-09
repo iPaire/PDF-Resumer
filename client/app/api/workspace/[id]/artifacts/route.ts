@@ -87,7 +87,13 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid artifact type' }, { status: 400 });
   }
 
-  const plan = session.user.subscription || 'free';
+  // Plan from the DB: the session JWT never carries `subscription` (the
+  // getServerSession config doesn't set it), so it can't be trusted here.
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { subscription: true },
+  });
+  const plan = dbUser?.subscription || 'free';
   if (!canUseFeature(plan, type)) {
     return NextResponse.json({ error: 'Feature not available on your plan', upgrade: true }, { status: 403 });
   }

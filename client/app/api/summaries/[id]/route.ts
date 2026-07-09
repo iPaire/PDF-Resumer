@@ -7,41 +7,45 @@ import prisma from "@/lib/prisma";
 // Funcție pentru îmbunătățirea formatării și structurii
 function improveFormatting(summary: string, title: string = '', createdAt: Date = new Date()): string {
   let improved = summary;
-  
+
   // Înlocuiește date placeholder cu date reale
   const currentDate = new Date().toLocaleDateString('ro-RO');
   const createdDate = createdAt.toLocaleDateString('ro-RO');
   improved = improved.replace(/\[data curentă\]/g, currentDate);
   improved = improved.replace(/\[data generării\]/g, createdDate);
   improved = improved.replace(/\[nume fisier\]/g, title);
-  
+
   // Adaugă separatori pentru secțiuni mari
   improved = improved.replace(/(#{1,3}\s*\*\*[^*]+\*\*)/g, '\n\n$1');
-  
+
+  // Rezumatele noi conțin LaTeX real ($...$) randat de KaTeX; regex-urile de
+  // mai jos sunt doar pentru output legacy și ar corupe LaTeX-ul.
+  const hasLatexMath = /\$[^$\n]+\$|\$\$[\s\S]+?\$\$/.test(improved);
+
   // Îmbunătățește formatarea formulelor - păstrează exact din text
   // Pentru formule simple cu egale
-  improved = improved.replace(/([A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z0-9\s+\-*/()^.\\{}]+)(?=\s|$|\n)/g, (match) => {
+  if (!hasLatexMath) improved = improved.replace(/([A-Za-z_]+\s*[=≈≤≥<>]\s*[A-Za-z0-9\s+\-*/()^.\\{}]+)(?=\s|$|\n)/g, (match) => {
     if (!match.includes('**Formulă:**')) {
       return `\n\n**Formulă:** \`${match.trim()}\`\n`;
     }
     return match;
   });
-  
+
   // Pentru formule LaTeX
-  improved = improved.replace(/(\\frac\{[^}]+\}\{[^}]+\})/g, (match) => {
+  if (!hasLatexMath) improved = improved.replace(/(\\frac\{[^}]+\}\{[^}]+\})/g, (match) => {
     return `\n\n**Formulă:** \`${match}\`\n`;
   });
-  
+
   // Pentru formule cu indici
-  improved = improved.replace(/([A-Za-z_]+_{[^}]+}[^a-zA-Z]*[=≈≤≥<>][^=]*)/g, (match) => {
+  if (!hasLatexMath) improved = improved.replace(/([A-Za-z_]+_{[^}]+}[^a-zA-Z]*[=≈≤≥<>][^=]*)/g, (match) => {
     if (!match.includes('**Formulă:**')) {
       return `\n\n**Formulă:** \`${match.trim()}\`\n`;
     }
     return match;
   });
-  
+
   // Evidențiază valorile numerice cu unități
-  improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%]+)/g, '**$1**');
+  if (!hasLatexMath) improved = improved.replace(/(\d+[.,]?\d*\s*[A-Za-z%]+)/g, '**$1**');
   
   // Îmbunătățește formatarea listelor
   improved = improved.replace(/^(\s*-)(\s*)/gm, '- ');

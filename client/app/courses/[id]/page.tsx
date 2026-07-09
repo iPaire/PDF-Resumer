@@ -824,9 +824,10 @@ export default function CoursePage() {
                         <div className="flex gap-2 items-center">
                           <Link
                             href={`/workspace/${summary.id}`}
-                            className="text-xs font-semibold text-accent hover:text-accent-strong whitespace-nowrap"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-strong whitespace-nowrap"
                           >
-                            ✨ {tWorkspace('openWorkspace')}
+                            <BookOpen className="h-3.5 w-3.5" />
+                            {tWorkspace('openWorkspace')}
                           </Link>
                           <button
                             onClick={() => copySummary(summary.content, summary.id)}

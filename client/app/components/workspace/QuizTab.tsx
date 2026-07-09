@@ -5,7 +5,7 @@
 // the same {question, options, correctAnswer} shape.
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CheckSquare, RefreshCw } from 'react-feather';
+import { Award, CheckSquare, RefreshCw } from 'react-feather';
 import { Button, Card, CardBody } from '@/components/ui';
 import ArtifactSection from './ArtifactSection';
 import type { WorkspaceData, WorkspaceQuizQuestion } from './WorkspaceShell';
@@ -58,7 +58,11 @@ function QuizPlayer({
 
       {submitted && (
         <div className="mb-6 bg-surface border border-line rounded-card shadow-card p-6 text-center">
-          <div className="text-3xl mb-1.5">{score === questions.length ? '🏆' : score >= questions.length / 2 ? '👏' : '💪'}</div>
+          <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full ${
+            score >= questions.length / 2 ? 'bg-success-soft text-success' : 'bg-accent-soft text-accent'
+          }`}>
+            <Award size={26} />
+          </div>
           <p className="text-lg font-semibold text-ink">
             {t('quizUi.score', { score, total: questions.length })}
           </p>

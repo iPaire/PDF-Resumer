@@ -111,17 +111,33 @@ export default function DashboardPage() {
     }
   };
 
-  const statusTone = (status: string): 'success' | 'warn' | 'danger' | 'neutral' => {
+  // The API returns status codes; translate for display. Legacy hardcoded
+  // strings are mapped too in case cached responses still carry them.
+  const normalizeStatus = (status: string): 'processed' | 'pending' | 'error' | null => {
     switch (status) {
+      case 'processed':
       case 'Procesat':
-      case 'Processed':
-      case t('processed'): return 'success';
+      case 'Processed': return 'processed';
+      case 'pending':
       case 'În așteptare':
-      case 'Pending':
-      case t('pending'): return 'warn';
+      case 'Pending': return 'pending';
+      case 'error':
       case 'Eroare':
-      case 'Error':
-      case t('error'): return 'danger';
+      case 'Error': return 'error';
+      default: return null;
+    }
+  };
+
+  const statusLabel = (status: string): string => {
+    const code = normalizeStatus(status);
+    return code ? t(code) : status;
+  };
+
+  const statusTone = (status: string): 'success' | 'warn' | 'danger' | 'neutral' => {
+    switch (normalizeStatus(status)) {
+      case 'processed': return 'success';
+      case 'pending': return 'warn';
+      case 'error': return 'danger';
       default: return 'neutral';
     }
   };
@@ -415,7 +431,7 @@ export default function DashboardPage() {
                       {file.date}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge tone={statusTone(file.status)}>{file.status}</Badge>
+                      <Badge tone={statusTone(file.status)}>{statusLabel(file.status)}</Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button

@@ -3,7 +3,7 @@
 // Chat with the document: streaming tutor answers with persisted history.
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Send } from 'react-feather';
+import { MessageCircle, Send } from 'react-feather';
 import { Button, Spinner } from '@/components/ui';
 import MarkdownContent from '@/components/MarkdownContent';
 import type { WorkspaceData } from './WorkspaceShell';
@@ -124,7 +124,9 @@ export default function ChatTab({ data }: { data: WorkspaceData }) {
           </div>
         ) : messages.length === 0 ? (
           <div className="py-8 text-center">
-            <div className="text-4xl mb-3">💬</div>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent">
+              <MessageCircle size={26} />
+            </div>
             <p className="text-sm text-ink-soft mb-5">{t('chat.starterHint')}</p>
             <div className="flex flex-col items-center gap-2">
               {starters.map((s, i) => (
