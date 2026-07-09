@@ -145,6 +145,17 @@ export async function generateDiagramsArtifact(
     });
 
     console.log(`[diagrams] stored ${refs.length} diagram pages for summary ${summaryId} (total ${Date.now() - startedAt}ms)`);
+
+    // Diagrams finish AFTER the user landed in the workspace - without a
+    // notification they would never know to refresh.
+    await prisma.notification.create({
+      data: {
+        userId,
+        type: 'diagrams_ready',
+        payload: { count: refs.length },
+        href: `/workspace/${summaryId}`,
+      },
+    }).catch((e) => console.error('[diagrams] notification create failed:', e));
   } catch (error) {
     console.error(`[diagrams] generation failed for summary ${summaryId}:`, error);
   }

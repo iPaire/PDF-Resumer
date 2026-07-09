@@ -55,7 +55,8 @@
     "notifications": "Notificaciones",
     "notificationsEmpty": "Nada nuevo por ahora",
     "markAllRead": "Marcar todo como leído",
-    "notifSummaryReady": "Tu resumen «{title}» está listo en tu Biblioteca"
+    "notifSummaryReady": "Tu resumen «{title}» está listo en tu Biblioteca",
+    "notifDiagramsReady": "Los diagramas de tu documento están listos ({count} páginas)"
   },
   "terms": {
     "title": "Términos y Condiciones",

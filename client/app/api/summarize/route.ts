@@ -1,7 +1,11 @@
 import { NextRequest } from 'next/server';
 import { after } from 'next/server';
 
-export const maxDuration = 60; // seconds - Vercel Pro supports up to 300
+// Large documents spend most of this on the two LLM calls (summary + quiz);
+// the post-response diagram rendering needs the remaining budget. 300s is
+// supported on Vercel with Fluid Compute (default) - if the deploy rejects
+// it, drop back to 60.
+export const maxDuration = 300;
 import { createHash } from 'crypto';
 import pdf from 'pdf-parse';
 import { generateDiagramsArtifact } from '@/lib/pdf-diagrams';
@@ -28,7 +32,9 @@ const CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 //     first-pages-only truncation), boilerplate stripping, worked-examples rule
 // v4: anti-hallucination rule for table-of-contents-only chapters; worked
 //     examples must show every calculation step or admit they are unsolved
-const PROMPT_VERSION = 'v4';
+// v5: hard skip rule for TOC-only chapters (no one-sentence stubs),
+//     gpt-4.1-mini for standard/premium (better instruction adherence)
+const PROMPT_VERSION = 'v5';
 
 interface CachedSummary {
   summary: string;
@@ -341,14 +347,16 @@ export async function POST(request: NextRequest) {
         inputCharLimit: 120_000
       },
       standard: {
-        model: 'gpt-4o-mini',
+        // 4.1-mini follows the faithfulness/worked-example rules much more
+        // reliably than 4o-mini, at a still-small cost.
+        model: 'gpt-4.1-mini',
         temperature: 0.3,
         sections: ['standard'],
         maxQuestions: 5,
         inputCharLimit: 150_000
       },
       premium: {
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         temperature: 0.2, // Slightly lower for faster response
         sections: ['premium'],
         maxQuestions: 12,
@@ -776,11 +784,11 @@ MATH AND FORMULAS (critical)
 - Never write formulas as plain text or inside backticks.
 
 WORKED EXAMPLES (critical)
-- If the document contains worked examples, applications or solved exercises (e.g. "Aplicația 6.1", "Example", "Exercise", "Problem"), reproduce them in a dedicated "## " section for worked examples: state the problem, then the COMPLETE solution — every intermediate calculation step in LaTeX, in order. Never state a numeric result without showing the calculation that produces it.
+- If the document contains worked examples, applications or solved exercises (e.g. "Aplicația 6.1", "Example", "Exercise", "Problem"), reproduce them in a dedicated "## " section for worked examples: state the problem, then the COMPLETE solution — every intermediate calculation step in LaTeX, in order. Never state a numeric result without showing the calculation that produces it. If the document gives the governing formula and the final value, write out the substitution step connecting them (e.g. state the relation, substitute the known values, then the result). A "solution" that jumps straight to the final number is unacceptable.
 - If the document leaves an exercise unsolved (homework), present the problem and say it is left as an exercise — never invent a solution or a numeric answer the document does not contain.
 
 FAITHFULNESS (critical)
-- If the document includes a table of contents or chapter list, use it ONLY to understand structure. NEVER generate content for a chapter or topic whose actual material is not present in the provided text — cover only sections whose real content appears in the document. Writing plausible-sounding sentences from a bare chapter title is strictly forbidden.
+- Documents often begin with a table of contents listing chapters whose material is NOT included. Before writing, decide for each chapter: does the provided text contain real paragraphs of material for it, or only its title? If only the title (or a line in a contents list), SKIP that chapter completely — no heading, no one-sentence description, nothing. A summary that covers only the chapters actually present (e.g. starting directly at chapter 6) is CORRECT; padding it with invented one-liners for the other chapters is a serious failure.
 
 QUALITY
 - Write complete, clear sentences a student can study from — not fragments of the original.

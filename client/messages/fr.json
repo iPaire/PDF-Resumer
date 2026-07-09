@@ -55,7 +55,8 @@
     "notifications": "Notifications",
     "notificationsEmpty": "Rien de nouveau pour le moment",
     "markAllRead": "Tout marquer comme lu",
-    "notifSummaryReady": "Votre résumé « {title} » est prêt dans votre Bibliothèque"
+    "notifSummaryReady": "Votre résumé « {title} » est prêt dans votre Bibliothèque",
+    "notifDiagramsReady": "Les schémas de votre document sont prêts ({count} pages)"
   },
   "terms": {
     "title": "Conditions générales",

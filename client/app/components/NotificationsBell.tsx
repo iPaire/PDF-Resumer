@@ -11,7 +11,7 @@ import { Bell } from 'react-feather';
 interface Notification {
   id: string;
   type: string;
-  payload: { title?: string } | null;
+  payload: { title?: string; count?: number } | null;
   href: string | null;
   readAt: string | null;
   createdAt: string;
@@ -64,6 +64,8 @@ export default function NotificationsBell() {
     switch (n.type) {
       case 'summary_ready':
         return t('notifSummaryReady', { title: n.payload?.title || '' });
+      case 'diagrams_ready':
+        return t('notifDiagramsReady', { count: n.payload?.count ?? 0 });
       default:
         return n.type;
     }

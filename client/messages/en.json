@@ -55,7 +55,8 @@
     "notifications": "Notifications",
     "notificationsEmpty": "Nothing new yet",
     "markAllRead": "Mark all as read",
-    "notifSummaryReady": "Your summary \"{title}\" is ready in your Library"
+    "notifSummaryReady": "Your summary \"{title}\" is ready in your Library",
+    "notifDiagramsReady": "Diagrams from your document are ready ({count} pages)"
   },
   "terms": {
     "title": "Terms and Conditions",

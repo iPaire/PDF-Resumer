@@ -55,7 +55,8 @@
     "notifications": "Benachrichtigungen",
     "notificationsEmpty": "Noch nichts Neues",
     "markAllRead": "Alle als gelesen markieren",
-    "notifSummaryReady": "Deine Zusammenfassung „{title}\" ist in deiner Bibliothek bereit"
+    "notifSummaryReady": "Deine Zusammenfassung „{title}\" ist in deiner Bibliothek bereit",
+    "notifDiagramsReady": "Die Diagramme aus deinem Dokument sind fertig ({count} Seiten)"
   },
   "terms": {
     "title": "Allgemeine Geschäftsbedingungen",

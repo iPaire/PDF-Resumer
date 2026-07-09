@@ -55,7 +55,8 @@
     "notifications": "Notificări",
     "notificationsEmpty": "Nimic nou deocamdată",
     "markAllRead": "Marchează tot ca citit",
-    "notifSummaryReady": "Rezumatul „{title}\" este gata în Biblioteca ta"
+    "notifSummaryReady": "Rezumatul „{title}\" este gata în Biblioteca ta",
+    "notifDiagramsReady": "Schemele din documentul tău sunt gata ({count} pagini)"
   },
   "terms": {
     "title": "Termeni și Condiții",
