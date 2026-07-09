@@ -904,6 +904,8 @@
       "copy": "Copy",
       "copied": "Copied!",
       "print": "Print"
-    }
+    },
+    "diagramsTitle": "Diagrams and figures from the document",
+    "diagramsPage": "Page {page}"
   }
 }

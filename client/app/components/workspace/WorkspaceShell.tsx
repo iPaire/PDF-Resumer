@@ -47,6 +47,7 @@ export interface WorkspaceData {
   artifacts: { type: string; updatedAt: string }[];
   chatCount: number;
   plan: string;
+  diagrams: { page: number; url: string }[];
 }
 
 export type SectionId = 'summary' | 'chat' | 'concepts' | 'quiz' | 'flashcards' | 'questions' | 'notes';

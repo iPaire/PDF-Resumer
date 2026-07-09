@@ -5,6 +5,7 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import prisma from '@/lib/prisma';
+import { createDiagramViewUrls } from '@/lib/supabase-storage';
 import { redirect } from 'next/navigation';
 import WorkspaceShell, { WorkspaceData } from '@/components/workspace/WorkspaceShell';
 
@@ -47,6 +48,25 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
     select: { subscription: true },
   });
 
+  // Diagram pages extracted from the document (rendered post-upload).
+  // Signed per view: the bucket is private.
+  let diagrams: { page: number; url: string }[] = [];
+  if (summary.artifacts.some((a) => a.type === 'diagrams')) {
+    const diagramsArtifact = await prisma.workspaceArtifact.findUnique({
+      where: { summaryId_type: { summaryId: summary.id, type: 'diagrams' } },
+      select: { content: true },
+    });
+    const refs = (diagramsArtifact?.content as any)?.pages as
+      | { page: number; path: string }[]
+      | undefined;
+    if (Array.isArray(refs) && refs.length > 0) {
+      const urls = await createDiagramViewUrls(refs.map((r) => r.path));
+      diagrams = refs
+        .map((r, i) => ({ page: r.page, url: urls[i] }))
+        .filter((d): d is { page: number; url: string } => !!d.url);
+    }
+  }
+
   const data: WorkspaceData = {
     id: summary.id,
     title: summary.title,
@@ -60,6 +80,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ id: 
     artifacts: summary.artifacts.map((a) => ({ type: a.type, updatedAt: a.updatedAt.toISOString() })),
     chatCount: summary._count.chatMessages,
     plan: dbUser?.subscription || 'free',
+    diagrams,
   };
 
   return <WorkspaceShell data={data} />;

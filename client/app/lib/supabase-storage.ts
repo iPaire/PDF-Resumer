@@ -5,9 +5,13 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const BUCKET = 'uploads';
+// Rendered diagram pages (PNG) extracted from documents. Private; served to
+// the owner through short-lived signed URLs generated per page view.
+const DIAGRAMS_BUCKET = 'diagrams';
 
 let client: SupabaseClient | null | undefined;
 let bucketReady = false;
+let diagramsBucketReady = false;
 
 function getClient(): SupabaseClient | null {
   if (client !== undefined) return client;
@@ -69,4 +73,48 @@ export async function deleteUpload(path: string): Promise<void> {
   if (error) {
     console.warn(`[storage] could not delete upload ${path}:`, error.message);
   }
+}
+
+// ---------------- Diagram images ----------------
+
+async function ensureDiagramsBucket(c: SupabaseClient): Promise<void> {
+  if (diagramsBucketReady) return;
+  const { error } = await c.storage.createBucket(DIAGRAMS_BUCKET, {
+    public: false,
+    fileSizeLimit: '5MB',
+    allowedMimeTypes: ['image/png'],
+  });
+  if (error && !/already exists/i.test(error.message)) {
+    throw new Error(`Could not ensure diagrams bucket: ${error.message}`);
+  }
+  diagramsBucketReady = true;
+}
+
+export async function uploadDiagram(path: string, png: Buffer): Promise<void> {
+  const c = getClient();
+  if (!c) throw new Error('Supabase storage is not configured');
+  await ensureDiagramsBucket(c);
+
+  const { error } = await c.storage.from(DIAGRAMS_BUCKET).upload(path, png, {
+    contentType: 'image/png',
+    upsert: true,
+  });
+  if (error) {
+    throw new Error(`Could not upload diagram ${path}: ${error.message}`);
+  }
+}
+
+/** Signed view URLs (24h) for a set of diagram paths, in the same order. */
+export async function createDiagramViewUrls(paths: string[]): Promise<(string | null)[]> {
+  const c = getClient();
+  if (!c || paths.length === 0) return paths.map(() => null);
+
+  const { data, error } = await c.storage
+    .from(DIAGRAMS_BUCKET)
+    .createSignedUrls(paths, 60 * 60 * 24);
+  if (error || !data) {
+    console.warn('[storage] could not sign diagram urls:', error?.message);
+    return paths.map(() => null);
+  }
+  return data.map((d) => d.signedUrl ?? null);
 }

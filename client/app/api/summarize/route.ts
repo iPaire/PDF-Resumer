@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server';
+import { after } from 'next/server';
 
 export const maxDuration = 60; // seconds - Vercel Pro supports up to 300
 import { createHash } from 'crypto';
 import pdf from 'pdf-parse';
+import { generateDiagramsArtifact } from '@/lib/pdf-diagrams';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
@@ -216,12 +218,34 @@ export async function POST(request: NextRequest) {
       return kept.join('\n').replace(/\n{3,}/g, '\n\n');
     }
 
-    // Parse PDF
+    // Parse PDF. The custom pagerender replicates pdf-parse's default line
+    // assembly exactly (so data.text - and therefore cache keys and content
+    // hashes - are unchanged) while also capturing per-page text for the
+    // diagram-page detection heuristic.
     let text = '';
     let numpages = 0;
+    const pageTexts: string[] = [];
 
     try {
-      const data = await pdf(Buffer.from(buffer));
+      const data = await pdf(Buffer.from(buffer), {
+        pagerender: (pageData: any) =>
+          pageData
+            .getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false })
+            .then((textContent: any) => {
+              let lastY: number | undefined;
+              let pageText = '';
+              for (const item of textContent.items) {
+                if (lastY === item.transform[5] || lastY === undefined) {
+                  pageText += item.str;
+                } else {
+                  pageText += '\n' + item.str;
+                }
+                lastY = item.transform[5];
+              }
+              pageTexts.push(pageText);
+              return pageText;
+            }),
+      });
       numpages = data.numpages;
       text = stripBoilerplate(data.text, numpages);
     } catch (parseError) {
@@ -424,6 +448,10 @@ export async function POST(request: NextRequest) {
           href: `/workspace/${summaryRecord.id}`,
         },
       }).catch((e) => console.error('[summarize] notification create failed:', e));
+
+      // Diagram pages render AFTER the response is sent - they must never
+      // slow down or break the summary flow.
+      after(() => generateDiagramsArtifact(summaryRecord.id, user.id, buffer, pageTexts));
 
       return new Response(
         JSON.stringify({
@@ -1184,6 +1212,10 @@ Format JSON:
         href: `/workspace/${summaryRecord.id}`,
       },
     }).catch((e) => console.error('[summarize] notification create failed:', e));
+
+    // Diagram pages render AFTER the response is sent - they must never
+    // slow down or break the summary flow.
+    after(() => generateDiagramsArtifact(summaryRecord.id, user.id, buffer, pageTexts));
 
     return new Response(
       JSON.stringify({

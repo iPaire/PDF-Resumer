@@ -904,6 +904,8 @@
       "copy": "Copiază",
       "copied": "Copiat!",
       "print": "Tipărește"
-    }
+    },
+    "diagramsTitle": "Scheme și figuri din document",
+    "diagramsPage": "Pagina {page}"
   }
 }
