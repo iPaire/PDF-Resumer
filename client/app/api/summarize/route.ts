@@ -23,7 +23,9 @@ const CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 // v2: adaptive document-driven prompts + LaTeX math output (KaTeX-rendered)
 // v3: gpt-4o-mini for all tiers, full-document input budget (no more
 //     first-pages-only truncation), boilerplate stripping, worked-examples rule
-const PROMPT_VERSION = 'v3';
+// v4: anti-hallucination rule for table-of-contents-only chapters; worked
+//     examples must show every calculation step or admit they are unsolved
+const PROMPT_VERSION = 'v4';
 
 interface CachedSummary {
   summary: string;
@@ -705,7 +707,11 @@ MATH AND FORMULAS (critical)
 - Never write formulas as plain text or inside backticks.
 
 WORKED EXAMPLES (critical)
-- If the document contains worked examples, applications or solved exercises (e.g. "Aplicația 6.1", "Example", "Exercise", "Problem"), reproduce them in a dedicated "## " section for worked examples: state the problem, then the full solution with all formulas (in LaTeX) and every numeric value preserved. Do not merely mention that examples exist.
+- If the document contains worked examples, applications or solved exercises (e.g. "Aplicația 6.1", "Example", "Exercise", "Problem"), reproduce them in a dedicated "## " section for worked examples: state the problem, then the COMPLETE solution — every intermediate calculation step in LaTeX, in order. Never state a numeric result without showing the calculation that produces it.
+- If the document leaves an exercise unsolved (homework), present the problem and say it is left as an exercise — never invent a solution or a numeric answer the document does not contain.
+
+FAITHFULNESS (critical)
+- If the document includes a table of contents or chapter list, use it ONLY to understand structure. NEVER generate content for a chapter or topic whose actual material is not present in the provided text — cover only sections whose real content appears in the document. Writing plausible-sounding sentences from a bare chapter title is strictly forbidden.
 
 QUALITY
 - Write complete, clear sentences a student can study from — not fragments of the original.

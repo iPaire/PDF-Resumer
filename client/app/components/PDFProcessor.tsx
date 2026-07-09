@@ -22,6 +22,7 @@ import {
   Zap,
   ArrowRight,
   X,
+  Coffee,
 } from 'react-feather';
 import FeedbackPopup from './FeedbackPopup';
 import MarkdownContent from './MarkdownContent';
@@ -509,6 +510,28 @@ export default function PDFProcessor() {
             </div>
           </div>
         </Card>
+
+        {/* While processing: the user doesn't have to sit on this page. Once
+            the file reached the server, the summary lands in the Library even
+            if they navigate away or close the tab. */}
+        {isLoading && (
+          <div className="mt-6 flex items-start gap-3 bg-accent-soft border border-line rounded-card p-4 sm:p-5">
+            <div className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full bg-surface text-accent">
+              <Coffee size={17} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink">{t('processingNoticeTitle')}</p>
+              <p className="mt-0.5 text-sm text-ink-soft leading-relaxed">{t('processingNotice')}</p>
+              <Link
+                href="/summaries"
+                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-accent hover:text-accent-strong"
+              >
+                {t('processingNoticeLink')}
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Error / fallback result */}
         {(summary || error) && (

@@ -12,6 +12,10 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+// Copying a KaTeX formula normally yields the stacked visual layer
+// ("BW\nf\n0" for a fraction). copy-tex intercepts the copy event and puts
+// the clean LaTeX source ($Q = \frac{f_0}{BW}$) on the clipboard instead.
+import 'katex/dist/contrib/copy-tex';
 import { InlineMath, BlockMath } from 'react-katex';
 import { useLocale } from 'next-intl';
 

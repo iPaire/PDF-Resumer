@@ -379,7 +379,10 @@
     "dropHere": "Drop here to upload",
     "heroTitle": "Upload a PDF. Get a personal tutor.",
     "heroSubtitle": "AI reads your document and turns it into a summary, chat tutor, flashcards, quizzes and more.",
-    "whatYouGet": "Your learning workspace will include:"
+    "whatYouGet": "Your learning workspace will include:",
+    "processingNoticeTitle": "No need to wait here",
+    "processingNotice": "Processing continues in the background — feel free to browse the app or even close this page. Your summary will appear in your Library as soon as it is ready.",
+    "processingNoticeLink": "Go to Library"
   },
   "summaries": {
     "title": "Your Summaries",

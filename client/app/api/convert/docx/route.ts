@@ -95,7 +95,12 @@ function isDocx(bytes: Uint8Array, name: string): boolean {
   );
 }
 
-/** Wrap mammoth's body HTML in a printable A4 document with basic typography. */
+/**
+ * Wrap mammoth's body HTML in a printable A4 document. Typography mirrors
+ * Word's defaults (Calibri 11pt, 1.15 line spacing, 8pt after paragraphs) so
+ * a one-page Word document stays one page - the old 1.5 line-height made
+ * text ~30% taller than in Word and pushed content onto a second page.
+ */
 function wrapHtml(body: string): string {
   return `<!DOCTYPE html>
 <html>
@@ -103,12 +108,13 @@ function wrapHtml(body: string): string {
 <meta charset="utf-8">
 <style>
   html, body { margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #111; }
-  h1, h2, h3, h4 { line-height: 1.25; margin: 0.8em 0 0.4em; }
-  p { margin: 0 0 0.6em; }
+  body { font-family: Calibri, Carlito, 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.15; color: #111; }
+  h1, h2, h3, h4 { line-height: 1.2; margin: 10pt 0 4pt; }
+  p { margin: 0 0 8pt; }
+  ul, ol { margin: 0 0 8pt; }
   img { max-width: 100%; height: auto; }
-  table { border-collapse: collapse; width: 100%; margin: 0.6em 0; }
-  td, th { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
+  table { border-collapse: collapse; width: 100%; margin: 6pt 0; }
+  td, th { border: 1px solid #ccc; padding: 3pt 6pt; text-align: left; }
 </style>
 </head>
 <body>${body}</body>

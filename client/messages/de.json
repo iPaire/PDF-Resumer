@@ -379,7 +379,10 @@
     "dropHere": "Hier ablegen zum Hochladen",
     "heroTitle": "Lade ein PDF hoch. Erhalte einen persönlichen Tutor.",
     "heroSubtitle": "Die KI liest dein Dokument und verwandelt es in Zusammenfassung, Chat-Tutor, Karteikarten, Quizze und mehr.",
-    "whatYouGet": "Dein Lernbereich wird enthalten:"
+    "whatYouGet": "Dein Lernbereich wird enthalten:",
+    "processingNoticeTitle": "Du musst hier nicht warten",
+    "processingNotice": "Die Verarbeitung läuft im Hintergrund weiter — du kannst die App erkunden oder diese Seite sogar schließen. Deine Zusammenfassung erscheint in deiner Bibliothek, sobald sie fertig ist.",
+    "processingNoticeLink": "Zur Bibliothek"
   },
   "summaries": {
     "title": "Ihre Zusammenfassungen",

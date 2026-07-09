@@ -379,7 +379,10 @@
     "dropHere": "Suelta tu PDF aquí",
     "heroTitle": "Sube un PDF. Consigue un tutor personal.",
     "heroSubtitle": "La IA lee tu documento y lo convierte en resumen, tutor de chat, tarjetas, quizzes y más.",
-    "whatYouGet": "Tu espacio de aprendizaje incluirá:"
+    "whatYouGet": "Tu espacio de aprendizaje incluirá:",
+    "processingNoticeTitle": "No hace falta esperar aquí",
+    "processingNotice": "El procesamiento continúa en segundo plano: puedes explorar la aplicación o incluso cerrar esta página. Tu resumen aparecerá en tu Biblioteca en cuanto esté listo.",
+    "processingNoticeLink": "Ir a la Biblioteca"
   },
   "summaries": {
     "title": "Tus Resúmenes",

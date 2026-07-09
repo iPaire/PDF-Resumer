@@ -379,7 +379,10 @@
     "dropHere": "Déposez ici pour télécharger",
     "heroTitle": "Importez un PDF. Obtenez un tuteur personnel.",
     "heroSubtitle": "L'IA lit votre document et le transforme en résumé, tuteur de chat, cartes mémoire, quiz et plus encore.",
-    "whatYouGet": "Votre espace d'apprentissage comprendra :"
+    "whatYouGet": "Votre espace d'apprentissage comprendra :",
+    "processingNoticeTitle": "Pas besoin d'attendre ici",
+    "processingNotice": "Le traitement continue en arrière-plan — vous pouvez explorer l'application ou même fermer cette page. Votre résumé apparaîtra dans votre Bibliothèque dès qu'il sera prêt.",
+    "processingNoticeLink": "Aller à la Bibliothèque"
   },
   "summaries": {
     "title": "Vos résumés",

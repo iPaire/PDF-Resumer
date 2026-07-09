@@ -379,7 +379,10 @@
     "dropHere": "Eliberează aici pentru a încărca",
     "heroTitle": "Încarcă un PDF. Primești un tutore personal.",
     "heroSubtitle": "AI-ul îți citește documentul și îl transformă în rezumat, tutore de chat, flashcarduri, quizuri și altele.",
-    "whatYouGet": "Spațiul tău de învățare va include:"
+    "whatYouGet": "Spațiul tău de învățare va include:",
+    "processingNoticeTitle": "Nu trebuie să aștepți aici",
+    "processingNotice": "Procesarea continuă în fundal — poți explora aplicația liniștit sau chiar să închizi pagina. Rezumatul va apărea în Biblioteca ta imediat ce e gata.",
+    "processingNoticeLink": "Mergi la Bibliotecă"
   },
   "summaries": {
     "title": "Rezumatele Tale",
