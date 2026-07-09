@@ -51,7 +51,11 @@
     "freeTools": "Free tools",
     "noAccountNeeded": "Free — no account needed",
     "translatePdfDescription": "Translate any PDF to English while keeping formulas and layout",
-    "menu": "Menu"
+    "menu": "Menu",
+    "notifications": "Notifications",
+    "notificationsEmpty": "Nothing new yet",
+    "markAllRead": "Mark all as read",
+    "notifSummaryReady": "Your summary \"{title}\" is ready in your Library"
   },
   "terms": {
     "title": "Terms and Conditions",

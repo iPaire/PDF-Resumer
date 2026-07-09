@@ -32,6 +32,7 @@ model User {
   feedback      Feedback[]
   workspaceArtifacts WorkspaceArtifact[]
   chatMessages  ChatMessage[]
+  notifications Notification[]
   passwordResetTokens PasswordResetToken[] @relation("PasswordResetTokens")
 
   trialOffered  Boolean?  @default(false)
@@ -153,7 +154,28 @@ model File {
   courseId    String?  @db.Uuid
   course      Course?  @relation("CourseFiles", fields: [courseId], references: [id], onDelete: Cascade)
   extractedText String?
+  // SHA-256 of the extracted text; used to detect re-uploads of the same
+  // document so a user doesn't accumulate duplicate summaries.
+  contentHash   String?
   summaryRec    Summary? @relation("SummaryFile")
+
+  @@index([userId, contentHash])
+}
+
+// In-app notifications ("your summary is ready"). Text is NOT stored here -
+// `type` + `payload` are rendered client-side through i18n so notifications
+// follow the user's UI language.
+model Notification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String    // e.g. 'summary_ready'
+  payload   Json?
+  href      String?
+  readAt    DateTime? @db.Timestamp(6)
+  createdAt DateTime  @default(now()) @db.Timestamp(6)
+
+  @@index([userId, createdAt])
 }
 
 model Account {

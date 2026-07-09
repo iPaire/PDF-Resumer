@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 
 export const maxDuration = 60; // seconds - Vercel Pro supports up to 300
+import { createHash } from 'crypto';
 import pdf from 'pdf-parse';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
@@ -238,6 +239,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Same document re-uploaded by the same user -> return the existing
+    // workspace instead of creating a duplicate summary. Doesn't consume
+    // quota and skips the whole AI pipeline.
+    const contentHash = createHash('sha256').update(text).digest('hex');
+    const existingFile = await prisma.file.findFirst({
+      where: { userId: user.id, contentHash },
+      include: { summaryRec: { select: { id: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (existingFile?.summaryRec) {
+      return new Response(
+        JSON.stringify({
+          summary: existingFile.summary,
+          quiz: existingFile.quiz,
+          fileID: existingFile.id,
+          summaryId: existingFile.summaryRec.id,
+          duplicate: true,
+          meta: {
+            filename,
+            pages: existingFile.pages,
+            size: fileSize,
+            characters: text.length,
+            language: existingFile.language,
+          },
+        }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Fast language detection using simple heuristics
     function detectLanguageFast(text: string): string {
       const sample = text.substring(0, 500).toLowerCase();
@@ -370,7 +400,8 @@ export async function POST(request: NextRequest) {
             summary: cached.summary,
             quiz: cached.quiz as unknown as Prisma.InputJsonValue,
             language: documentLanguage,
-            extractedText: text.slice(0, 1_500_000)
+            extractedText: text.slice(0, 1_500_000),
+            contentHash
           }
         })
       ]);
@@ -383,6 +414,16 @@ export async function POST(request: NextRequest) {
           fileId: fileRecord.id,
         }
       });
+      // Tells the user their summary landed in the Library even if they
+      // navigated away while it was processing.
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: 'summary_ready',
+          payload: { title: summaryRecord.title },
+          href: `/workspace/${summaryRecord.id}`,
+        },
+      }).catch((e) => console.error('[summarize] notification create failed:', e));
 
       return new Response(
         JSON.stringify({
@@ -1119,7 +1160,8 @@ Format JSON:
           summary: summaryContent,
           quiz: quiz as unknown as Prisma.InputJsonValue,
           language: documentLanguage,
-          extractedText: text.slice(0, 1_500_000)
+          extractedText: text.slice(0, 1_500_000),
+          contentHash
         }
       })
     ]);
@@ -1132,6 +1174,16 @@ Format JSON:
         fileId: fileRecord.id,
       }
     });
+    // Tells the user their summary landed in the Library even if they
+    // navigated away while it was processing.
+    await prisma.notification.create({
+      data: {
+        userId: user.id,
+        type: 'summary_ready',
+        payload: { title: summaryRecord.title },
+        href: `/workspace/${summaryRecord.id}`,
+      },
+    }).catch((e) => console.error('[summarize] notification create failed:', e));
 
     return new Response(
       JSON.stringify({

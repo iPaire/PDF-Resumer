@@ -51,7 +51,11 @@
     "freeTools": "Unelte gratuite",
     "noAccountNeeded": "Gratuit — fără cont",
     "translatePdfDescription": "Traduce orice PDF în engleză, păstrând formulele și aspectul",
-    "menu": "Meniu"
+    "menu": "Meniu",
+    "notifications": "Notificări",
+    "notificationsEmpty": "Nimic nou deocamdată",
+    "markAllRead": "Marchează tot ca citit",
+    "notifSummaryReady": "Rezumatul „{title}\" este gata în Biblioteca ta"
   },
   "terms": {
     "title": "Termeni și Condiții",

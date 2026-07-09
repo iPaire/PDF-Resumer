@@ -51,7 +51,11 @@
     "freeTools": "Kostenlose Tools",
     "noAccountNeeded": "Kostenlos — ohne Konto",
     "translatePdfDescription": "Übersetze jedes PDF ins Englische, Formeln und Layout bleiben erhalten",
-    "menu": "Menü"
+    "menu": "Menü",
+    "notifications": "Benachrichtigungen",
+    "notificationsEmpty": "Noch nichts Neues",
+    "markAllRead": "Alle als gelesen markieren",
+    "notifSummaryReady": "Deine Zusammenfassung „{title}\" ist in deiner Bibliothek bereit"
   },
   "terms": {
     "title": "Allgemeine Geschäftsbedingungen",

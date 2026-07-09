@@ -51,7 +51,11 @@
     "freeTools": "Outils gratuits",
     "noAccountNeeded": "Gratuit — sans compte",
     "translatePdfDescription": "Traduisez n'importe quel PDF en anglais en conservant formules et mise en page",
-    "menu": "Menu"
+    "menu": "Menu",
+    "notifications": "Notifications",
+    "notificationsEmpty": "Rien de nouveau pour le moment",
+    "markAllRead": "Tout marquer comme lu",
+    "notifSummaryReady": "Votre résumé « {title} » est prêt dans votre Bibliothèque"
   },
   "terms": {
     "title": "Conditions générales",

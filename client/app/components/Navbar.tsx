@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, Plus, Menu } from 'react-feather';
 import { Badge } from '@/components/ui';
+import NotificationsBell from '@/components/NotificationsBell';
 import { analyticsEvents } from '@/lib/analytics';
 
 const navLinkClass =
@@ -166,6 +167,8 @@ export default function Navbar() {
             <span className="hidden sm:inline">{t('newDocument')}</span>
           </Link>
         )}
+
+        {session && <NotificationsBell />}
 
         {session ? (
           <div ref={menuRef} className="relative">
