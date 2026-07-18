@@ -154,7 +154,7 @@ export default function Home() {
                 <div className="flex-1 p-5 space-y-3" aria-hidden="true">
                   <div className="flex justify-end">
                     <div className="bg-accent text-white text-xs rounded-card px-3.5 py-2.5 max-w-[70%]">
-                      {t('featureChatDesc')}
+                      {t('mockChatQuestion')}
                     </div>
                   </div>
                   <div className="flex justify-start">

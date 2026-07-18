@@ -229,6 +229,7 @@
     "featuresSubtitle": "Chaque document devient un espace d'apprentissage complet",
     "featureSummaryDesc": "Un résumé clair et structuré de tout le document.",
     "featureChatDesc": "Demandez n'importe quoi — l'IA répond à partir de votre document, comme un tuteur.",
+    "mockChatQuestion": "Quel est l'argument principal du chapitre 3 ?",
     "featureConceptsDesc": "Les termes et idées essentiels, expliqués simplement.",
     "featureQuizDesc": "Des QCM avec explications pour vous tester.",
     "featureFlashcardsDesc": "Des cartes mémoire pour une révision active et rapide.",
